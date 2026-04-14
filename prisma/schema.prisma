@@ -5,3 +5,258 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+// ============================================
+// AUTH & USER MANAGEMENT
+// ============================================
+
+enum Role {
+  ADMIN
+  PENDAFTARAN
+  PERAWAT
+  DOKTER
+}
+
+enum Gender {
+  LAKI_LAKI
+  PEREMPUAN
+}
+
+model Account {
+  id          String   @id @default(cuid())
+  username    String   @unique
+  password    String
+  role        Role
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  practitioner Practitioner?
+  activityLogs ActivityLog[]
+}
+
+model Practitioner {
+  id            String   @id @default(cuid())
+  ihsNumber     String?  @unique
+  name          String
+  identifierStr String?
+  speciality    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  accountId     String   @unique
+  account       Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  encounters    Encounter[]
+}
+
+// ============================================
+// PATIENT & ADMINISTRATION
+// ============================================
+
+model Patient {
+  id            String   @id @default(cuid())
+  ihsNumber     String?  @unique
+  identifierNik String?  @unique
+  name          String
+  birthdate     DateTime
+  gender        Gender
+  address       String?
+  telecom       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  encounters         Encounter[]
+  conditionHistories ConditionHistory[]
+  allergyIntolerances AllergyIntolerance[]
+  medicationStatements MedicationStatement[]
+}
+
+model Encounter {
+  id            String   @id @default(cuid())
+  queueNumber   String   @unique
+  status        String   @default("MENUNGGU")
+  priority      String   @default("STABIL")
+  periodStart   DateTime @default(now())
+  periodEnd     DateTime?
+  reasonCode    String?
+  patientType   String   @default("UMUM")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  patientId       String
+  patient         Patient      @relation(fields: [patientId], references: [id])
+  practitionerId  String?
+  practitioner    Practitioner? @relation(fields: [practitionerId], references: [id])
+
+  observations        Observation[]
+  conditionDiagnoses  ConditionDiagnosis[]
+  procedures          Procedure[]
+  serviceRequests     ServiceRequest[]
+  medicationRequests  MedicationRequest[]
+  syncQueues          SyncQueue[]
+}
+
+// ============================================
+// SOAP - SUBJECTIVE
+// ============================================
+
+model ConditionHistory {
+  id             String   @id @default(cuid())
+  code           String?
+  description    String
+  clinicalStatus String   @default("ACTIVE")
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id])
+}
+
+model AllergyIntolerance {
+  id               String   @id @default(cuid())
+  code             String?
+  description      String
+  reactionSeverity String?
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id])
+}
+
+model MedicationStatement {
+  id             String   @id @default(cuid())
+  medicationCode String?
+  description    String
+  dosage         String?
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id])
+}
+
+// ============================================
+// SOAP - OBJECTIVE
+// ============================================
+
+model Observation {
+  id              String   @id @default(cuid())
+  systolic        Float?
+  diastolic       Float?
+  temperature     Float?
+  heartRate       Float?
+  respiratoryRate Float?
+  weight          Float?
+  height          Float?
+  bmi             Float?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  encounterId String
+  encounter   Encounter @relation(fields: [encounterId], references: [id])
+}
+
+// ============================================
+// SOAP - ASSESSMENT
+// ============================================
+
+model ConditionDiagnosis {
+  id          String   @id @default(cuid())
+  codeIcd10   String
+  display     String
+  notes       String?
+  isPrimary   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  encounterId String
+  encounter   Encounter @relation(fields: [encounterId], references: [id])
+}
+
+// ============================================
+// SOAP - PLAN
+// ============================================
+
+model Procedure {
+  id        String   @id @default(cuid())
+  codeIcd9  String?
+  display   String
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  encounterId String
+  encounter   Encounter @relation(fields: [encounterId], references: [id])
+}
+
+model MedicationRequest {
+  id          String   @id @default(cuid())
+  medication  String
+  dosage      String?
+  instruction String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  encounterId String
+  encounter   Encounter @relation(fields: [encounterId], references: [id])
+}
+
+model ServiceRequest {
+  id        String   @id @default(cuid())
+  intent    String
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  encounterId String
+  encounter   Encounter @relation(fields: [encounterId], references: [id])
+}
+
+// ============================================
+// REFERENCE TABLES
+// ============================================
+
+model ICD10Reference {
+  id      String @id @default(cuid())
+  code    String @unique
+  display String
+}
+
+model ICD9Reference {
+  id      String @id @default(cuid())
+  code    String @unique
+  display String
+}
+
+// ============================================
+// SYSTEM
+// ============================================
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  action     String
+  status     String   @default("SUCCESS")
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  accountId String
+  account   Account @relation(fields: [accountId], references: [id])
+}
+
+model SyncQueue {
+  id          String   @id @default(cuid())
+  fhirJson    Json
+  status      String   @default("PENDING")
+  retryCount  Int      @default(0)
+  lastError   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  encounterId String
+  encounter   Encounter @relation(fields: [encounterId], references: [id])
+}
