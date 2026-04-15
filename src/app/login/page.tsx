@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -26,7 +26,17 @@ export default function LoginPage() {
       if (result?.error) {
         setError("Username atau Password salah!");
       } else {
-        window.location.href = "/beranda";
+        const session = await getSession();
+        const role = session?.user?.role;
+
+        const roleRedirectMap: Record<string, string> = {
+          ADMIN: "/beranda",
+          PENDAFTARAN: "/beranda",
+          PERAWAT: "/beranda",
+          DOKTER: "/beranda",
+        };
+
+        window.location.href = role ? (roleRedirectMap[role] ?? "/beranda") : "/beranda";
       }
     } catch {
       setError("Terjadi kesalahan. Silakan coba lagi.");
