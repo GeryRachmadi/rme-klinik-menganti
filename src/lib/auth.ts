@@ -1,7 +1,15 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+
+class InvalidCredentials extends CredentialsSignin {
+  code = "credentials";
+}
+
+class AccountInactive extends CredentialsSignin {
+  code = "account_inactive";
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -11,22 +19,26 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {    
-        if (!credentials?.username || !credentials?.password) return null;
+      async authorize(credentials) {
+        if (!credentials?.username || !credentials?.password) {
+          throw new InvalidCredentials();
+        }
 
         const account = await prisma.account.findUnique({
           where: { username: credentials.username as string },
           include: { practitioner: true },
         });
 
-        if (!account || !account.isActive) return null;
+        if (!account) throw new InvalidCredentials();
+
+        if (!account.isActive) throw new AccountInactive();
 
         const isValid = await bcrypt.compare(
           credentials.password as string,
           account.password
         );
 
-        if (!isValid) return null;
+        if (!isValid) throw new InvalidCredentials();
 
         return {
           id: account.id,
