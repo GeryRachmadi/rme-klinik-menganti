@@ -2,15 +2,37 @@
 
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { signIn } from "next-auth/react";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // NextAuth integration - TR-20
+    setError(null);
+    setLoading(true);
+
+    try {
+      const result = await signIn("credentials", {
+        username,
+        password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setError("Username atau Password salah!");
+      } else {
+        window.location.href = "/beranda";
+      }
+    } catch {
+      setError("Terjadi kesalahan. Silakan coba lagi.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -51,7 +73,11 @@ export default function LoginPage() {
             Masuk
           </h2>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5" autoComplete="off">
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col gap-5"
+            autoComplete="off"
+          >
             {/* Username */}
             <div className="flex flex-col gap-2">
               <label
@@ -99,16 +125,30 @@ export default function LoginPage() {
               </div>
             </div>
 
+            {/* Error Message */}
+            {error && (
+              <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 border border-red-200">
+                <span
+                  className="text-xs text-red-600"
+                  style={{ fontFamily: "var(--font-jakarta)" }}
+                >
+                  {error}
+                </span>
+              </div>
+            )}
+
             {/* Tombol Masuk */}
             <button
               type="submit"
-              className="mt-4 w-full py-4 rounded-full text-white font-semibold text-sm transition hover:opacity-90 active:scale-95"
+              disabled={loading}
+              className="mt-2 w-full py-4 rounded-full text-white font-semibold text-sm transition hover:opacity-90 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
               style={{
-                background: "linear-gradient(90deg, #4DD9C0 0%, #2BB5A0 100%)",
+                background:
+                  "linear-gradient(90deg, #4DD9C0 0%, #2BB5A0 100%)",
                 fontFamily: "var(--font-poppins)",
               }}
             >
-              Masuk
+              {loading ? "Memproses..." : "Masuk"}
             </button>
           </form>
         </div>
