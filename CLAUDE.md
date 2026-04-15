@@ -82,3 +82,92 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 - Never use English in user-facing text except for technical terms
 - Route protection via layout.tsx using auth() from next-auth
 - All form inputs use autoComplete="off"
+
+## Jira Tickets Summary
+
+### TR-2 [UC-01] Login
+- TR-19 ✅ Buat halaman Login UI
+- TR-20 ✅ Setup NextAuth.js credentials provider
+- TR-21 ⏳ Implementasi role-based redirect (NEXT)
+- TR-22 ⏳ Implementasi validasi error handling login
+
+### TR-3 [UC-02] Lihat Dashboard
+- TR-23 ⏳ Buat shared DashboardLayout component
+- TR-24 ⏳ Buat Dashboard Admin
+- TR-25 ⏳ Buat Dashboard Pendaftaran
+- TR-26 ⏳ Buat Dashboard Perawat
+- TR-27 ⏳ Buat Dashboard Dokter
+
+### TR-4 [UC-03] Kelola Pengguna
+- TR-28 ⏳ Buat halaman Manajemen Pengguna UI
+- TR-29 ⏳ Buat form Tambah Akun Baru
+- TR-30 ⏳ Implementasi edit dan hapus akun
+- TR-31 ⏳ Implementasi toggle aktif/nonaktif
+- TR-32 ⏳ Buat API endpoint CRUD Account & Practitioner
+- TR-33 ⏳ Role-based access - hanya Admin
+
+### TR-5 [UC-04] Daftar Pasien Baru
+- TR-34 ⏳ Buat halaman Rekam Medis UI
+- TR-35 ⏳ Buat form Tambah Pasien Baru
+- TR-36 ⏳ Validasi NIK 16 digit
+- TR-37 ⏳ Integrasi SATUSEHAT API auto-fill
+- TR-38 ⏳ Fallback pendaftaran manual
+- TR-39 ⏳ API endpoint CRUD Patient
+
+### TR-6 [UC-05] Daftar Kunjungan
+- TR-40 ⏳ Buat form Tambah Kunjungan Baru
+- TR-41 ⏳ Generate nomor antrean U- dan G-
+- TR-42 ⏳ Form detail kunjungan
+- TR-43 ⏳ Opsi pendaftaran tanpa NIK
+- TR-44 ⏳ Error handling pasien belum terdaftar
+- TR-45 ⏳ API endpoint Encounter baru
+
+### TR-7 [UC-06] Lihat Daftar Antrean
+- TR-46 ⏳ Buat halaman Rawat Jalan UI
+- TR-47 ⏳ Filter antrean
+- TR-48 ⏳ Role-based action Petugas Pendaftaran
+- TR-49 ⏳ Empty state dan error state
+- TR-50 ⏳ API endpoint fetch Encounter aktif
+
+### TR-8 [UC-07] Lihat Riwayat Medis
+- TR-51 ⏳ Buat halaman Riwayat Medis UI
+- TR-52 ⏳ Komponen Riwayat Kunjungan timeline
+- TR-53 ⏳ Komponen Ringkasan Klinis
+- TR-54 ⏳ Empty state riwayat kosong
+- TR-55 ⏳ API endpoint fetch riwayat medis
+
+### TR-9 [UC-08] Catat Kajian Awal
+- TR-56 ⏳ Buat halaman Asesmen UI
+- TR-57 ⏳ Form Kajian Awal input chips
+- TR-58 ⏳ Opsi "tidak ada" tiap field
+- TR-59 ⏳ Error handling preserve input state
+- TR-60 ⏳ API endpoint ConditionHistory, AllergyIntolerance, MedicationStatement
+
+### TR-10 [UC-09] Catat Pemeriksaan Fisik
+- TR-61 ⏳ Form Pemeriksaan Fisik
+- TR-62 ⏳ Kalkulasi BMI otomatis
+- TR-63 ⏳ Validasi batas logis tanda vital
+- TR-64 ⏳ Konfirmasi dua opsi Kembali/Lanjut
+- TR-65 ⏳ API endpoint Observation
+
+### TR-11 [UC-10] Input Diagnosis
+- TR-66 ⏳ Form Hasil Periksa Medis
+- TR-67 ⏳ Search ICD-10 autocomplete
+- TR-68 ⏳ Fallback input manual diagnosis
+- TR-69 ⏳ Read-only view Kajian Awal & Pemeriksaan Fisik
+- TR-70 ⏳ API endpoint ConditionDiagnosis
+
+### TR-12 [UC-11] Catat Tindak Lanjut
+- TR-71 ⏳ Search ICD-9 CM autocomplete
+- TR-72 ⏳ Fallback input manual tindakan
+- TR-73 ⏳ Form Resep Obat dan Edukasi
+- TR-74 ⏳ Form Rujukan toggle
+- TR-75 ⏳ Validasi form kosong tetap bisa simpan
+- TR-76 ⏳ API endpoint Procedure, ServiceRequest, MedicationRequest
+
+### TR-13 [UC-12] Kirim Resume Medis
+- TR-77 ⏳ Tombol Simpan & Kirim ke SATUSEHAT
+- TR-78 ⏳ Susun data SOAP ke FHIR JSON Bundle
+- TR-79 ⏳ Integrasi POST ke SATUSEHAT API
+- TR-80 ⏳ Error handling retry queue
+- TR-81 ⏳ Tombol Kirim Ulang retry
