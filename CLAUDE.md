@@ -85,14 +85,21 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 
 ## Jira Tickets Summary
 
+### TR-1 [SETUP] Project Infrastructure
+- TR-14 ✅ Setup Next.js project dengan TypeScript dan Tailwind CSS
+- TR-15 ✅ Setup PostgreSQL database dan konfigurasi Prisma ORM
+- TR-16 ✅ Definisi Prisma schema berdasarkan Domain Model
+- TR-17 ✅ Setup struktur folder dan routing Next.js App Router
+- TR-18 ✅ Setup environment variables dan konfigurasi SATUSEHAT credentials
+
 ### TR-2 [UC-01] Login
 - TR-19 ✅ Buat halaman Login UI
 - TR-20 ✅ Setup NextAuth.js credentials provider
-- TR-21 ⏳ Implementasi role-based redirect (NEXT)
-- TR-22 ⏳ Implementasi validasi error handling login
+- TR-21 ✅ Implementasi role-based redirect (NEXT)
+- TR-22 ✅ Implementasi validasi error handling login
 
 ### TR-3 [UC-02] Lihat Dashboard
-- TR-23 ⏳ Buat shared DashboardLayout component
+- TR-23 ✅ Buat shared DashboardLayout component
 - TR-24 ⏳ Buat Dashboard Admin
 - TR-25 ⏳ Buat Dashboard Pendaftaran
 - TR-26 ⏳ Buat Dashboard Perawat

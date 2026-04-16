@@ -74,7 +74,7 @@ export default function AdminDashboard({
             className="text-gray-500 text-sm"
             style={{ fontFamily: "var(--font-jakarta)" }}
           >
-            Apa yang ingin anda lakukan saat ini?
+            Selamat Bertugas! Apa yang ingin anda lakukan saat ini?
           </p>
         </div>
         <div className="flex-shrink-0 opacity-20 select-none" style={{ color: "#2BB5A0" }}>
@@ -112,9 +112,9 @@ export default function AdminDashboard({
       >
         <div
           className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-          style={{ background: "linear-gradient(135deg, #4DD9C0 0%, #2BB5A0 100%)" }}
+          style={{ backgroundColor: "#ECFDF5" }}
         >
-          <UserPlus size={22} className="text-white" strokeWidth={2} />
+          <UserPlus size={22} strokeWidth={2} style={{ color: "#10B981" }} />
         </div>
         <div>
           <p
