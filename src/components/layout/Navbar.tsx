@@ -31,7 +31,7 @@ export default function Navbar({ name, role }: NavbarProps) {
     <header className="bg-white border-b border-gray-100 h-16 flex items-center flex-shrink-0">
       {/* Logo — lebarnya disejajarkan dengan Sidebar */}
       <div
-        className="w-56 flex-shrink-0 flex items-center gap-3 px-5"
+        className="w-72 flex-shrink-0 flex items-center gap-3 px-5"
       >
         <div
           className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"

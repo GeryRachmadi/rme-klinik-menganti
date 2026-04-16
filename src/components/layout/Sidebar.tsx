@@ -16,7 +16,7 @@ type Role = "ADMIN" | "PENDAFTARAN" | "PERAWAT" | "DOKTER";
 interface NavItem {
   label: string;
   href: string;
-  Icon: React.ComponentType<{ size?: number; className?: string }>;
+  Icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
 }
 
 const baseNavItems: NavItem[] = [
@@ -44,7 +44,7 @@ export default function Sidebar({ role }: SidebarProps) {
   const navItems = navItemsByRole[role];
 
   return (
-    <aside className="w-56 flex-shrink-0 bg-white border-r border-gray-100 flex flex-col">
+    <aside className="w-72 flex-shrink-0 bg-white border-r border-gray-100 flex flex-col">
       {/* Navigasi */}
       <nav className="flex-1 p-3 pt-4">
         <ul className="space-y-1">
@@ -58,16 +58,17 @@ export default function Sidebar({ role }: SidebarProps) {
               <li key={href}>
                 <Link
                   href={href}
-                  className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors text-sm ${
+                  className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors text-sm font-bold ${
                     isActive
-                      ? "bg-[#2BB5A0] text-white font-semibold"
-                      : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+                      ? "bg-[#E6F5F4] text-[#009E95]"
+                      : "text-[#64748B] hover:bg-gray-50 hover:text-gray-800"
                   }`}
                   style={{ fontFamily: "var(--font-jakarta)" }}
                 >
                   <Icon
                     size={18}
-                    className={isActive ? "text-white" : "text-gray-400"}
+                    strokeWidth={2.5}
+                    className={isActive ? "text-[#009E95]" : "text-[#64748B]"}
                   />
                   {label}
                 </Link>
@@ -81,10 +82,10 @@ export default function Sidebar({ role }: SidebarProps) {
       <div className="p-3 pb-6">
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-3 px-4 py-2.5 w-full rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-500 transition-colors text-sm"
+          className="flex items-center gap-3 px-4 py-2.5 w-full rounded-xl text-[#64748B] hover:bg-red-50 hover:text-red-500 transition-colors text-sm font-bold"
           style={{ fontFamily: "var(--font-jakarta)" }}
         >
-          <LogOut size={18} className="text-gray-400" />
+          <LogOut size={18} strokeWidth={2.5} className="text-[#64748B]" />
           Keluar
         </button>
       </div>
