@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import AdminDashboard from "@/components/shared/AdminDashboard";
 import PendaftaranDashboard from "@/components/shared/PendaftaranDashboard";
+import PerawatDashboard from "@/components/shared/PerawatDashboard";
 
 export default async function BerandaPage() {
   const session = await auth();
@@ -79,6 +80,73 @@ export default async function BerandaPage() {
           sisaAntrean={sisaAntrean}
           encounters={encounters}
           practitioners={practitioners}
+        />
+      </DashboardLayout>
+    );
+  }
+
+  if (role === "PERAWAT") {
+    const wibOffset = 7 * 60 * 60 * 1000;
+    const nowWib = new Date(Date.now() + wibOffset);
+    nowWib.setUTCHours(0, 0, 0, 0);
+    const todayStart = new Date(nowWib.getTime() - wibOffset);
+    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+
+    const [
+      antreanMenunggu,
+      selesaiAsesmen,
+      encounters,
+      partnerDokter,
+      selesaiList,
+      perawatPrac,
+    ] = await Promise.all([
+      prisma.encounter.count({
+        where: { status: "MENUNGGU", createdAt: { gte: todayStart, lt: todayEnd } },
+      }),
+      prisma.encounter.count({
+        where: { status: "SELESAI", createdAt: { gte: todayStart, lt: todayEnd } },
+      }),
+      prisma.encounter.findMany({
+        where: {
+          status: { not: "SELESAI" },
+          createdAt: { gte: todayStart, lt: todayEnd },
+        },
+        take: 8,
+        orderBy: { createdAt: "asc" },
+        include: {
+          patient: { select: { name: true, gender: true, birthdate: true } },
+        },
+      }),
+      prisma.practitioner.findMany({
+        where: { account: { isActive: true, role: "DOKTER" } },
+        select: { id: true, name: true, speciality: true },
+        orderBy: { name: "asc" },
+      }),
+      prisma.encounter.findMany({
+        where: {
+          status: "SELESAI",
+          createdAt: { gte: todayStart, lt: todayEnd },
+        },
+        take: 6,
+        orderBy: { updatedAt: "desc" },
+        include: { patient: { select: { name: true } } },
+      }),
+      prisma.practitioner.findUnique({
+        where: { accountId: session!.user.id },
+        select: { speciality: true },
+      }),
+    ]);
+
+    return (
+      <DashboardLayout>
+        <PerawatDashboard
+          name={name}
+          antreanMenunggu={antreanMenunggu}
+          selesaiAsesmen={selesaiAsesmen}
+          ruangPenugasan={perawatPrac?.speciality ?? "Umum"}
+          encounters={encounters}
+          partnerDokter={partnerDokter}
+          selesaiList={selesaiList}
         />
       </DashboardLayout>
     );

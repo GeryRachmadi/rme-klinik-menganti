@@ -44,6 +44,7 @@ export default function LoginPage() {
         const code = result.code ?? "unknown";
         setFormError(errorMessageMap[code] ?? "Terjadi kesalahan. Silakan coba lagi.");
       } else {
+        await new Promise((resolve) => setTimeout(resolve, 200));
         window.location.href = "/beranda";
       }
     } catch {

@@ -1,15 +1,24 @@
 import Link from "next/link";
 import {
   Users,
-  Ticket,
-  UserPlus,
-  ClipboardPlus,
+  ClipboardCheck,
+  UserSearch,
+  MapPin,
   Stethoscope,
+  CheckCircle,
 } from "lucide-react";
 import type { Prisma } from "@/generated/prisma";
 
-type EncounterWithPatient = Prisma.EncounterGetPayload<{
-  include: { patient: { select: { name: true } } };
+type EncounterWithPatientDetail = Prisma.EncounterGetPayload<{
+  include: {
+    patient: { select: { name: true; gender: true; birthdate: true } };
+  };
+}>;
+
+type EncounterSelesaiItem = Prisma.EncounterGetPayload<{
+  include: {
+    patient: { select: { name: true } };
+  };
 }>;
 
 type PractitionerItem = {
@@ -18,20 +27,14 @@ type PractitionerItem = {
   speciality: string | null;
 };
 
-interface PendaftaranDashboardProps {
+interface PerawatDashboardProps {
   name: string;
-  totalEncountersToday: number;
-  sisaAntrean: number;
-  encounters: EncounterWithPatient[];
-  practitioners: PractitionerItem[];
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? "")
-    .join("");
+  antreanMenunggu: number;
+  selesaiAsesmen: number;
+  ruangPenugasan: string;
+  encounters: EncounterWithPatientDetail[];
+  partnerDokter: PractitionerItem[];
+  selesaiList: EncounterSelesaiItem[];
 }
 
 function getGreeting(): string {
@@ -49,6 +52,22 @@ function formatWIB(date: Date): string {
   return `${hh}:${mm}`;
 }
 
+function calcAge(birthdate: Date): number {
+  const now = new Date();
+  let age = now.getFullYear() - birthdate.getFullYear();
+  const m = now.getMonth() - birthdate.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < birthdate.getDate())) age--;
+  return age;
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
 function getPoliLabel(queueNumber: string): string {
   const prefix = queueNumber.charAt(0).toUpperCase();
   if (prefix === "U") return "Poli Umum";
@@ -56,17 +75,36 @@ function getPoliLabel(queueNumber: string): string {
   return "-";
 }
 
+const AVATAR_COLORS = [
+  { bg: "#EFF6FF", color: "#3B82F6" },
+  { bg: "#F0FDF4", color: "#22C55E" },
+  { bg: "#FFF7ED", color: "#F97316" },
+  { bg: "#FAF5FF", color: "#A855F7" },
+  { bg: "#FFF1F2", color: "#F43F5E" },
+  { bg: "#F0FDFA", color: "#14B8A6" },
+];
+
+function getAvatarColor(name: string) {
+  const idx = name.charCodeAt(0) % AVATAR_COLORS.length;
+  return AVATAR_COLORS[idx];
+}
+
+const genderLabel: Record<string, string> = {
+  LAKI_LAKI: "Laki-laki",
+  PEREMPUAN: "Perempuan",
+};
+
 const encounterStatusConfig: Record<
   string,
   { label: string; bgClass: string; textClass: string }
 > = {
   MENUNGGU: {
-    label: "Menunggu",
+    label: "Menunggu Asesmen",
     bgClass: "bg-orange-50",
     textClass: "text-orange-500",
   },
   DIPERIKSA: {
-    label: "Diperiksa",
+    label: "Siap Diperiksa",
     bgClass: "bg-teal-50",
     textClass: "text-teal-600",
   },
@@ -77,34 +115,15 @@ const encounterStatusConfig: Record<
   },
 };
 
-const jadwalStatusConfig: Record<
-  string,
-  { label: string; borderColor: string; textColor: string }
-> = {
-  TERSEDIA: {
-    label: "Tersedia",
-    borderColor: "#2BB5A0",
-    textColor: "#2BB5A0",
-  },
-  ISTIRAHAT: {
-    label: "Istirahat",
-    borderColor: "#F97316",
-    textColor: "#F97316",
-  },
-  BERHALANGAN: {
-    label: "Berhalangan",
-    borderColor: "#EF4444",
-    textColor: "#EF4444",
-  },
-};
-
-export default function PendaftaranDashboard({
+export default function PerawatDashboard({
   name,
-  totalEncountersToday,
-  sisaAntrean,
+  antreanMenunggu,
+  selesaiAsesmen,
+  ruangPenugasan,
   encounters,
-  practitioners,
-}: PendaftaranDashboardProps) {
+  partnerDokter,
+  selesaiList,
+}: PerawatDashboardProps) {
   const greeting = getGreeting();
 
   return (
@@ -117,7 +136,7 @@ export default function PendaftaranDashboard({
             className="text-xs font-bold tracking-widest text-gray-400 uppercase mb-3"
             style={{ fontFamily: "var(--font-jakarta)" }}
           >
-            DASHBOARD PENDAFTARAN
+            DASHBOARD PERAWAT
           </p>
           <h1
             className="text-4xl font-bold mb-3 leading-tight"
@@ -126,12 +145,10 @@ export default function PendaftaranDashboard({
             {greeting}, {name}!
           </h1>
           <p
-            className="text-gray-500 text-sm"
+            className="text-gray-500 text-sm truncate"
             style={{ fontFamily: "var(--font-jakarta)" }}
           >
-            Selamat bertugas! Saat ini terdapat{" "}
-            <span className="font-semibold text-gray-700">{sisaAntrean}</span>{" "}
-            antrean aktif hari ini.
+            Selamat bertugas! Silakan pilih pasien dari daftar antrean di bawah untuk memulai sesi pemeriksaan.
           </p>
         </div>
         <div
@@ -144,7 +161,7 @@ export default function PendaftaranDashboard({
 
       {/* ── Row 2: KPI + Action Cards ── */}
 
-      {/* Card 1 – Total Kunjungan Hari Ini */}
+      {/* Card 1 – Antrean Menunggu */}
       <div className="col-span-3 bg-white rounded-3xl p-6 flex items-center gap-4">
         <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center flex-shrink-0">
           <Users size={22} className="text-blue-400" strokeWidth={2} />
@@ -154,42 +171,46 @@ export default function PendaftaranDashboard({
             className="text-xs text-gray-400 mb-1 leading-snug"
             style={{ fontFamily: "var(--font-jakarta)" }}
           >
-            Total Kunjungan Hari Ini
+            Antrean Menunggu
           </p>
           <p
             className="text-2xl font-bold text-gray-800"
             style={{ fontFamily: "var(--font-poppins)" }}
           >
-            {totalEncountersToday}
+            {antreanMenunggu}
           </p>
         </div>
       </div>
 
-      {/* Card 2 – Sisa Antrean */}
+      {/* Card 2 – Selesai Asesmen */}
       <div className="col-span-3 bg-white rounded-3xl p-6 flex items-center gap-4">
         <div
           className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
           style={{ backgroundColor: "#F0FDF9" }}
         >
-          <Ticket size={22} strokeWidth={2} style={{ color: "#2BB5A0" }} />
+          <ClipboardCheck
+            size={22}
+            strokeWidth={2}
+            style={{ color: "#2BB5A0" }}
+          />
         </div>
         <div>
           <p
             className="text-xs text-gray-400 mb-1 leading-snug"
             style={{ fontFamily: "var(--font-jakarta)" }}
           >
-            Sisa Antrean
+            Selesai Asesmen
           </p>
           <p
             className="text-2xl font-bold text-gray-800"
             style={{ fontFamily: "var(--font-poppins)" }}
           >
-            {sisaAntrean}
+            {selesaiAsesmen}
           </p>
         </div>
       </div>
 
-      {/* Card 3 – Action: Tambah Pasien */}
+      {/* Card 3 – Action: Cari Data Pasien */}
       <Link
         href="/rekam-medis"
         className="col-span-3 bg-white rounded-3xl p-6 flex items-center gap-4 hover:bg-gray-50 transition-colors"
@@ -198,51 +219,47 @@ export default function PendaftaranDashboard({
           className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
           style={{ backgroundColor: "#FAF5FF" }}
         >
-          <UserPlus size={22} strokeWidth={2} style={{ color: "#A855F7" }} />
+          <UserSearch size={22} strokeWidth={2} style={{ color: "#A855F7" }} />
         </div>
         <div>
           <p
             className="text-sm font-bold text-gray-800 leading-snug"
             style={{ fontFamily: "var(--font-poppins)" }}
           >
-            Tambah Pasien
+            Cari Data Pasien
           </p>
           <p
             className="text-xs text-gray-400 mt-0.5"
             style={{ fontFamily: "var(--font-jakarta)" }}
           >
-            Tambahkan pasien baru
+            Cari informasi pasien
           </p>
         </div>
       </Link>
 
-      {/* Card 4 – Action: Kunjungan */}
-      <Link
-        href="/rawat-jalan"
-        className="col-span-3 bg-white rounded-3xl p-6 flex items-center gap-4 hover:bg-gray-50 transition-colors"
-      >
-        <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center flex-shrink-0">
-          <ClipboardPlus
-            size={22}
-            strokeWidth={2}
-            className="text-orange-400"
-          />
+      {/* Card 4 – Info: Ruang Penugasan */}
+      <div className="col-span-3 bg-white rounded-3xl p-6 flex items-center gap-4">
+        <div
+          className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+          style={{ backgroundColor: "#FFF7ED" }}
+        >
+          <MapPin size={22} strokeWidth={2} style={{ color: "#F97316" }} />
         </div>
         <div>
           <p
-            className="text-sm font-bold text-gray-800 leading-snug"
-            style={{ fontFamily: "var(--font-poppins)" }}
-          >
-            Kunjungan
-          </p>
-          <p
-            className="text-xs text-gray-400 mt-0.5"
+            className="text-xs text-gray-400 mb-1 leading-snug"
             style={{ fontFamily: "var(--font-jakarta)" }}
           >
-            Daftarkan pasien ke antrean
+            Ruang Penugasan
+          </p>
+          <p
+            className="text-sm font-bold uppercase"
+            style={{ fontFamily: "var(--font-poppins)", color: "#2BB5A0" }}
+          >
+            Poli {ruangPenugasan}
           </p>
         </div>
-      </Link>
+      </div>
 
       {/* ── Row 3 Left: Tabel Antrean ── */}
       <div className="col-span-8 bg-white rounded-3xl p-6">
@@ -267,7 +284,10 @@ export default function PendaftaranDashboard({
             <Link
               href="/rawat-jalan"
               className="px-4 py-1.5 rounded-full text-sm text-white transition-colors hover:opacity-90"
-              style={{ background: "#2BB5A0", fontFamily: "var(--font-jakarta)" }}
+              style={{
+                background: "#2BB5A0",
+                fontFamily: "var(--font-jakarta)",
+              }}
             >
               Selengkapnya
             </Link>
@@ -279,13 +299,13 @@ export default function PendaftaranDashboard({
             className="text-center py-16 text-gray-300 text-sm"
             style={{ fontFamily: "var(--font-jakarta)" }}
           >
-            Belum ada antrean hari ini.
+            Belum ada antrean aktif hari ini.
           </div>
         ) : (
           <table className="w-full">
             <thead>
               <tr className="text-left border-b border-gray-100">
-                {["NO.ANTREAN", "WAKTU", "NAMA", "POLI TUJUAN", "STATUS"].map(
+                {["NO.ANTREAN", "WAKTU", "NAMA", "STATUS", "ACTION"].map(
                   (col) => (
                     <th
                       key={col}
@@ -303,6 +323,9 @@ export default function PendaftaranDashboard({
                 const statusCfg =
                   encounterStatusConfig[enc.status] ??
                   encounterStatusConfig["MENUNGGU"];
+                const age = calcAge(enc.patient.birthdate);
+                const gender = genderLabel[enc.patient.gender] ?? enc.patient.gender;
+
                 return (
                   <tr
                     key={enc.id}
@@ -323,17 +346,19 @@ export default function PendaftaranDashboard({
                     >
                       {formatWIB(enc.periodStart)}
                     </td>
-                    <td
-                      className="py-3 text-sm text-gray-700"
-                      style={{ fontFamily: "var(--font-jakarta)" }}
-                    >
-                      {enc.patient.name}
-                    </td>
-                    <td
-                      className="py-3 text-sm text-gray-500"
-                      style={{ fontFamily: "var(--font-jakarta)" }}
-                    >
-                      {getPoliLabel(enc.queueNumber)}
+                    <td className="py-3">
+                      <p
+                        className="text-sm font-semibold text-gray-800 leading-snug"
+                        style={{ fontFamily: "var(--font-jakarta)" }}
+                      >
+                        {enc.patient.name}
+                      </p>
+                      <p
+                        className="text-xs text-gray-400 mt-0.5"
+                        style={{ fontFamily: "var(--font-jakarta)" }}
+                      >
+                        {gender} &bull; {age} tahun
+                      </p>
                     </td>
                     <td className="py-3">
                       <span
@@ -343,6 +368,18 @@ export default function PendaftaranDashboard({
                         {statusCfg.label}
                       </span>
                     </td>
+                    <td className="py-3">
+                      <Link
+                        href={`/asesmen/${enc.id}`}
+                        className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold text-white hover:opacity-90 transition-opacity"
+                        style={{
+                          background: "#2BB5A0",
+                          fontFamily: "var(--font-jakarta)",
+                        }}
+                      >
+                        Asesmen
+                      </Link>
+                    </td>
                   </tr>
                 );
               })}
@@ -351,38 +388,40 @@ export default function PendaftaranDashboard({
         )}
       </div>
 
-      {/* ── Row 3 Right: Jadwal Bertugas ── */}
-      <div className="col-span-4 bg-white rounded-3xl p-6">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-1 h-5 rounded-full bg-[#2BB5A0]" />
+      {/* ── Row 3 Right: Partner Dokter + Baru Saja Selesai ── */}
+      <div className="col-span-4 bg-white rounded-3xl p-6 flex flex-col gap-5">
+
+        {/* Partner Dokter Header */}
+        <div>
           <h2
-            className="text-sm font-bold text-gray-800 tracking-widest"
+            className="text-base font-bold text-gray-800 leading-tight"
             style={{ fontFamily: "var(--font-poppins)" }}
           >
-            JADWAL BERTUGAS
+            Partner Dokter
           </h2>
-        </div>
-
-        {practitioners.length === 0 ? (
-          <div
-            className="text-center py-10 text-gray-300 text-sm"
+          <p
+            className="text-xs font-semibold text-gray-400 tracking-widest uppercase mt-0.5"
             style={{ fontFamily: "var(--font-jakarta)" }}
           >
-            Tidak ada dokter bertugas hari ini.
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {practitioners.map((prac) => {
-              // Default status — no schedule model yet in schema
-              const statusKey = "TERSEDIA";
-              const statusCfg = jadwalStatusConfig[statusKey];
-              const initials = getInitials(prac.name);
-              const poliLabel = prac.speciality ?? "Umum";
+            Dokter Jaga Hari Ini
+          </p>
+        </div>
 
+        {/* Doctor List */}
+        <div className="flex flex-col gap-3">
+          {partnerDokter.length === 0 ? (
+            <p
+              className="text-sm text-gray-300 text-center py-4"
+              style={{ fontFamily: "var(--font-jakarta)" }}
+            >
+              Tidak ada dokter bertugas hari ini.
+            </p>
+          ) : (
+            partnerDokter.map((doc) => {
+              const initials = getInitials(doc.name);
               return (
                 <div
-                  key={prac.id}
+                  key={doc.id}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-2xl border border-gray-100"
                 >
                   {/* Avatar */}
@@ -403,13 +442,13 @@ export default function PendaftaranDashboard({
                       className="text-sm font-bold text-gray-800 truncate leading-snug"
                       style={{ fontFamily: "var(--font-poppins)" }}
                     >
-                      {prac.name}
+                      {doc.name}
                     </p>
                     <p
                       className="text-xs text-gray-400 truncate"
                       style={{ fontFamily: "var(--font-jakarta)" }}
                     >
-                      Dokter &bull; Poli {poliLabel}
+                      Dokter &bull; Poli {doc.speciality ?? "Umum"}
                     </p>
                   </div>
 
@@ -417,22 +456,100 @@ export default function PendaftaranDashboard({
                   <span
                     className="flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border"
                     style={{
-                      borderColor: statusCfg.borderColor,
-                      color: statusCfg.textColor,
+                      borderColor: "#2BB5A0",
+                      color: "#2BB5A0",
                       fontFamily: "var(--font-jakarta)",
                     }}
                   >
                     <span
                       className="w-1.5 h-1.5 rounded-full"
-                      style={{ backgroundColor: statusCfg.borderColor }}
+                      style={{ backgroundColor: "#2BB5A0" }}
                     />
-                    {statusCfg.label}
+                    Praktik
                   </span>
                 </div>
               );
-            })}
-          </div>
-        )}
+            })
+          )}
+        </div>
+
+        {/* Divider + Baru Saja Selesai */}
+        <div className="border-t border-gray-100 pt-4">
+          <p
+            className="text-xs font-semibold text-gray-400 tracking-widest uppercase mb-3"
+            style={{ fontFamily: "var(--font-jakarta)" }}
+          >
+            Baru Saja Selesai Diasesmen
+          </p>
+
+          {selesaiList.length === 0 ? (
+            <p
+              className="text-sm text-gray-300 text-center py-4"
+              style={{ fontFamily: "var(--font-jakarta)" }}
+            >
+              Belum ada asesmen selesai hari ini.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {selesaiList.map((enc) => {
+                const initials = getInitials(enc.patient.name);
+                const { bg, color } = getAvatarColor(enc.patient.name);
+                const selesaiTime = formatWIB(enc.periodEnd ?? enc.updatedAt);
+                const poli = getPoliLabel(enc.queueNumber);
+
+                return (
+                  <div key={enc.id} className="flex items-center gap-3 py-1">
+                    {/* Avatar */}
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                      style={{
+                        backgroundColor: bg,
+                        color,
+                        fontFamily: "var(--font-poppins)",
+                      }}
+                    >
+                      {initials}
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className="text-sm font-semibold text-gray-800 truncate leading-snug"
+                        style={{ fontFamily: "var(--font-jakarta)" }}
+                      >
+                        {enc.patient.name}
+                      </p>
+                      <p
+                        className="text-xs text-gray-400 truncate"
+                        style={{ fontFamily: "var(--font-jakarta)" }}
+                      >
+                        {enc.queueNumber} &bull; {poli}
+                      </p>
+                    </div>
+
+                    {/* Selesai time */}
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <CheckCircle
+                        size={12}
+                        style={{ color: "#2BB5A0" }}
+                        strokeWidth={2.5}
+                      />
+                      <span
+                        className="text-xs font-semibold"
+                        style={{
+                          color: "#2BB5A0",
+                          fontFamily: "var(--font-jakarta)",
+                        }}
+                      >
+                        Selesai {selesaiTime}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
     </div>
