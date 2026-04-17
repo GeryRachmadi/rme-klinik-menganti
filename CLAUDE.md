@@ -100,7 +100,7 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 
 ### TR-3 [UC-02] Lihat Dashboard
 - TR-23 ✅ Buat shared DashboardLayout component
-- TR-24 ⏳ Buat Dashboard Admin
+- TR-24 ✅ Buat Dashboard Admin
 - TR-25 ⏳ Buat Dashboard Pendaftaran
 - TR-26 ⏳ Buat Dashboard Perawat
 - TR-27 ⏳ Buat Dashboard Dokter

@@ -66,7 +66,7 @@ export default function AdminDashboard({
           </p>
           <h1
             className="text-4xl font-bold mb-3 leading-tight"
-            style={{ fontFamily: "var(--font-poppins)", color: "#F97168" }}
+            style={{ fontFamily: "var(--font-poppins)", color: "#DA567B" }}
           >
             {greeting}, {name}!
           </h1>

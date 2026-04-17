@@ -75,7 +75,7 @@ export default function Navbar({ name, role }: NavbarProps) {
       </div>
 
       {/* Kanan: Bell + Info User */}
-      <div className="flex items-center gap-4 pr-6 flex-shrink-0">
+      <div className="w-72 flex items-center gap-4 pr-6 flex-shrink-0 justify-end">
         {/* Notifikasi */}
         <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
           <Bell size={18} className="text-gray-500" />
