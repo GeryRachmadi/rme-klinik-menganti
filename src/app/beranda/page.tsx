@@ -4,6 +4,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import AdminDashboard from "@/components/shared/AdminDashboard";
 import PendaftaranDashboard from "@/components/shared/PendaftaranDashboard";
 import PerawatDashboard from "@/components/shared/PerawatDashboard";
+import DokterDashboard from "@/components/shared/DokterDashboard";
 
 export default async function BerandaPage() {
   const session = await auth();
@@ -147,6 +148,65 @@ export default async function BerandaPage() {
           encounters={encounters}
           partnerDokter={partnerDokter}
           selesaiList={selesaiList}
+        />
+      </DashboardLayout>
+    );
+  }
+
+  if (role === "DOKTER") {
+    const wibOffset = 7 * 60 * 60 * 1000;
+    const nowWib = new Date(Date.now() + wibOffset);
+    nowWib.setUTCHours(0, 0, 0, 0);
+    const todayStart = new Date(nowWib.getTime() - wibOffset);
+    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+
+    const [
+      antreanMenunggu,
+      selesaiDiperiksa,
+      encounters,
+      riwayatPemeriksaan,
+    ] = await Promise.all([
+      prisma.encounter.count({
+        where: { status: "MENUNGGU", createdAt: { gte: todayStart, lt: todayEnd } },
+      }),
+      prisma.encounter.count({
+        where: { status: "SELESAI", createdAt: { gte: todayStart, lt: todayEnd } },
+      }),
+      prisma.encounter.findMany({
+        where: { createdAt: { gte: todayStart, lt: todayEnd } },
+        take: 8,
+        orderBy: { createdAt: "asc" },
+        include: {
+          patient: { select: { name: true, gender: true, birthdate: true } },
+        },
+      }),
+      prisma.encounter.findMany({
+        where: {
+          status: "SELESAI",
+          createdAt: { gte: todayStart, lt: todayEnd },
+        },
+        take: 8,
+        orderBy: { updatedAt: "desc" },
+        include: {
+          patient: { select: { name: true } },
+          conditionDiagnoses: {
+            orderBy: { isPrimary: "desc" },
+            take: 1,
+            select: { codeIcd10: true, display: true },
+          },
+        },
+      }),
+    ]);
+
+    return (
+      <DashboardLayout>
+        <DokterDashboard
+          name={name}
+          antreanMenunggu={antreanMenunggu}
+          selesaiDiperiksa={selesaiDiperiksa}
+          jadwalPraktik="08:00–15:00"
+          encounters={encounters}
+          riwayatPemeriksaan={riwayatPemeriksaan}
         />
       </DashboardLayout>
     );
