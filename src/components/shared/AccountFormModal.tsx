@@ -3,9 +3,20 @@
 import { useState, useEffect, useRef } from "react";
 import { X, Eye, EyeOff, AlertCircle, ChevronDown } from "lucide-react";
 
+export type AccountSavePayload = {
+  id?: string;
+  username: string;
+  password?: string;
+  role: string;
+  nik: string;
+  namaLengkap: string;
+  spesialisasi?: string;
+};
+
 interface AccountFormModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSave: (data: AccountSavePayload) => Promise<string | null>;
   user?: {
     id: string;
     username: string;
@@ -28,7 +39,7 @@ interface FormErrors {
   spesialisasi?: string;
 }
 
-export default function AccountFormModal({ isOpen, onClose, user }: AccountFormModalProps) {
+export default function AccountFormModal({ isOpen, onClose, onSave, user }: AccountFormModalProps) {
   const isEditMode = !!user;
 
   const [username, setUsername] = useState("");
@@ -41,10 +52,10 @@ export default function AccountFormModal({ isOpen, onClose, user }: AccountFormM
   const [showPassword, setShowPassword] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
-  const [showToast, setShowToast] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [showValidationToast, setShowValidationToast] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Pre-fill fields in edit mode
   useEffect(() => {
     if (isOpen && user) {
       setUsername(user.username);
@@ -56,18 +67,14 @@ export default function AccountFormModal({ isOpen, onClose, user }: AccountFormM
     }
   }, [isOpen, user]);
 
-  // Auto-hide toast after 3 seconds
   useEffect(() => {
-    if (showToast) {
+    if (showValidationToast) {
       if (toastTimer.current) clearTimeout(toastTimer.current);
-      toastTimer.current = setTimeout(() => setShowToast(false), 3000);
+      toastTimer.current = setTimeout(() => setShowValidationToast(false), 3000);
     }
-    return () => {
-      if (toastTimer.current) clearTimeout(toastTimer.current);
-    };
-  }, [showToast]);
+    return () => { if (toastTimer.current) clearTimeout(toastTimer.current); };
+  }, [showValidationToast]);
 
-  // Reset all state when modal closes
   useEffect(() => {
     if (!isOpen) {
       setUsername("");
@@ -79,7 +86,8 @@ export default function AccountFormModal({ isOpen, onClose, user }: AccountFormM
       setShowPassword(false);
       setIsSaving(false);
       setErrors({});
-      setShowToast(false);
+      setApiError(null);
+      setShowValidationToast(false);
     }
   }, [isOpen]);
 
@@ -94,28 +102,35 @@ export default function AccountFormModal({ isOpen, onClose, user }: AccountFormM
     return errs;
   }
 
-  function handleSimpan() {
+  async function handleSimpan() {
     const errs = validate();
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
-      setShowToast(true);
+      setShowValidationToast(true);
       return;
     }
+
     setIsSaving(true);
-    console.log(isEditMode ? "Update payload:" : "Create payload:", {
+    setApiError(null);
+
+    const payload: AccountSavePayload = {
       ...(isEditMode && { id: user!.id }),
       username,
       ...(password && { password }),
       role,
       nik,
       namaLengkap,
-      spesialisasi: spesialisasi || null,
-    });
-    // Simulate brief save delay before closing
-    setTimeout(() => {
-      setIsSaving(false);
+      ...(spesialisasi && { spesialisasi }),
+    };
+
+    const errorMsg = await onSave(payload);
+
+    setIsSaving(false);
+    if (errorMsg) {
+      setApiError(errorMsg);
+    } else {
       onClose();
-    }, 500);
+    }
   }
 
   if (!isOpen) return null;
@@ -126,15 +141,12 @@ export default function AccountFormModal({ isOpen, onClose, user }: AccountFormM
 
   return (
     <>
-      {/* Backdrop */}
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
 
-      {/* Slide-over panel */}
       <div
         className="fixed top-0 right-0 h-full w-[440px] bg-white z-50 flex flex-col shadow-2xl"
         style={{ fontFamily: "var(--font-jakarta)" }}
       >
-
         {/* Header */}
         <div className="px-8 pt-8 pb-6 border-b border-gray-100 flex items-start justify-between flex-shrink-0">
           <div>
@@ -161,20 +173,14 @@ export default function AccountFormModal({ isOpen, onClose, user }: AccountFormM
         {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto px-8 py-6 space-y-7">
 
-          {/* ── Section 1: INFORMASI ── */}
+          {/* Section 1: INFORMASI */}
           <div className="space-y-4">
-            <p
-              className="text-xs font-bold tracking-widest uppercase"
-              style={{ color: "#2BB5A0" }}
-            >
+            <p className="text-xs font-bold tracking-widest uppercase" style={{ color: "#2BB5A0" }}>
               Informasi
             </p>
 
-            {/* Username */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Username
-              </label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Username</label>
               <input
                 type="text"
                 placeholder="Masukkan username"
@@ -183,16 +189,11 @@ export default function AccountFormModal({ isOpen, onClose, user }: AccountFormM
                 onChange={(e) => setUsername(e.target.value)}
                 className={errors.username ? inputError : inputNormal}
               />
-              {errors.username && (
-                <p className="mt-1.5 text-xs text-red-500 font-medium">{errors.username}</p>
-              )}
+              {errors.username && <p className="mt-1.5 text-xs text-red-500 font-medium">{errors.username}</p>}
             </div>
 
-            {/* Password */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Password
-              </label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
@@ -207,23 +208,14 @@ export default function AccountFormModal({ isOpen, onClose, user }: AccountFormM
                   onClick={() => setShowPassword((v) => !v)}
                   className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors"
                 >
-                  {showPassword ? (
-                    <Eye size={16} strokeWidth={2} />
-                  ) : (
-                    <EyeOff size={16} strokeWidth={2} />
-                  )}
+                  {showPassword ? <Eye size={16} strokeWidth={2} /> : <EyeOff size={16} strokeWidth={2} />}
                 </button>
               </div>
-              {errors.password && (
-                <p className="mt-1.5 text-xs text-red-500 font-medium">{errors.password}</p>
-              )}
+              {errors.password && <p className="mt-1.5 text-xs text-red-500 font-medium">{errors.password}</p>}
             </div>
 
-            {/* Role */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Role
-              </label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Role</label>
               <div className="relative">
                 <select
                   value={role}
@@ -236,28 +228,18 @@ export default function AccountFormModal({ isOpen, onClose, user }: AccountFormM
                   <option value="PERAWAT">Perawat</option>
                   <option value="DOKTER">Dokter</option>
                 </select>
-                <ChevronDown
-                  size={15}
-                  strokeWidth={2}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                />
+                <ChevronDown size={15} strokeWidth={2} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               </div>
-              {errors.role && (
-                <p className="mt-1.5 text-xs text-red-500 font-medium">{errors.role}</p>
-              )}
+              {errors.role && <p className="mt-1.5 text-xs text-red-500 font-medium">{errors.role}</p>}
             </div>
           </div>
 
-          {/* ── Section 2: DATA PERSONAL ── */}
+          {/* Section 2: DATA PERSONAL */}
           <div className="space-y-4">
-            <p
-              className="text-xs font-bold tracking-widest uppercase"
-              style={{ color: "#2BB5A0" }}
-            >
+            <p className="text-xs font-bold tracking-widest uppercase" style={{ color: "#2BB5A0" }}>
               Data Personal
             </p>
 
-            {/* NIK */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                 NIK (Nomor Induk Kependudukan)
@@ -271,16 +253,11 @@ export default function AccountFormModal({ isOpen, onClose, user }: AccountFormM
                 onChange={(e) => setNik(e.target.value.replace(/\D/g, ""))}
                 className={errors.nik ? inputError : inputNormal}
               />
-              {errors.nik && (
-                <p className="mt-1.5 text-xs text-red-500 font-medium">{errors.nik}</p>
-              )}
+              {errors.nik && <p className="mt-1.5 text-xs text-red-500 font-medium">{errors.nik}</p>}
             </div>
 
-            {/* Nama Lengkap */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Nama Lengkap
-              </label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nama Lengkap</label>
               <input
                 type="text"
                 placeholder="Masukkan nama lengkap"
@@ -289,16 +266,11 @@ export default function AccountFormModal({ isOpen, onClose, user }: AccountFormM
                 onChange={(e) => setNamaLengkap(e.target.value)}
                 className={errors.namaLengkap ? inputError : inputNormal}
               />
-              {errors.namaLengkap && (
-                <p className="mt-1.5 text-xs text-red-500 font-medium">{errors.namaLengkap}</p>
-              )}
+              {errors.namaLengkap && <p className="mt-1.5 text-xs text-red-500 font-medium">{errors.namaLengkap}</p>}
             </div>
 
-            {/* Spesialisasi – always visible; required only when role is DOKTER */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Spesialisasi (Poli)
-              </label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Spesialisasi (Poli)</label>
               <div className="relative">
                 <select
                   value={spesialisasi}
@@ -309,25 +281,25 @@ export default function AccountFormModal({ isOpen, onClose, user }: AccountFormM
                   <option value="Umum">Umum</option>
                   <option value="Gigi">Gigi</option>
                 </select>
-                <ChevronDown
-                  size={15}
-                  strokeWidth={2}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                />
+                <ChevronDown size={15} strokeWidth={2} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               </div>
-              {errors.spesialisasi && (
-                <p className="mt-1.5 text-xs text-red-500 font-medium">{errors.spesialisasi}</p>
-              )}
+              {errors.spesialisasi && <p className="mt-1.5 text-xs text-red-500 font-medium">{errors.spesialisasi}</p>}
             </div>
           </div>
 
-          {/* Error Toast */}
-          {showToast && (
+          {/* Validation error toast */}
+          {showValidationToast && (
             <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-2xl px-4 py-3">
               <AlertCircle size={18} strokeWidth={2} className="text-red-500 flex-shrink-0" />
-              <p className="text-sm text-red-600 font-medium">
-                Error saving: Informasi tidak lengkap.
-              </p>
+              <p className="text-sm text-red-600 font-medium">Informasi tidak lengkap atau tidak valid.</p>
+            </div>
+          )}
+
+          {/* API error */}
+          {apiError && (
+            <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-2xl px-4 py-3">
+              <AlertCircle size={18} strokeWidth={2} className="text-red-500 flex-shrink-0" />
+              <p className="text-sm text-red-600 font-medium">{apiError}</p>
             </div>
           )}
 
@@ -351,7 +323,6 @@ export default function AccountFormModal({ isOpen, onClose, user }: AccountFormM
             {isSaving ? "Menyimpan..." : "Simpan"}
           </button>
         </div>
-
       </div>
     </>
   );

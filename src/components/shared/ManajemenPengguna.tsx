@@ -1,178 +1,266 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
-import { Search, UserPlus, Eye, Pencil, Trash2, ChevronLeft, ChevronRight, CheckCircle2 } from "lucide-react";
-import AccountFormModal from "@/components/shared/AccountFormModal";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { Search, UserPlus, Eye, Pencil, Trash2, ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import AccountFormModal, { type AccountSavePayload } from "@/components/shared/AccountFormModal";
 import DeleteConfirmationModal from "@/components/shared/DeleteConfirmationModal";
+
+// ── Types matching GET /api/accounts response ──────────────────────────────
 
 type Role = "DOKTER" | "PENDAFTARAN" | "PERAWAT" | "ADMIN";
 
-interface DummyAccount {
+interface Practitioner {
   id: string;
   name: string;
-  subtitle: string;
-  nik: string;
-  ihs: string | null;
+  identifierStr: string | null;
+  speciality: string | null;
+  ihsNumber: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Account {
+  id: string;
   username: string;
   role: Role;
   isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  practitioner: Practitioner | null;
 }
 
-const mockUsers: DummyAccount[] = [
-  {
-    id: "1",
-    name: "dr.Strange",
-    subtitle: "Dokter Poli Umum",
-    nik: "1234567890123456",
-    ihs: "10009880728",
-    username: "strange.practitioner",
-    role: "DOKTER",
-    isActive: true,
-  },
-  {
-    id: "2",
-    name: "Gabrielle",
-    subtitle: "Petugas Pendaftaran",
-    nik: "3578014502980003",
-    ihs: null,
-    username: "gabrielle.frontdesk",
-    role: "PENDAFTARAN",
-    isActive: true,
-  },
-  {
-    id: "3",
-    name: "Fanny",
-    subtitle: "Perawat",
-    nik: "3578016708990012",
-    ihs: "10007262080",
-    username: "fanny.nurse",
-    role: "PERAWAT",
-    isActive: false,
-  },
-];
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
 
 const roleBadge: Record<Role, { label: string; className: string }> = {
-  DOKTER: { label: "DOKTER", className: "bg-blue-50 text-blue-500" },
+  DOKTER:      { label: "DOKTER",      className: "bg-blue-50 text-blue-500"    },
   PENDAFTARAN: { label: "PENDAFTARAN", className: "bg-purple-50 text-purple-500" },
-  PERAWAT: { label: "PERAWAT", className: "bg-green-50 text-green-600" },
-  ADMIN: { label: "ADMIN", className: "bg-gray-100 text-gray-500" },
+  PERAWAT:     { label: "PERAWAT",     className: "bg-green-50 text-green-600"  },
+  ADMIN:       { label: "ADMIN",       className: "bg-gray-100 text-gray-500"   },
 };
 
-export default function ManajemenPengguna() {
-  // ── Table data state ──────────────────────────────────────
-  const [users, setUsers] = useState<DummyAccount[]>(mockUsers);
+function displayName(account: Account): string {
+  return account.practitioner?.name ?? account.username;
+}
 
-  // ── Filter state ──────────────────────────────────────────
+function getPageNumbers(current: number, total: number): (number | "…")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  if (current <= 4) return [1, 2, 3, 4, 5, "…", total];
+  if (current >= total - 3) return [1, "…", total - 4, total - 3, total - 2, total - 1, total];
+  return [1, "…", current - 1, current, current + 1, "…", total];
+}
+
+// ── Component ────────────────────────────────────────────────────────────────
+
+export default function ManajemenPengguna() {
+  // ── Server data ───────────────────────────────────────────────────────────
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 10, total: 0, totalPages: 1 });
+  const [isLoading, setIsLoading] = useState(true);
+
+  // ── Filter / search ───────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("Semua");
   const [statusFilter, setStatusFilter] = useState("Semua");
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // ── Modal state ───────────────────────────────────────────
+  // ── Modal state ───────────────────────────────────────────────────────────
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [userToEdit, setUserToEdit] = useState<DummyAccount | null>(null);
+  const [userToEdit, setUserToEdit] = useState<Account | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<DummyAccount | null>(null);
-  const [userToDeactivate, setUserToDeactivate] = useState<DummyAccount | null>(null);
+  const [userToDelete, setUserToDelete] = useState<Account | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [userToDeactivate, setUserToDeactivate] = useState<Account | null>(null);
+  const [isTogglingId, setIsTogglingId] = useState<string | null>(null);
 
-  // ── Success toast ─────────────────────────────────────────
-  const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: "", visible: false });
+  // ── Toast ─────────────────────────────────────────────────────────────────
+  const [toast, setToast] = useState<{ message: string; visible: boolean; type: "success" | "error" }>({
+    message: "", visible: false, type: "success",
+  });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  function showToast(message: string) {
+  function showToast(message: string, type: "success" | "error" = "success") {
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    setToast({ message, visible: true });
-    toastTimer.current = setTimeout(() => setToast({ message: "", visible: false }), 3000);
+    setToast({ message, visible: true, type });
+    toastTimer.current = setTimeout(() => setToast((t) => ({ ...t, visible: false })), 4000);
   }
 
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
 
-  // ── Toggle handler ────────────────────────────────────────
-  function handleToggle(account: DummyAccount) {
+  // ── Debounce search ───────────────────────────────────────────────────────
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // ── Fetch accounts ────────────────────────────────────────────────────────
+  const fetchAccounts = useCallback(async (page: number, search: string) => {
+    setIsLoading(true);
+    try {
+      const params = new URLSearchParams({ page: String(page), limit: "10" });
+      if (search) params.set("search", search);
+      const res = await fetch(`/api/accounts?${params}`);
+      const json = await res.json();
+      if (json.success) {
+        setAccounts(json.data.accounts);
+        setPagination(json.data.pagination);
+      } else {
+        showToast(json.error ?? "Gagal memuat data pengguna.", "error");
+      }
+    } catch {
+      showToast("Terjadi kesalahan jaringan saat memuat data.", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAccounts(currentPage, debouncedSearch);
+  }, [currentPage, debouncedSearch, fetchAccounts]);
+
+  // ── Client-side role / status filter ─────────────────────────────────────
+  const filteredAccounts = useMemo(() => {
+    return accounts.filter((a) => {
+      if (roleFilter !== "Semua" && a.role !== roleFilter) return false;
+      if (statusFilter === "aktif" && !a.isActive) return false;
+      if (statusFilter === "nonaktif" && a.isActive) return false;
+      return true;
+    });
+  }, [accounts, roleFilter, statusFilter]);
+
+  // ── Save (create or update) ───────────────────────────────────────────────
+  async function handleSaveAccount(payload: AccountSavePayload): Promise<string | null> {
+    const isEdit = !!payload.id;
+    const url = isEdit ? `/api/accounts/${payload.id}` : "/api/accounts";
+    const method = isEdit ? "PATCH" : "POST";
+
+    const { id, ...body } = payload;
+    void id;
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        return json.error ?? "Terjadi kesalahan saat menyimpan data.";
+      }
+      await fetchAccounts(isEdit ? currentPage : 1, debouncedSearch);
+      if (!isEdit) setCurrentPage(1);
+      showToast(json.message ?? (isEdit ? "Akun berhasil diperbarui." : "Akun berhasil dibuat."));
+      return null;
+    } catch {
+      return "Terjadi kesalahan jaringan.";
+    }
+  }
+
+  // ── Delete ────────────────────────────────────────────────────────────────
+  async function handleDeleteConfirm() {
+    if (!userToDelete) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/accounts/${userToDelete.id}`, { method: "DELETE" });
+      const json = await res.json();
+      if (!json.success) {
+        showToast(json.error ?? "Gagal menghapus akun.", "error");
+      } else {
+        const newPage = accounts.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage;
+        await fetchAccounts(newPage, debouncedSearch);
+        setCurrentPage(newPage);
+        showToast(`Akun ${displayName(userToDelete)} berhasil dihapus.`);
+      }
+    } catch {
+      showToast("Terjadi kesalahan jaringan.", "error");
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteModalOpen(false);
+      setUserToDelete(null);
+    }
+  }
+
+  // ── Toggle status ─────────────────────────────────────────────────────────
+  async function callToggleAPI(account: Account) {
+    setIsTogglingId(account.id);
+    try {
+      const res = await fetch(`/api/accounts/${account.id}/toggle-status`, { method: "PATCH" });
+      const json = await res.json();
+      if (!json.success) {
+        showToast(json.error ?? "Gagal mengubah status akun.", "error");
+      } else {
+        setAccounts((prev) =>
+          prev.map((a) => a.id === account.id ? { ...a, isActive: !a.isActive } : a)
+        );
+        const name = displayName(account);
+        showToast(`Akun ${name} berhasil ${account.isActive ? "dinonaktifkan" : "diaktifkan"}.`);
+      }
+    } catch {
+      showToast("Terjadi kesalahan jaringan.", "error");
+    } finally {
+      setIsTogglingId(null);
+    }
+  }
+
+  function handleToggle(account: Account) {
     if (!account.isActive) {
-      // Inactive → Active: immediate
-      setUsers((prev) =>
-        prev.map((u) => u.id === account.id ? { ...u, isActive: true } : u)
-      );
-      showToast(`Akun ${account.name} berhasil diaktifkan.`);
+      callToggleAPI(account);
     } else {
-      // Active → Inactive: ask for confirmation first
       setUserToDeactivate(account);
     }
   }
 
-  function handleDeactivateConfirm() {
+  async function handleDeactivateConfirm() {
     if (!userToDeactivate) return;
-    setUsers((prev) =>
-      prev.map((u) => u.id === userToDeactivate.id ? { ...u, isActive: false } : u)
-    );
-    showToast(`Akun ${userToDeactivate.name} berhasil dinonaktifkan.`);
+    const account = userToDeactivate;
     setUserToDeactivate(null);
+    await callToggleAPI(account);
   }
 
-  // ── Delete handler ────────────────────────────────────────
-  function handleDeleteConfirm() {
-    console.log("Delete payload:", {
-      id: userToDelete?.id,
-      username: userToDelete?.username,
-      role: userToDelete?.role,
-      nik: userToDelete?.nik,
-      name: userToDelete?.name,
-      speciality: userToDelete?.subtitle ?? null,
-    });
-    setIsDeleteModalOpen(false);
-    setUserToDelete(null);
-  }
-
-  // ── Filtered view ─────────────────────────────────────────
-  const filteredAccounts = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
-    return users.filter((account) => {
-      if (q) {
-        const haystack = [account.name, account.nik, account.ihs ?? "", account.username]
-          .join(" ")
-          .toLowerCase();
-        if (!haystack.includes(q)) return false;
-      }
-      if (roleFilter !== "Semua" && account.role !== roleFilter) return false;
-      if (statusFilter === "aktif" && !account.isActive) return false;
-      if (statusFilter === "nonaktif" && account.isActive) return false;
-      return true;
-    });
-  }, [users, searchQuery, roleFilter, statusFilter]);
-
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="grid grid-cols-12 gap-6">
 
-      {/* ── Modals ── */}
+      {/* Modals */}
       <AccountFormModal
         isOpen={isAddModalOpen || !!userToEdit}
         onClose={() => { setIsAddModalOpen(false); setUserToEdit(null); }}
+        onSave={handleSaveAccount}
         user={userToEdit ? {
           id: userToEdit.id,
           username: userToEdit.username,
           role: userToEdit.role,
           isActive: userToEdit.isActive,
           practitioner: {
-            nik: userToEdit.nik,
-            name: userToEdit.name,
-            speciality: userToEdit.subtitle ?? null,
+            nik: userToEdit.practitioner?.identifierStr ?? "",
+            name: userToEdit.practitioner?.name ?? "",
+            speciality: userToEdit.practitioner?.speciality ?? null,
           },
         } : undefined}
       />
+
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => { setIsDeleteModalOpen(false); setUserToDelete(null); }}
         onConfirm={handleDeleteConfirm}
-        userName={userToDelete?.name ?? ""}
+        userName={userToDelete ? displayName(userToDelete) : ""}
+        isLoading={isDeleting}
       />
 
-      {/* ── Deactivate Confirmation Modal ── */}
+      {/* Deactivate Confirmation Modal */}
       {userToDeactivate && (
         <>
-          <div
-            className="fixed inset-0 bg-black/40 z-40"
-            onClick={() => setUserToDeactivate(null)}
-          />
+          <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setUserToDeactivate(null)} />
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
             <div
               className="w-full max-w-[400px] bg-white rounded-3xl shadow-2xl px-8 py-8 flex flex-col items-center text-center"
@@ -184,15 +272,12 @@ export default function ManajemenPengguna() {
                   <path d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
                 </svg>
               </div>
-              <h2
-                className="text-xl font-bold text-gray-800 mb-3"
-                style={{ fontFamily: "var(--font-poppins)" }}
-              >
+              <h2 className="text-xl font-bold text-gray-800 mb-3" style={{ fontFamily: "var(--font-poppins)" }}>
                 Nonaktifkan Akun
               </h2>
               <p className="text-sm text-gray-500 leading-relaxed">
                 Nonaktifkan akun{" "}
-                <span className="font-bold text-gray-700">{userToDeactivate.name}</span>?{" "}
+                <span className="font-bold text-gray-700">{displayName(userToDeactivate)}</span>?{" "}
                 Pengguna ini tidak akan dapat login ke dalam sistem.
               </p>
               <div className="flex gap-3 mt-7 w-full">
@@ -214,30 +299,29 @@ export default function ManajemenPengguna() {
         </>
       )}
 
-      {/* ── Success Toast ── */}
+      {/* Toast */}
       {toast.visible && (
         <div
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-3 bg-white border border-green-200 rounded-2xl shadow-lg px-5 py-3.5"
+          className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 bg-white rounded-2xl shadow-lg px-5 py-3.5 border ${
+            toast.type === "error" ? "border-red-200" : "border-green-200"
+          }`}
           style={{ fontFamily: "var(--font-jakarta)" }}
         >
-          <CheckCircle2 size={18} strokeWidth={2} className="text-green-500 flex-shrink-0" />
+          {toast.type === "error"
+            ? <AlertCircle size={18} strokeWidth={2} className="text-red-500 flex-shrink-0" />
+            : <CheckCircle2 size={18} strokeWidth={2} className="text-green-500 flex-shrink-0" />
+          }
           <p className="text-sm text-gray-700 font-medium">{toast.message}</p>
         </div>
       )}
 
-      {/* ── Row 1: Page Header ── */}
+      {/* Row 1: Page Header */}
       <div className="col-span-12 bg-white rounded-3xl px-10 py-7 flex items-center justify-between">
         <div>
-          <h1
-            className="text-2xl font-bold text-gray-800 leading-tight"
-            style={{ fontFamily: "var(--font-poppins)" }}
-          >
+          <h1 className="text-2xl font-bold text-gray-800 leading-tight" style={{ fontFamily: "var(--font-poppins)" }}>
             Manajemen Pengguna
           </h1>
-          <p
-            className="text-sm text-gray-400 mt-1"
-            style={{ fontFamily: "var(--font-jakarta)" }}
-          >
+          <p className="text-sm text-gray-400 mt-1" style={{ fontFamily: "var(--font-jakarta)" }}>
             Atur akses klinik dan peran administratif dari tiap akun
           </p>
         </div>
@@ -251,23 +335,20 @@ export default function ManajemenPengguna() {
         </button>
       </div>
 
-      {/* ── Row 2: Filter + Table ── */}
+      {/* Row 2: Filter + Table */}
       <div className="col-span-12 bg-white rounded-3xl px-8 py-7">
 
         {/* Search / Filter Bar */}
         <div className="flex items-end gap-5 mb-7">
           <div className="flex-1">
-            <label
-              className="block text-xs font-semibold tracking-widest text-gray-400 uppercase mb-2"
-              style={{ fontFamily: "var(--font-jakarta)" }}
-            >
+            <label className="block text-xs font-semibold tracking-widest text-gray-400 uppercase mb-2" style={{ fontFamily: "var(--font-jakarta)" }}>
               Cari Akun
             </label>
             <div className="relative">
               <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300" strokeWidth={2.5} />
               <input
                 type="text"
-                placeholder="Cari Nama, NIK, IHS, atau Username..."
+                placeholder="Cari Nama atau Username..."
                 autoComplete="off"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -278,10 +359,7 @@ export default function ManajemenPengguna() {
           </div>
 
           <div className="w-48">
-            <label
-              className="block text-xs font-semibold tracking-widest text-gray-400 uppercase mb-2"
-              style={{ fontFamily: "var(--font-jakarta)" }}
-            >
+            <label className="block text-xs font-semibold tracking-widest text-gray-400 uppercase mb-2" style={{ fontFamily: "var(--font-jakarta)" }}>
               Role
             </label>
             <select
@@ -299,10 +377,7 @@ export default function ManajemenPengguna() {
           </div>
 
           <div className="w-48">
-            <label
-              className="block text-xs font-semibold tracking-widest text-gray-400 uppercase mb-2"
-              style={{ fontFamily: "var(--font-jakarta)" }}
-            >
+            <label className="block text-xs font-semibold tracking-widest text-gray-400 uppercase mb-2" style={{ fontFamily: "var(--font-jakarta)" }}>
               Status
             </label>
             <select
@@ -322,51 +397,52 @@ export default function ManajemenPengguna() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-gray-100">
-              {["NAMA", "NIK/IHS", "USERNAME", "ROLE", "ACCESS STATUS", "ACTION"].map((h) => (
-                <th
-                  key={h}
-                  className="pb-3 text-left text-xs font-semibold text-gray-400 tracking-widest"
-                  style={{ fontFamily: "var(--font-jakarta)" }}
-                >
+              {["NAMA", "NIK / NO. IHS", "USERNAME", "ROLE", "ACCESS STATUS", "ACTION"].map((h) => (
+                <th key={h} className="pb-3 text-left text-xs font-semibold text-gray-400 tracking-widest" style={{ fontFamily: "var(--font-jakarta)" }}>
                   {h}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {filteredAccounts.length === 0 && (
+            {isLoading ? (
               <tr>
-                <td
-                  colSpan={6}
-                  className="py-16 text-center text-sm text-gray-300"
-                  style={{ fontFamily: "var(--font-jakarta)" }}
-                >
+                <td colSpan={6} className="py-16 text-center" style={{ fontFamily: "var(--font-jakarta)" }}>
+                  <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
+                    <Loader2 size={16} className="animate-spin" />
+                    Memuat data...
+                  </div>
+                </td>
+              </tr>
+            ) : filteredAccounts.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="py-16 text-center text-sm text-gray-300" style={{ fontFamily: "var(--font-jakarta)" }}>
                   Tidak ada data pengguna yang sesuai dengan pencarian.
                 </td>
               </tr>
-            )}
-            {filteredAccounts.map((account) => {
+            ) : filteredAccounts.map((account) => {
               const badge = roleBadge[account.role];
+              const isToggling = isTogglingId === account.id;
               return (
                 <tr key={account.id} className="border-b border-gray-50 last:border-0">
 
                   {/* NAMA */}
                   <td className="py-4">
                     <p className="text-sm font-bold text-gray-800" style={{ fontFamily: "var(--font-jakarta)" }}>
-                      {account.name}
+                      {account.practitioner?.name ?? account.username}
                     </p>
                     <p className="text-xs text-gray-400 mt-0.5" style={{ fontFamily: "var(--font-jakarta)" }}>
-                      {account.subtitle}
+                      {account.practitioner?.speciality ?? "-"}
                     </p>
                   </td>
 
-                  {/* NIK/IHS */}
+                  {/* NIK / IHS */}
                   <td className="py-4">
                     <p className="text-sm text-gray-600" style={{ fontFamily: "var(--font-jakarta)" }}>
-                      {account.nik}
+                      {account.practitioner?.identifierStr ?? "-"}
                     </p>
                     <p className="text-xs text-gray-400 mt-0.5" style={{ fontFamily: "var(--font-jakarta)" }}>
-                      {account.ihs ?? "-"}
+                      {account.practitioner?.ihsNumber ?? "-"}
                     </p>
                   </td>
 
@@ -390,8 +466,9 @@ export default function ManajemenPengguna() {
                   {/* ACCESS STATUS Toggle */}
                   <td className="py-4">
                     <button
-                      onClick={() => handleToggle(account)}
-                      className="flex items-center gap-2 cursor-pointer group"
+                      onClick={() => !isToggling && handleToggle(account)}
+                      disabled={isToggling}
+                      className="flex items-center gap-2 cursor-pointer group disabled:opacity-60 disabled:cursor-not-allowed"
                       title={account.isActive ? "Klik untuk menonaktifkan" : "Klik untuk mengaktifkan"}
                     >
                       <div
@@ -407,7 +484,7 @@ export default function ManajemenPengguna() {
                         className="text-sm font-medium text-gray-600 group-hover:text-gray-800 transition-colors"
                         style={{ fontFamily: "var(--font-jakarta)" }}
                       >
-                        {account.isActive ? "Aktif" : "Nonaktif"}
+                        {isToggling ? "..." : account.isActive ? "Aktif" : "Nonaktif"}
                       </span>
                     </button>
                   </td>
@@ -446,40 +523,55 @@ export default function ManajemenPengguna() {
         </table>
 
         {/* Pagination */}
-        <div className="flex items-center justify-center gap-1 mt-8">
-          <button
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-gray-500 hover:bg-gray-50 transition-colors"
-            style={{ fontFamily: "var(--font-jakarta)" }}
-          >
-            <ChevronLeft size={14} strokeWidth={2.5} />
-            Sebelum
-          </button>
-          {[1, 2, 3, 4, 5].map((page) => (
+        {!isLoading && pagination.totalPages > 1 && (
+          <div className="flex items-center justify-center gap-1 mt-8">
             <button
-              key={page}
-              className={`w-9 h-9 rounded-xl text-sm font-semibold transition-colors ${page === 1 ? "text-white" : "text-gray-500 hover:bg-gray-50"}`}
-              style={{ fontFamily: "var(--font-jakarta)", background: page === 1 ? "#2BB5A0" : undefined }}
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => p - 1)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{ fontFamily: "var(--font-jakarta)" }}
             >
-              {page}
+              <ChevronLeft size={14} strokeWidth={2.5} />
+              Sebelum
             </button>
-          ))}
-          <span className="px-1 text-gray-300 text-sm select-none" style={{ fontFamily: "var(--font-jakarta)" }}>
-            .......
-          </span>
-          <button
-            className="w-9 h-9 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-50 transition-colors"
-            style={{ fontFamily: "var(--font-jakarta)" }}
-          >
-            12
-          </button>
-          <button
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-gray-500 hover:bg-gray-50 transition-colors"
-            style={{ fontFamily: "var(--font-jakarta)" }}
-          >
-            Selanjutnya
-            <ChevronRight size={14} strokeWidth={2.5} />
-          </button>
-        </div>
+
+            {getPageNumbers(currentPage, pagination.totalPages).map((p, i) =>
+              p === "…" ? (
+                <span key={`ellipsis-${i}`} className="px-1 text-gray-300 text-sm select-none" style={{ fontFamily: "var(--font-jakarta)" }}>
+                  …
+                </span>
+              ) : (
+                <button
+                  key={p}
+                  onClick={() => setCurrentPage(p as number)}
+                  className={`w-9 h-9 rounded-xl text-sm font-semibold transition-colors ${
+                    p === currentPage ? "text-white" : "text-gray-500 hover:bg-gray-50"
+                  }`}
+                  style={{ fontFamily: "var(--font-jakarta)", background: p === currentPage ? "#2BB5A0" : undefined }}
+                >
+                  {p}
+                </button>
+              )
+            )}
+
+            <button
+              disabled={currentPage === pagination.totalPages}
+              onClick={() => setCurrentPage((p) => p + 1)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{ fontFamily: "var(--font-jakarta)" }}
+            >
+              Selanjutnya
+              <ChevronRight size={14} strokeWidth={2.5} />
+            </button>
+          </div>
+        )}
+
+        {/* Record count */}
+        {!isLoading && (
+          <p className="text-center text-xs text-gray-300 mt-4" style={{ fontFamily: "var(--font-jakarta)" }}>
+            Menampilkan {filteredAccounts.length} dari {pagination.total} akun
+          </p>
+        )}
 
       </div>
     </div>

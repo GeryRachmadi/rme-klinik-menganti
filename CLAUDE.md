@@ -103,14 +103,14 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 - TR-24 ✅ Buat Dashboard Admin
 - TR-25 ✅ Buat Dashboard Pendaftaran
 - TR-26 ✅ Buat Dashboard Perawat
-- TR-27 ⏳ Buat Dashboard Dokter
+- TR-27 ✅ Buat Dashboard Dokter
 
 ### TR-4 [UC-03] Kelola Pengguna
-- TR-28 ⏳ Buat halaman Manajemen Pengguna UI
-- TR-29 ⏳ Buat form Tambah Akun Baru
-- TR-30 ⏳ Implementasi edit dan hapus akun
-- TR-31 ⏳ Implementasi toggle aktif/nonaktif
-- TR-32 ⏳ Buat API endpoint CRUD Account & Practitioner
+- TR-28 ✅ Buat halaman Manajemen Pengguna UI
+- TR-29 ✅ Buat form Tambah Akun Baru
+- TR-30 ✅ Implementasi edit dan hapus akun
+- TR-31 ✅ Implementasi toggle aktif/nonaktif
+- TR-32 ✅ Buat API endpoint CRUD Account & Practitioner
 - TR-33 ⏳ Role-based access - hanya Admin
 
 ### TR-5 [UC-04] Daftar Pasien Baru
