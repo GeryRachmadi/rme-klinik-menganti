@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Search, UserPlus, Eye, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import AddAccountModal from "@/components/shared/AddAccountModal";
 
 type Role = "DOKTER" | "PENDAFTARAN" | "PERAWAT" | "ADMIN";
 
@@ -72,6 +73,7 @@ export default function ManajemenPengguna() {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("Semua");
   const [statusFilter, setStatusFilter] = useState("Semua");
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const filteredAccounts = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
@@ -96,6 +98,7 @@ export default function ManajemenPengguna() {
 
   return (
     <div className="grid grid-cols-12 gap-6">
+      <AddAccountModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} />
 
       {/* ── Row 1: Page Header ── */}
       <div className="col-span-12 bg-white rounded-3xl px-10 py-7 flex items-center justify-between">
@@ -114,7 +117,7 @@ export default function ManajemenPengguna() {
           </p>
         </div>
         <button
-          onClick={() => console.log("Add user")}
+          onClick={() => setIsAddModalOpen(true)}
           className="flex items-center gap-2 px-5 py-2.5 rounded-full text-white text-sm font-semibold hover:opacity-90 transition-opacity"
           style={{ background: "#2BB5A0", fontFamily: "var(--font-jakarta)" }}
         >
