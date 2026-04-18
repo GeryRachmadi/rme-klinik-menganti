@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { Search, UserPlus, Eye, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
-import AddAccountModal from "@/components/shared/AddAccountModal";
+import AccountFormModal from "@/components/shared/AccountFormModal";
+import DeleteConfirmationModal from "@/components/shared/DeleteConfirmationModal";
 
 type Role = "DOKTER" | "PENDAFTARAN" | "PERAWAT" | "ADMIN";
 
@@ -74,6 +75,22 @@ export default function ManajemenPengguna() {
   const [roleFilter, setRoleFilter] = useState("Semua");
   const [statusFilter, setStatusFilter] = useState("Semua");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [userToEdit, setUserToEdit] = useState<DummyAccount | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<DummyAccount | null>(null);
+
+  function handleDeleteConfirm() {
+    console.log("Delete payload:", {
+      id: userToDelete?.id,
+      username: userToDelete?.username,
+      role: userToDelete?.role,
+      nik: userToDelete?.nik,
+      name: userToDelete?.name,
+      speciality: userToDelete?.subtitle ?? null,
+    });
+    setIsDeleteModalOpen(false);
+    setUserToDelete(null);
+  }
 
   const filteredAccounts = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
@@ -98,7 +115,27 @@ export default function ManajemenPengguna() {
 
   return (
     <div className="grid grid-cols-12 gap-6">
-      <AddAccountModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} />
+      <AccountFormModal
+        isOpen={isAddModalOpen || !!userToEdit}
+        onClose={() => { setIsAddModalOpen(false); setUserToEdit(null); }}
+        user={userToEdit ? {
+          id: userToEdit.id,
+          username: userToEdit.username,
+          role: userToEdit.role,
+          isActive: userToEdit.isActive,
+          practitioner: {
+            nik: userToEdit.nik,
+            name: userToEdit.name,
+            speciality: userToEdit.subtitle ?? null,
+          },
+        } : undefined}
+      />
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => { setIsDeleteModalOpen(false); setUserToDelete(null); }}
+        onConfirm={handleDeleteConfirm}
+        userName={userToDelete?.name ?? ""}
+      />
 
       {/* ── Row 1: Page Header ── */}
       <div className="col-span-12 bg-white rounded-3xl px-10 py-7 flex items-center justify-between">
@@ -341,21 +378,21 @@ export default function ManajemenPengguna() {
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => console.log("View user - coming soon")}
-                        className="p-2 rounded-lg text-gray-400 hover:bg-blue-50 hover:text-blue-500 transition-colors"
+                        className="cursor-pointer p-2 rounded-lg text-gray-400 hover:bg-blue-50 hover:text-blue-500 transition-colors"
                         title="Lihat detail"
                       >
                         <Eye size={15} strokeWidth={2} />
                       </button>
                       <button
-                        onClick={() => console.log("Edit user")}
-                        className="p-2 rounded-lg text-gray-400 hover:bg-amber-50 hover:text-amber-500 transition-colors"
+                        onClick={() => setUserToEdit(account)}
+                        className="cursor-pointer p-2 rounded-lg text-gray-400 hover:bg-amber-50 hover:text-amber-500 transition-colors"
                         title="Edit akun"
                       >
                         <Pencil size={15} strokeWidth={2} />
                       </button>
                       <button
-                        onClick={() => console.log("Delete user")}
-                        className="p-2 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                        onClick={() => { setUserToDelete(account); setIsDeleteModalOpen(true); }}
+                        className="cursor-pointer p-2 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
                         title="Hapus akun"
                       >
                         <Trash2 size={15} strokeWidth={2} />
