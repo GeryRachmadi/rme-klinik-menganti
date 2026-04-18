@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireAdminRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { okResponse, errResponse } from "@/lib/api-response";
 import { handlePrismaError } from "@/lib/api-errors";
@@ -28,10 +28,8 @@ export async function PATCH(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session || session.user.role !== "ADMIN") {
-    return errResponse("Akses ditolak. Hanya Admin yang dapat mengakses fitur ini.", 403);
-  }
+  const authResult = await requireAdminRole();
+  if (!authResult.authorized) return errResponse(authResult.error, 403);
 
   const { id } = await params;
 

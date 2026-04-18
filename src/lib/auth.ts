@@ -1,4 +1,4 @@
-import NextAuth, { CredentialsSignin } from "next-auth";
+import NextAuth, { CredentialsSignin, type Session } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
@@ -74,3 +74,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     strategy: "jwt",
   },
 });
+
+type AdminAuthResult =
+  | { authorized: true; session: Session }
+  | { authorized: false; error: string };
+
+export async function requireAdminRole(): Promise<AdminAuthResult> {
+  const session = await auth();
+  if (!session || session.user.role !== "ADMIN") {
+    return {
+      authorized: false,
+      error: "Akses ditolak: Hanya Admin yang dapat mengakses endpoint ini.",
+    };
+  }
+  return { authorized: true, session };
+}

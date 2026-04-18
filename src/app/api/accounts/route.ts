@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
-import { auth } from "@/lib/auth";
+import { requireAdminRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { okResponse, errResponse } from "@/lib/api-response";
 import { createAccountSchema } from "@/lib/validation";
@@ -28,10 +28,8 @@ const ACCOUNT_SELECT = {
 } as const;
 
 export async function GET(request: NextRequest) {
-  const session = await auth();
-  if (!session || session.user.role !== "ADMIN") {
-    return errResponse("Akses ditolak. Hanya Admin yang dapat mengakses fitur ini.", 403);
-  }
+  const authResult = await requireAdminRole();
+  if (!authResult.authorized) return errResponse(authResult.error, 403);
 
   const { searchParams } = request.nextUrl;
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
@@ -70,10 +68,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await auth();
-  if (!session || session.user.role !== "ADMIN") {
-    return errResponse("Akses ditolak. Hanya Admin yang dapat mengakses fitur ini.", 403);
-  }
+  const authResult = await requireAdminRole();
+  if (!authResult.authorized) return errResponse(authResult.error, 403);
 
   let body: unknown;
   try {

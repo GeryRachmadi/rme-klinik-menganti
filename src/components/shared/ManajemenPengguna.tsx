@@ -58,7 +58,13 @@ function getPageNumbers(current: number, total: number): (number | "…")[] {
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export default function ManajemenPengguna() {
+interface ManajemenPenggunaProps {
+  role?: string;
+}
+
+export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
+  const isAdmin = role === "ADMIN";
+
   // ── Server data ───────────────────────────────────────────────────────────
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 10, total: 0, totalPages: 1 });
@@ -227,6 +233,9 @@ export default function ManajemenPengguna() {
     await callToggleAPI(account);
   }
 
+  // ── Defensive guard ───────────────────────────────────────────────────────
+  if (!isAdmin) return null;
+
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="grid grid-cols-12 gap-6">
@@ -325,14 +334,16 @@ export default function ManajemenPengguna() {
             Atur akses klinik dan peran administratif dari tiap akun
           </p>
         </div>
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-full text-white text-sm font-semibold hover:opacity-90 transition-opacity"
-          style={{ background: "#2BB5A0", fontFamily: "var(--font-jakarta)" }}
-        >
-          <UserPlus size={16} strokeWidth={2.5} />
-          Tambah Akun Baru
-        </button>
+        {isAdmin && (
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-white text-sm font-semibold hover:opacity-90 transition-opacity"
+            style={{ background: "#2BB5A0", fontFamily: "var(--font-jakarta)" }}
+          >
+            <UserPlus size={16} strokeWidth={2.5} />
+            Tambah Akun Baru
+          </button>
+        )}
       </div>
 
       {/* Row 2: Filter + Table */}
@@ -465,28 +476,37 @@ export default function ManajemenPengguna() {
 
                   {/* ACCESS STATUS Toggle */}
                   <td className="py-4">
-                    <button
-                      onClick={() => !isToggling && handleToggle(account)}
-                      disabled={isToggling}
-                      className="flex items-center gap-2 cursor-pointer group disabled:opacity-60 disabled:cursor-not-allowed"
-                      title={account.isActive ? "Klik untuk menonaktifkan" : "Klik untuk mengaktifkan"}
-                    >
-                      <div
-                        className="relative w-10 h-5 rounded-full flex-shrink-0 transition-colors duration-200"
-                        style={{ background: account.isActive ? "#2BB5A0" : "#D1D5DB" }}
+                    {isAdmin ? (
+                      <button
+                        onClick={() => !isToggling && handleToggle(account)}
+                        disabled={isToggling}
+                        className="flex items-center gap-2 cursor-pointer group disabled:opacity-60 disabled:cursor-not-allowed"
+                        title={account.isActive ? "Klik untuk menonaktifkan" : "Klik untuk mengaktifkan"}
                       >
                         <div
-                          className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200"
-                          style={{ transform: account.isActive ? "translateX(22px)" : "translateX(2px)" }}
-                        />
-                      </div>
+                          className="relative w-10 h-5 rounded-full flex-shrink-0 transition-colors duration-200"
+                          style={{ background: account.isActive ? "#2BB5A0" : "#D1D5DB" }}
+                        >
+                          <div
+                            className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200"
+                            style={{ transform: account.isActive ? "translateX(22px)" : "translateX(2px)" }}
+                          />
+                        </div>
+                        <span
+                          className="text-sm font-medium text-gray-600 group-hover:text-gray-800 transition-colors"
+                          style={{ fontFamily: "var(--font-jakarta)" }}
+                        >
+                          {isToggling ? "..." : account.isActive ? "Aktif" : "Nonaktif"}
+                        </span>
+                      </button>
+                    ) : (
                       <span
-                        className="text-sm font-medium text-gray-600 group-hover:text-gray-800 transition-colors"
+                        className={`text-sm font-medium ${account.isActive ? "text-[#2BB5A0]" : "text-gray-400"}`}
                         style={{ fontFamily: "var(--font-jakarta)" }}
                       >
-                        {isToggling ? "..." : account.isActive ? "Aktif" : "Nonaktif"}
+                        {account.isActive ? "Aktif" : "Nonaktif"}
                       </span>
-                    </button>
+                    )}
                   </td>
 
                   {/* ACTION Buttons */}
@@ -499,20 +519,24 @@ export default function ManajemenPengguna() {
                       >
                         <Eye size={15} strokeWidth={2} />
                       </button>
-                      <button
-                        onClick={() => setUserToEdit(account)}
-                        className="cursor-pointer p-2 rounded-lg text-gray-400 hover:bg-amber-50 hover:text-amber-500 transition-colors"
-                        title="Edit akun"
-                      >
-                        <Pencil size={15} strokeWidth={2} />
-                      </button>
-                      <button
-                        onClick={() => { setUserToDelete(account); setIsDeleteModalOpen(true); }}
-                        className="cursor-pointer p-2 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
-                        title="Hapus akun"
-                      >
-                        <Trash2 size={15} strokeWidth={2} />
-                      </button>
+                      {isAdmin && (
+                        <>
+                          <button
+                            onClick={() => setUserToEdit(account)}
+                            className="cursor-pointer p-2 rounded-lg text-gray-400 hover:bg-amber-50 hover:text-amber-500 transition-colors"
+                            title="Edit akun"
+                          >
+                            <Pencil size={15} strokeWidth={2} />
+                          </button>
+                          <button
+                            onClick={() => { setUserToDelete(account); setIsDeleteModalOpen(true); }}
+                            className="cursor-pointer p-2 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                            title="Hapus akun"
+                          >
+                            <Trash2 size={15} strokeWidth={2} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
 
