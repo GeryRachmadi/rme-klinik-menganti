@@ -5,7 +5,9 @@
       "Bash(cat node_modules/next-auth/dist/docs/error-handling.md)",
       "Bash(ls node_modules/next-auth/dist/docs/)",
       "Bash(node -e \"const na = require\\('next-auth'\\); console.log\\(Object.keys\\(na\\)\\)\")",
-      "Bash(xargs grep *)"
+      "Bash(xargs grep *)",
+      "Bash(node -e \"const p = require\\('./package.json'\\); ['react-hook-form','zod','@hookform/resolvers'].forEach\\(k => console.log\\(k, p.dependencies?.[k] ?? p.devDependencies?.[k] ?? 'NOT FOUND'\\)\\)\")",
+      "Bash(npm install *)"
     ]
   }
 }
