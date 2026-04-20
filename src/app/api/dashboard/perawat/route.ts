@@ -37,7 +37,7 @@ export async function GET() {
       take: 8,
       orderBy: { createdAt: "asc" },
       include: {
-        patient: { select: { name: true, gender: true, birthdate: true } },
+        patient: { select: { namaLengkap: true, jenisKelamin: true, tanggalLahir: true } },
       },
     }),
     prisma.practitioner.findMany({
@@ -52,7 +52,7 @@ export async function GET() {
       },
       take: 6,
       orderBy: { updatedAt: "desc" },
-      include: { patient: { select: { name: true } } },
+      include: { patient: { select: { namaLengkap: true } } },
     }),
     prisma.practitioner.findUnique({
       where: { accountId: session.user.id },

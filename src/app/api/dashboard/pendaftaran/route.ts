@@ -32,7 +32,7 @@ export async function GET() {
         take: 8,
         orderBy: { createdAt: "desc" },
         include: {
-          patient: { select: { name: true } },
+          patient: { select: { namaLengkap: true } },
         },
       }),
       prisma.practitioner.findMany({

@@ -9,7 +9,7 @@ import {
 import type { Prisma } from "@/generated/prisma";
 
 type EncounterWithPatient = Prisma.EncounterGetPayload<{
-  include: { patient: { select: { name: true } } };
+  include: { patient: { select: { namaLengkap: true } } };
 }>;
 
 type PractitionerItem = {
@@ -327,7 +327,7 @@ export default function PendaftaranDashboard({
                       className="py-3 text-sm text-gray-700"
                       style={{ fontFamily: "var(--font-jakarta)" }}
                     >
-                      {enc.patient.name}
+                      {enc.patient.namaLengkap}
                     </td>
                     <td
                       className="py-3 text-sm text-gray-500"

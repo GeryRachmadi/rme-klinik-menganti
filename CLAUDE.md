@@ -3,7 +3,7 @@
 # RME Klinik Pratama Menganti — Claude Code Context
 
 ## Project Overview
-Sistem Rekam Medis Elektronik (RME) berbasis web untuk Klinik Pratama Menganti Gresik.
+Sistem Rekam Medis Elektronik (RME) berbasis aplikasi web untuk Klinik Pratama Menganti Gresik.
 Thesis project by Mohammad Geresidi Rachmadi (Gery), Information Systems ITS Surabaya.
 Methodology: ICONIX Process. Language: Bahasa Indonesia (UI), English (code).
 
@@ -48,11 +48,15 @@ src/
 │   └── next-auth.d.ts                   → NextAuth type extensions
 └── utils/                               → Helper functions
 
-## Design System
-- Primary color: teal #2BB5A0 / #4DD9C0
-- Border radius: rounded-xl (inputs), rounded-full (buttons), rounded-3xl (cards)
-- Grid layout: 12-column (grid-cols-12 gap-6) for all dashboards
-- Dashboard layout: Welcome Card (col-span-12) → 4 KPI Cards (col-span-3) → Main Table (col-span-8) + Widget (col-span-4)
+## Design System & Tokens
+- **Primary Teal:** #2BB5A0 (Active), #E6F5F4 (Bg), #4DD9C0 (Light), #009E95 (Dark)
+- **Status Badges:** #10B981 (Aktif), #6B7280 (Arsip), #F59E0B (Pending), #EF4444 (Error)
+- **Gender Badges:** #3B82F6 (Laki-laki), #EC4899 (Perempuan)
+- **Jenis Pasien:** #06B6D4 (UMUM), #3B82F6 (BPJS)
+- **UI Elements:** #64748B (Inactive text), #A0AEC0 (Placeholder), #E2E8F0 (Border), #F8FAFC (Bg subtle)
+- **Border radius:** rounded-xl (inputs), rounded-full (buttons), rounded-3xl (cards)
+- **Grid layout:** 12-column (grid-cols-12 gap-6) for all dashboards
+- **Dashboard layout:** Welcome Card (col-span-12) → 4 KPI Cards (col-span-3) → Main Table (col-span-8) + Widget (col-span-4)
 
 ## URL Structure
 - /login → Halaman login (UC-01)
@@ -61,6 +65,28 @@ src/
 - /rekam-medis → Daftar pasien (UC-04, UC-07)
 - /manajemen-pengguna → Kelola user (UC-03)
 - /asesmen/[encounterId] → SOAP form (UC-08 to UC-12)
+
+## Important Rules
+- Always use Bahasa Indonesia for UI text, labels, and messages
+- Use PrismaPg adapter when instantiating PrismaClient
+- Use tsx to run TypeScript scripts (NOT ts-node)
+- Font: Poppins for headings/buttons, Plus Jakarta Sans for body/form
+- Never use English in user-facing text except for technical terms
+- Route protection via layout.tsx using auth() from next-auth
+- All form inputs use autoComplete="off"
+
+## Critical Architectural Decisions (Guardrails)
+- **Database Schema:** Address fields are kept "flat" in the Prisma schema to avoid complex joins (MVP phase). No soft deletes currently to respect P2003 constraints (Medical history privacy).
+- **No. RM Format:** `RM-YYYYMM-XXXX` (e.g., RM-202604-0001).
+- **Race Condition Prevention:** Server actions creating No. RM MUST use a `for` loop with max 3 retries catching Prisma `P2002` errors on the `noRm` field.
+- **Zod Validations:** Always use `.coerce.date()` for dates. Implement "all-or-nothing" rule for Guardian data using `.superRefine()`. Empty optional strings MUST be mapped to `null` before database insertion.
+
+## Git Workflow
+- `feat: [description] (TR-XX)` → New feature or task
+- `fix: [description] (TR-XX)` → Bug fix or corection
+- `docs: [description]` → Update documentation
+- `refactor: [description] (TR-XX)` → Refactor code
+- *Example:* `feat: Build shared DashboardLayout component (TR-23)`
 
 ## Prisma Schema Key Models
 Account, Practitioner, Patient, Encounter, ConditionHistory,
@@ -71,17 +97,8 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 ## Jira Project
 - Project: Tugas Akhir - RME Klinik Pratama Menganti Gresik
 - Key: TR
-- Current progress: TR-20 Done (UC-01 Login complete)
-- Next: TR-21 (role-based redirect), TR-22 (error handling), TR-23+ (UC-02 Dashboard)
-
-## Important Rules
-- Always use Bahasa Indonesia for UI text, labels, and messages
-- Use PrismaPg adapter when instantiating PrismaClient
-- Use tsx to run TypeScript scripts (NOT ts-node)
-- Font: Poppins for headings/buttons, Plus Jakarta Sans for body/form
-- Never use English in user-facing text except for technical terms
-- Route protection via layout.tsx using auth() from next-auth
-- All form inputs use autoComplete="off"
+- Current progress: TR-35 Subtask 3 Done (UC-04 Patient Registration UI & Backend logic complete)
+- Next: TR-35 Subtask 4 (Migrate Daftar Pasien table to live Prisma data)
 
 ## Jira Tickets Summary
 
@@ -111,11 +128,11 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 - TR-30 ✅ Implementasi edit dan hapus akun
 - TR-31 ✅ Implementasi toggle aktif/nonaktif
 - TR-32 ✅ Buat API endpoint CRUD Account & Practitioner
-- TR-33 ⏳ Role-based access - hanya Admin
+- TR-33 ✅ Role-based access - hanya Admin
 
 ### TR-5 [UC-04] Daftar Pasien Baru
-- TR-34 ⏳ Buat halaman Rekam Medis UI
-- TR-35 ⏳ Buat form Tambah Pasien Baru
+- TR-34 ✅ Buat halaman Rekam Medis UI
+- TR-35 🟡 Buat form Tambah Pasien Baru
 - TR-36 ⏳ Validasi NIK 16 digit
 - TR-37 ⏳ Integrasi SATUSEHAT API auto-fill
 - TR-38 ⏳ Fallback pendaftaran manual

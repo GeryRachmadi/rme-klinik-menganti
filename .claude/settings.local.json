@@ -7,7 +7,11 @@
       "Bash(node -e \"const na = require\\('next-auth'\\); console.log\\(Object.keys\\(na\\)\\)\")",
       "Bash(xargs grep *)",
       "Bash(node -e \"const p = require\\('./package.json'\\); ['react-hook-form','zod','@hookform/resolvers'].forEach\\(k => console.log\\(k, p.dependencies?.[k] ?? p.devDependencies?.[k] ?? 'NOT FOUND'\\)\\)\")",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/zod/package.json'\\).version\\)\")",
+      "Bash(npx prisma *)",
+      "Bash(sed -n '85,95p' src/components/shared/DokterDashboard.tsx)",
+      "Bash(sed -n '85,95p' src/components/shared/PerawatDashboard.tsx)"
     ]
   }
 }

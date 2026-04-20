@@ -11,13 +11,13 @@ import type { Prisma } from "@/generated/prisma";
 
 type EncounterForDokter = Prisma.EncounterGetPayload<{
   include: {
-    patient: { select: { name: true; gender: true; birthdate: true } };
+    patient: { select: { namaLengkap: true; jenisKelamin: true; tanggalLahir: true } };
   };
 }>;
 
 type RiwayatItem = Prisma.EncounterGetPayload<{
   include: {
-    patient: { select: { name: true } };
+    patient: { select: { namaLengkap: true } };
     conditionDiagnoses: { select: { codeIcd10: true; display: true } };
   };
 }>;
@@ -323,9 +323,9 @@ export default function DokterDashboard({
                 const statusCfg =
                   encounterStatusConfig[enc.status] ??
                   encounterStatusConfig["MENUNGGU"];
-                const age = calcAge(enc.patient.birthdate);
+                const age = calcAge(enc.patient.tanggalLahir);
                 const gender =
-                  genderLabel[enc.patient.gender] ?? enc.patient.gender;
+                  genderLabel[enc.patient.jenisKelamin] ?? enc.patient.jenisKelamin;
 
                 return (
                   <tr
@@ -346,7 +346,7 @@ export default function DokterDashboard({
                         className="text-sm font-semibold text-gray-800 leading-snug"
                         style={{ fontFamily: "var(--font-jakarta)" }}
                       >
-                        {enc.patient.name}
+                        {enc.patient.namaLengkap}
                       </p>
                       <p
                         className="text-xs text-gray-400 mt-0.5"
@@ -424,8 +424,8 @@ export default function DokterDashboard({
         ) : (
           <div className="flex flex-col divide-y divide-gray-50">
             {riwayatPemeriksaan.map((enc) => {
-              const initials = getInitials(enc.patient.name);
-              const { bg, color } = getAvatarColor(enc.patient.name);
+              const initials = getInitials(enc.patient.namaLengkap);
+              const { bg, color } = getAvatarColor(enc.patient.namaLengkap);
               const selesaiTime = formatWIB(enc.periodEnd ?? enc.updatedAt);
               const diagnosis = enc.conditionDiagnoses[0];
 
@@ -449,7 +449,7 @@ export default function DokterDashboard({
                       className="text-sm font-semibold text-gray-800 truncate leading-snug"
                       style={{ fontFamily: "var(--font-jakarta)" }}
                     >
-                      {enc.patient.name}
+                      {enc.patient.namaLengkap}
                     </p>
                     <p
                       className="text-xs text-gray-400 truncate mt-0.5"

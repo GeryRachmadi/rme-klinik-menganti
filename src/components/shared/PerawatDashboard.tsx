@@ -11,13 +11,13 @@ import type { Prisma } from "@/generated/prisma";
 
 type EncounterWithPatientDetail = Prisma.EncounterGetPayload<{
   include: {
-    patient: { select: { name: true; gender: true; birthdate: true } };
+    patient: { select: { namaLengkap: true; jenisKelamin: true; tanggalLahir: true } };
   };
 }>;
 
 type EncounterSelesaiItem = Prisma.EncounterGetPayload<{
   include: {
-    patient: { select: { name: true } };
+    patient: { select: { namaLengkap: true } };
   };
 }>;
 
@@ -323,8 +323,8 @@ export default function PerawatDashboard({
                 const statusCfg =
                   encounterStatusConfig[enc.status] ??
                   encounterStatusConfig["MENUNGGU"];
-                const age = calcAge(enc.patient.birthdate);
-                const gender = genderLabel[enc.patient.gender] ?? enc.patient.gender;
+                const age = calcAge(enc.patient.tanggalLahir);
+                const gender = genderLabel[enc.patient.jenisKelamin] ?? enc.patient.jenisKelamin;
 
                 return (
                   <tr
@@ -351,7 +351,7 @@ export default function PerawatDashboard({
                         className="text-sm font-semibold text-gray-800 leading-snug"
                         style={{ fontFamily: "var(--font-jakarta)" }}
                       >
-                        {enc.patient.name}
+                        {enc.patient.namaLengkap}
                       </p>
                       <p
                         className="text-xs text-gray-400 mt-0.5"
@@ -492,8 +492,8 @@ export default function PerawatDashboard({
           ) : (
             <div className="flex flex-col gap-2">
               {selesaiList.map((enc) => {
-                const initials = getInitials(enc.patient.name);
-                const { bg, color } = getAvatarColor(enc.patient.name);
+                const initials = getInitials(enc.patient.namaLengkap);
+                const { bg, color } = getAvatarColor(enc.patient.namaLengkap);
                 const selesaiTime = formatWIB(enc.periodEnd ?? enc.updatedAt);
                 const poli = getPoliLabel(enc.queueNumber);
 
@@ -517,7 +517,7 @@ export default function PerawatDashboard({
                         className="text-sm font-semibold text-gray-800 truncate leading-snug"
                         style={{ fontFamily: "var(--font-jakarta)" }}
                       >
-                        {enc.patient.name}
+                        {enc.patient.namaLengkap}
                       </p>
                       <p
                         className="text-xs text-gray-400 truncate"

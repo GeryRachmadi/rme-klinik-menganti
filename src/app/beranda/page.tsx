@@ -64,7 +64,7 @@ export default async function BerandaPage() {
           where: { createdAt: { gte: todayStart, lt: todayEnd } },
           take: 8,
           orderBy: { createdAt: "desc" },
-          include: { patient: { select: { name: true } } },
+          include: { patient: { select: { namaLengkap: true } } },
         }),
         prisma.practitioner.findMany({
           where: { account: { isActive: true, role: "DOKTER" } },
@@ -115,7 +115,7 @@ export default async function BerandaPage() {
         take: 8,
         orderBy: { createdAt: "asc" },
         include: {
-          patient: { select: { name: true, gender: true, birthdate: true } },
+          patient: { select: { namaLengkap: true, jenisKelamin: true, tanggalLahir: true } },
         },
       }),
       prisma.practitioner.findMany({
@@ -130,7 +130,7 @@ export default async function BerandaPage() {
         },
         take: 6,
         orderBy: { updatedAt: "desc" },
-        include: { patient: { select: { name: true } } },
+        include: { patient: { select: { namaLengkap: true } } },
       }),
       prisma.practitioner.findUnique({
         where: { accountId: session!.user.id },
@@ -177,7 +177,7 @@ export default async function BerandaPage() {
         take: 8,
         orderBy: { createdAt: "asc" },
         include: {
-          patient: { select: { name: true, gender: true, birthdate: true } },
+          patient: { select: { namaLengkap: true, jenisKelamin: true, tanggalLahir: true } },
         },
       }),
       prisma.encounter.findMany({
@@ -188,7 +188,7 @@ export default async function BerandaPage() {
         take: 8,
         orderBy: { updatedAt: "desc" },
         include: {
-          patient: { select: { name: true } },
+          patient: { select: { namaLengkap: true } },
           conditionDiagnoses: {
             orderBy: { isPrimary: "desc" },
             take: 1,

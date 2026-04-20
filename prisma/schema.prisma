@@ -19,9 +19,34 @@ enum Role {
   DOKTER
 }
 
-enum Gender {
+// ============================================
+// PATIENT ENUMS
+// ============================================
+
+enum JenisKelamin {
   LAKI_LAKI
   PEREMPUAN
+}
+
+enum Agama {
+  ISLAM
+  KRISTEN
+  KATOLIK
+  HINDU
+  BUDDHA
+  KHONGHUCU
+}
+
+enum JenisPasien {
+  UMUM
+  BPJS
+}
+
+enum StatusPernikahan {
+  BELUM_MENIKAH
+  MENIKAH
+  CERAI_HIDUP
+  CERAI_MATI
 }
 
 model Account {
@@ -56,20 +81,33 @@ model Practitioner {
 // ============================================
 
 model Patient {
-  id            String   @id @default(cuid())
-  ihsNumber     String?  @unique
-  identifierNik String?  @unique
-  name          String
-  birthdate     DateTime
-  gender        Gender
-  address       String?
-  telecom       String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id               String          @id @default(cuid())
+  noRm             String          @unique
+  nik              String          @unique
+  namaLengkap      String
+  tempatLahir      String
+  tanggalLahir     DateTime
+  jenisKelamin     JenisKelamin
+  agama            Agama
+  statusPernikahan StatusPernikahan
+  jenisPasien      JenisPasien
+  alamatKtp        String
+  provinsi         String
+  kabupatenKota    String
+  kecamatan        String
+  desa             String
+  pekerjaan        String
+  perusahaan       String?
+  noHp             String
+  namaWali         String?
+  hubunganWali     String?
+  noHpWali         String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
-  encounters         Encounter[]
-  conditionHistories ConditionHistory[]
-  allergyIntolerances AllergyIntolerance[]
+  encounters           Encounter[]
+  conditionHistories   ConditionHistory[]
+  allergyIntolerances  AllergyIntolerance[]
   medicationStatements MedicationStatement[]
 }
 

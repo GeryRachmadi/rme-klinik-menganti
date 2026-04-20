@@ -3,11 +3,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { X, ChevronDown, CheckCircle2, AlertCircle } from "lucide-react";
+import { X, ChevronDown, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import {
   patientRegistrationSchema,
   type PatientRegistrationInput,
 } from "@/lib/validations/patient";
+import { createPatient } from "@/app/actions/patient";
 
 interface PatientRegistrationDrawerProps {
   isOpen: boolean;
@@ -54,6 +55,7 @@ export default function PatientRegistrationDrawer({
   onClose,
 }: PatientRegistrationDrawerProps) {
   const [rendered, setRendered] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<{ visible: boolean; type: "success" | "error"; message: string }>({
     visible: false, type: "success", message: "",
   });
@@ -69,11 +71,14 @@ export default function PatientRegistrationDrawer({
     }
   }, [isOpen]);
 
+  // `as unknown as` bridges the "" string to enum literal types so RHF can
+  // keep selects controlled (avoids uncontrolled→controlled React warning)
+  // while Zod still rejects "" as invalid and shows the correct error message.
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<PatientRegistrationInput>({
     resolver: zodResolver(patientRegistrationSchema),
     defaultValues: {
@@ -81,8 +86,10 @@ export default function PatientRegistrationDrawer({
       namaLengkap: "",
       tempatLahir: "",
       tanggalLahir: "",
-      agama: "",
-      statusPernikahan: "",
+      jenisKelamin: "" as unknown as PatientRegistrationInput["jenisKelamin"],
+      agama: "" as unknown as PatientRegistrationInput["agama"],
+      statusPernikahan: "" as unknown as PatientRegistrationInput["statusPernikahan"],
+      jenisPasien: "" as unknown as PatientRegistrationInput["jenisPasien"],
       alamatKtp: "",
       provinsi: "",
       kabupatenKota: "",
@@ -122,9 +129,20 @@ export default function PatientRegistrationDrawer({
     []
   );
 
-  function onSubmit(data: PatientRegistrationInput) {
-    console.log("Patient registration data:", data);
-    showToast("Data pasien berhasil disimpan.");
+  async function onSubmit(data: PatientRegistrationInput) {
+    setIsLoading(true);
+    try {
+      const res = await createPatient(data);
+      if (res.success) {
+        showToast(`Pasien berhasil didaftarkan. No. RM: ${res.data.noRm}`);
+        reset();
+        setTimeout(() => onClose(), 2000);
+      } else {
+        showToast(res.error, "error");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   if (!rendered) return null;
@@ -234,6 +252,56 @@ export default function PatientRegistrationDrawer({
               <FieldError message={errors.namaLengkap?.message} />
             </div>
 
+            {/* Jenis Kelamin | Jenis Pasien */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  Jenis Kelamin
+                </label>
+                <div className="relative">
+                  <select
+                    {...register("jenisKelamin")}
+                    className={selCls(errors.jenisKelamin)}
+                  >
+                    <option value="" disabled>
+                      Pilih jenis kelamin...
+                    </option>
+                    <option value="LAKI_LAKI">Laki-laki</option>
+                    <option value="PEREMPUAN">Perempuan</option>
+                  </select>
+                  <ChevronDown
+                    size={15}
+                    strokeWidth={2}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                  />
+                </div>
+                <FieldError message={errors.jenisKelamin?.message} />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  Jenis Pasien
+                </label>
+                <div className="relative">
+                  <select
+                    {...register("jenisPasien")}
+                    className={selCls(errors.jenisPasien)}
+                  >
+                    <option value="" disabled>
+                      Pilih jenis pasien...
+                    </option>
+                    <option value="UMUM">Umum</option>
+                    <option value="BPJS">BPJS</option>
+                  </select>
+                  <ChevronDown
+                    size={15}
+                    strokeWidth={2}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                  />
+                </div>
+                <FieldError message={errors.jenisPasien?.message} />
+              </div>
+            </div>
+
             {/* Tempat Lahir | Tanggal Lahir */}
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -277,12 +345,12 @@ export default function PatientRegistrationDrawer({
                     <option value="" disabled>
                       Pilih agama...
                     </option>
-                    <option value="Islam">Islam</option>
-                    <option value="Kristen">Kristen</option>
-                    <option value="Katolik">Katolik</option>
-                    <option value="Hindu">Hindu</option>
-                    <option value="Buddha">Buddha</option>
-                    <option value="Khonghucu">Khonghucu</option>
+                    <option value="ISLAM">Islam</option>
+                    <option value="KRISTEN">Kristen</option>
+                    <option value="KATOLIK">Katolik</option>
+                    <option value="HINDU">Hindu</option>
+                    <option value="BUDDHA">Buddha</option>
+                    <option value="KHONGHUCU">Khonghucu</option>
                   </select>
                   <ChevronDown
                     size={15}
@@ -304,10 +372,10 @@ export default function PatientRegistrationDrawer({
                     <option value="" disabled>
                       Pilih status...
                     </option>
-                    <option value="Belum Menikah">Belum Menikah</option>
-                    <option value="Menikah">Menikah</option>
-                    <option value="Cerai Hidup">Cerai Hidup</option>
-                    <option value="Cerai Mati">Cerai Mati</option>
+                    <option value="BELUM_MENIKAH">Belum Menikah</option>
+                    <option value="MENIKAH">Menikah</option>
+                    <option value="CERAI_HIDUP">Cerai Hidup</option>
+                    <option value="CERAI_MATI">Cerai Mati</option>
                   </select>
                   <ChevronDown
                     size={15}
@@ -532,6 +600,7 @@ export default function PatientRegistrationDrawer({
                 {...register("namaWali")}
                 className={cls(errors.namaWali)}
               />
+              <FieldError message={errors.namaWali?.message} />
             </div>
 
             {/* Hubungan | No. HP Wali */}
@@ -566,18 +635,31 @@ export default function PatientRegistrationDrawer({
                     className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
                   />
                 </div>
+                <FieldError message={errors.hubunganWali?.message} />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   No. HP Wali
                 </label>
                 <input
-                  type="tel"
+                  type="text"
+                  inputMode="numeric"
                   placeholder="08123456789"
                   autoComplete="off"
-                  {...register("noHpWali")}
+                  maxLength={13}
+                  {...(() => {
+                    const { onChange, ...rest } = register("noHpWali");
+                    return {
+                      ...rest,
+                      onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+                        e.target.value = e.target.value.replace(/\D/g, "");
+                        onChange(e);
+                      },
+                    };
+                  })()}
                   className={cls(errors.noHpWali)}
                 />
+                <FieldError message={errors.noHpWali?.message} />
               </div>
             </div>
           </div>
@@ -595,11 +677,12 @@ export default function PatientRegistrationDrawer({
           <button
             type="submit"
             form="patient-form"
-            disabled={isSubmitting}
-            className="px-6 py-2.5 rounded-full text-sm font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-70"
+            disabled={isLoading}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-70"
             style={{ background: "#2BB5A0" }}
           >
-            {isSubmitting ? "Menyimpan..." : "Simpan"}
+            {isLoading && <Loader2 size={14} strokeWidth={2.5} className="animate-spin" />}
+            {isLoading ? "Menyimpan..." : "Simpan"}
           </button>
         </div>
       </div>
