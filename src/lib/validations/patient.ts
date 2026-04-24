@@ -24,6 +24,10 @@ export const patientRegistrationSchema = z
         "Tanggal lahir tidak boleh di masa depan"
       )
       .refine((s) => {
+        const year = new Date(s).getFullYear();
+        return year >= 1000 && year <= 9999;
+      }, "Tahun lahir harus 4 digit")
+      .refine((s) => {
         const ageYears =
           (Date.now() - new Date(s).getTime()) /
           (365.25 * 24 * 60 * 60 * 1000);

@@ -84,6 +84,7 @@ model Patient {
   id               String          @id @default(cuid())
   noRm             String          @unique
   nik              String          @unique
+  ihs              String?         @unique
   namaLengkap      String
   tempatLahir      String
   tanggalLahir     DateTime

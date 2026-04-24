@@ -10,10 +10,18 @@ import {
   ChevronRight,
   UserPlus,
 } from "lucide-react";
-import { mockPatients } from "@/lib/mock-patients";
+import { Patient } from "@/generated/prisma";
 import PatientRegistrationDrawer from "@/components/shared/PatientRegistrationDrawer";
 
-const ITEMS_PER_PAGE = 10;
+function calcAge(dob: Date): number {
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const m = today.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+  return age;
+}
+
+const ITEMS_PER_PAGE = 7;
 
 function getPageNumbers(current: number, total: number): (number | "…")[] {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
@@ -23,7 +31,7 @@ function getPageNumbers(current: number, total: number): (number | "…")[] {
   return [1, "…", current - 1, current, current + 1, "…", total];
 }
 
-export default function DaftarPasien() {
+export default function DaftarPasien({ patients }: { patients: Patient[] }) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [jenisKelaminFilter, setJenisKelaminFilter] = useState("Semua");
@@ -32,13 +40,13 @@ export default function DaftarPasien() {
 
   const filtered = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    return mockPatients.filter((p) => {
+    return patients.filter((p) => {
       if (
         q &&
         !p.namaLengkap.toLowerCase().includes(q) &&
         !p.nik.includes(q) &&
-        !(p.ihs?.toLowerCase().includes(q)) &&
-        !p.noRm.toLowerCase().includes(q)
+        !p.noRm.toLowerCase().includes(q) &&
+        !(p.ihs?.toLowerCase().includes(q))
       )
         return false;
       if (jenisKelaminFilter !== "Semua" && p.jenisKelamin !== jenisKelaminFilter)
@@ -47,7 +55,7 @@ export default function DaftarPasien() {
         return false;
       return true;
     });
-  }, [searchQuery, jenisKelaminFilter, jenisPasienFilter]);
+  }, [patients, searchQuery, jenisKelaminFilter, jenisPasienFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const safePage = Math.min(currentPage, totalPages);
@@ -139,8 +147,8 @@ export default function DaftarPasien() {
               style={{ fontFamily: "var(--font-jakarta)" }}
             >
               <option value="Semua">Semua</option>
-              <option value="Laki-laki">Laki-laki</option>
-              <option value="Perempuan">Perempuan</option>
+              <option value="LAKI_LAKI">Laki-laki</option>
+              <option value="PEREMPUAN">Perempuan</option>
             </select>
           </div>
 
@@ -215,7 +223,7 @@ export default function DaftarPasien() {
                       className="text-xs text-gray-400 mt-0.5"
                       style={{ fontFamily: "var(--font-jakarta)" }}
                     >
-                      {patient.jenisKelamin} • {patient.umur} thn
+                      {patient.jenisKelamin} • {calcAge(new Date(patient.tanggalLahir))} thn
                     </p>
                   </td>
 
