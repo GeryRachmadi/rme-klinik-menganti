@@ -44,7 +44,7 @@ function SectionTitle({
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return (
-    <p className="mt-1.5 text-xs text-red-500 font-medium">⚠ {message}</p>
+    <p className="mt-1 text-sm text-red-500">{message}</p>
   );
 }
 
@@ -78,9 +78,10 @@ export default function PatientRegistrationDrawer({
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    formState: { errors, isValid },
   } = useForm<PatientRegistrationInput>({
     resolver: zodResolver(patientRegistrationSchema),
+    mode: "onChange",
     defaultValues: {
       nik: "",
       namaLengkap: "",
@@ -211,7 +212,7 @@ export default function PatientRegistrationDrawer({
             {/* NIK */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                NIK{" "}
+                NIK <span className="text-red-500">*</span>{" "}
                 <span className="font-normal text-gray-400">
                   (Nomor Induk Kependudukan)
                 </span>
@@ -222,6 +223,7 @@ export default function PatientRegistrationDrawer({
                 placeholder="Masukkan 16 digit NIK"
                 autoComplete="off"
                 maxLength={16}
+                title="Nomor Identitas Kependudukan (KTP)"
                 {...(() => {
                   const { onChange, ...rest } = register("nik");
                   return {
@@ -234,13 +236,14 @@ export default function PatientRegistrationDrawer({
                 })()}
                 className={cls(errors.nik)}
               />
+              <p className="mt-1 text-sm text-gray-500">Contoh: 3214041701234567</p>
               <FieldError message={errors.nik?.message} />
             </div>
 
             {/* Nama Lengkap */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Nama Lengkap
+                Nama Lengkap <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -256,7 +259,7 @@ export default function PatientRegistrationDrawer({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Jenis Kelamin
+                  Jenis Kelamin <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <select
@@ -279,7 +282,7 @@ export default function PatientRegistrationDrawer({
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Jenis Pasien
+                  Jenis Pasien <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <select
@@ -306,7 +309,7 @@ export default function PatientRegistrationDrawer({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Tempat Lahir
+                  Tempat Lahir <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -319,7 +322,7 @@ export default function PatientRegistrationDrawer({
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Tanggal Lahir
+                  Tanggal Lahir <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
@@ -335,7 +338,7 @@ export default function PatientRegistrationDrawer({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Agama
+                  Agama <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <select
@@ -362,7 +365,7 @@ export default function PatientRegistrationDrawer({
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Status Pernikahan
+                  Status Pernikahan <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <select
@@ -395,7 +398,7 @@ export default function PatientRegistrationDrawer({
             {/* Alamat KTP */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Alamat KTP
+                Alamat KTP <span className="text-red-500">*</span>
               </label>
               <textarea
                 placeholder="Jl. Nama Jalan, No. XX, RT/RW..."
@@ -411,7 +414,7 @@ export default function PatientRegistrationDrawer({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Provinsi
+                  Provinsi <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <select
@@ -439,7 +442,7 @@ export default function PatientRegistrationDrawer({
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Kabupaten / Kota
+                  Kabupaten / Kota <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <select
@@ -472,7 +475,7 @@ export default function PatientRegistrationDrawer({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Kecamatan
+                  Kecamatan <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <select
@@ -497,7 +500,7 @@ export default function PatientRegistrationDrawer({
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Desa / Kelurahan
+                  Desa / Kelurahan <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <select
@@ -531,7 +534,7 @@ export default function PatientRegistrationDrawer({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Pekerjaan
+                  Pekerjaan <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -560,7 +563,7 @@ export default function PatientRegistrationDrawer({
             {/* No. HP — full width */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                No. HP / Kontak
+                No. HP / Kontak <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -677,8 +680,8 @@ export default function PatientRegistrationDrawer({
           <button
             type="submit"
             form="patient-form"
-            disabled={isLoading}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-70"
+            disabled={isLoading || !isValid}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-70 disabled:cursor-not-allowed"
             style={{ background: "#2BB5A0" }}
           >
             {isLoading && <Loader2 size={14} strokeWidth={2.5} className="animate-spin" />}

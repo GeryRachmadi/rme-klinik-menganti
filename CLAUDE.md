@@ -132,7 +132,7 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 
 ### TR-5 [UC-04] Daftar Pasien Baru
 - TR-34 ✅ Buat halaman Rekam Medis UI
-- TR-35 🟡 Buat form Tambah Pasien Baru
+- TR-35 ✅ Buat form Tambah Pasien Baru
 - TR-36 ⏳ Validasi NIK 16 digit
 - TR-37 ⏳ Integrasi SATUSEHAT API auto-fill
 - TR-38 ⏳ Fallback pendaftaran manual

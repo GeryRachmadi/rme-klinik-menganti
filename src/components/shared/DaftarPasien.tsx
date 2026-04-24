@@ -21,7 +21,7 @@ function calcAge(dob: Date): number {
   return age;
 }
 
-const ITEMS_PER_PAGE = 7;
+const ITEMS_PER_PAGE = 6;
 
 function getPageNumbers(current: number, total: number): (number | "…")[] {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);

@@ -11,6 +11,17 @@ export type CreatePatientResponse =
 export async function createPatient(
   data: PatientRegistrationInput
 ): Promise<CreatePatientResponse> {
+  const existingPatient = await prisma.patient.findUnique({
+    where: { nik: data.nik },
+  });
+
+  if (existingPatient) {
+    return {
+      success: false,
+      error: "NIK sudah terdaftar. Silakan hubungi admin.",
+    };
+  }
+
   for (let attempt = 0; attempt < 3; attempt++) {
     const now = new Date();
     const yyyymm = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -58,7 +69,7 @@ export async function createPatient(
           const target = prismaErr.meta?.target ?? [];
           if (target.includes("noRm")) continue;
           if (target.includes("nik")) {
-            return { success: false, error: "NIK sudah terdaftar dalam sistem." };
+            return { success: false, error: "NIK sudah terdaftar. Silakan hubungi admin." };
           }
         }
       }

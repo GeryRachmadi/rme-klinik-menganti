@@ -83,6 +83,7 @@ model Practitioner {
 model Patient {
   id               String          @id @default(cuid())
   noRm             String          @unique
+  /// National ID (KTP). Unique, exactly 16 digits. Required.
   nik              String          @unique
   ihs              String?         @unique
   namaLengkap      String
@@ -100,6 +101,8 @@ model Patient {
   pekerjaan        String
   perusahaan       String?
   noHp             String
+  /// Guardian details — all-or-nothing rule: if any field is provided, all must be provided.
+  /// See Zod schema in lib/validations/patient.ts for enforcement.
   namaWali         String?
   hubunganWali     String?
   noHpWali         String?

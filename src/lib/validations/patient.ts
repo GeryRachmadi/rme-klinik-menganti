@@ -5,7 +5,8 @@ export const patientRegistrationSchema = z
     // ── Identitas ──────────────────────────────────────────────────────────
     nik: z
       .string()
-      .regex(/^\d{16}$/, "NIK wajib diisi dengan 16 Digit"),
+      .min(1, "NIK tidak boleh kosong")
+      .regex(/^\d{16}$/, "NIK harus 16 digit angka"),
 
     namaLengkap: z.string().min(1, "Nama lengkap wajib diisi"),
     tempatLahir: z.string().min(1, "Tempat lahir wajib diisi"),
@@ -74,27 +75,19 @@ export const patientRegistrationSchema = z
     hubunganWali: z.string().optional(),
     noHpWali:     z.string().optional(),
   })
-  // Guardian all-or-nothing: if ANY wali field is filled, mark each EMPTY
-  // field individually so only the missing ones get the red border/error.
+  // Guardian all-or-nothing: if ANY wali field is filled, ALL must be filled.
   .superRefine((data, ctx) => {
-    const filled = (v?: string) => Boolean(v && v.trim());
-    const anyFilled =
-      filled(data.namaWali) ||
-      filled(data.hubunganWali) ||
-      filled(data.noHpWali);
+    const hasAny = data.namaWali || data.hubunganWali || data.noHpWali;
+    const hasAll = data.namaWali && data.hubunganWali && data.noHpWali;
 
-    if (!anyFilled) return; // all empty → section is optional, pass
-
-    const msg = "Wajib diisi jika data wali lainnya ada";
-
-    if (!filled(data.namaWali)) {
-      ctx.addIssue({ code: "custom", message: msg, path: ["namaWali"] });
-    }
-    if (!filled(data.hubunganWali)) {
-      ctx.addIssue({ code: "custom", message: msg, path: ["hubunganWali"] });
-    }
-    if (!filled(data.noHpWali)) {
-      ctx.addIssue({ code: "custom", message: msg, path: ["noHpWali"] });
+    if (hasAny && !hasAll) {
+      const msg = "Jika ada data wali, semua field harus diisi.";
+      if (!data.namaWali)
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: msg, path: ["namaWali"] });
+      if (!data.hubunganWali)
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: msg, path: ["hubunganWali"] });
+      if (!data.noHpWali)
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: msg, path: ["noHpWali"] });
     }
   });
 
