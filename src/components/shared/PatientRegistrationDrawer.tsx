@@ -1,18 +1,27 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { X, ChevronDown, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { X, ChevronDown, CheckCircle2, AlertCircle, Loader2, Sparkles, PencilLine } from "lucide-react";
 import {
   patientRegistrationSchema,
   type PatientRegistrationInput,
 } from "@/lib/validations/patient";
 import { createPatient } from "@/app/actions/patient";
 
+interface SatusehatData {
+  namaLengkap?: string;
+  jenisKelamin?: string;
+  tanggalLahir?: string;
+}
+
 interface PatientRegistrationDrawerProps {
   isOpen: boolean;
   onClose: () => void;
+  mode?: "autofill" | "manual";
+  satusehatData?: SatusehatData | null;
 }
 
 // ── Tiny presentational helpers (defined outside to avoid remounting) ─────────
@@ -53,23 +62,29 @@ function FieldError({ message }: { message?: string }) {
 export default function PatientRegistrationDrawer({
   isOpen,
   onClose,
+  mode = "manual",
+  // satusehatData,
 }: PatientRegistrationDrawerProps) {
+  const satusehatData = null;  // Force fallback for testing
+  const router = useRouter();
   const [rendered, setRendered] = useState(false);
+  const [activeMode, setActiveMode] = useState<"autofill" | "manual">(mode);
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<{ visible: boolean; type: "success" | "error"; message: string }>({
     visible: false, type: "success", message: "",
   });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Mount/unmount with slide animation
+  // Mount/unmount with slide animation; reset internal mode on each open
   useEffect(() => {
     if (isOpen) {
       setRendered(true);
+      setActiveMode(mode);
     } else {
       const t = setTimeout(() => setRendered(false), 300);
       return () => clearTimeout(t);
     }
-  }, [isOpen]);
+  }, [isOpen, mode]);
 
   // `as unknown as` bridges the "" string to enum literal types so RHF can
   // keep selects controlled (avoids uncontrolled→controlled React warning)
@@ -135,9 +150,10 @@ export default function PatientRegistrationDrawer({
     try {
       const res = await createPatient(data);
       if (res.success) {
-        showToast(`Pasien berhasil didaftarkan. No. RM: ${res.data.noRm}`);
+        showToast(`Pasien ${res.data.noRm} berhasil didaftar.`);
         reset();
-        setTimeout(() => onClose(), 2000);
+        router.refresh();
+        setTimeout(() => onClose(), 1500);
       } else {
         showToast(res.error, "error");
       }
@@ -157,6 +173,11 @@ export default function PatientRegistrationDrawer({
       : `${inputBase} border-gray-200 focus:border-[#2BB5A0]`;
   const selCls = (err?: { message?: string }) =>
     `${cls(err)} appearance-none cursor-pointer`;
+  const readonlyCls =
+    "w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-100 text-sm text-gray-400 outline-none cursor-not-allowed select-none";
+
+  // Fallback: autofill was attempted but SATUSEHAT returned nothing (null or undefined).
+  const isFallback = activeMode === "autofill" && !satusehatData;
 
   return (
     <>
@@ -198,6 +219,38 @@ export default function PatientRegistrationDrawer({
           </button>
         </div>
 
+        {/* ── Mode Banner ─────────────────────────────────────────────────── */}
+        {activeMode === "autofill" ? (
+          <div
+            className="flex items-center gap-3 px-8 py-3 flex-shrink-0 border-b border-[#4DD9C0]/30"
+            style={{ background: "#E6F5F4" }}
+          >
+            <span
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white"
+              style={{ background: "#2BB5A0" }}
+            >
+              <Sparkles size={11} strokeWidth={2.5} />
+              Mode: Auto-fill dari SATUSEHAT
+            </span>
+            <p className="text-xs text-[#009E95]">
+              Data pasien diisi otomatis. NIK tidak dapat diubah.
+            </p>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 px-8 py-3 flex-shrink-0 border-b border-gray-100">
+            <span
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold"
+              style={{ background: "#E6F5F4", color: "#009E95" }}
+            >
+              <PencilLine size={11} strokeWidth={2.5} />
+              Pendaftaran Manual
+            </span>
+            <p className="text-xs text-gray-400">
+              Isi seluruh data pasien secara lengkap.
+            </p>
+          </div>
+        )}
+
         {/* ── Scrollable form body ─────────────────────────────────────────── */}
         <form
           id="patient-form"
@@ -207,7 +260,7 @@ export default function PatientRegistrationDrawer({
         >
           {/* ── Section 1: IDENTITAS UTAMA ─────────────────────────────────── */}
           <div className="space-y-4">
-            <SectionTitle>Identitas Utama</SectionTitle>
+            <SectionTitle>Identitas Pasien</SectionTitle>
 
             {/* NIK */}
             <div>
@@ -217,28 +270,77 @@ export default function PatientRegistrationDrawer({
                   (Nomor Induk Kependudukan)
                 </span>
               </label>
-              <input
-                type="text"
-                inputMode="numeric"
-                placeholder="Masukkan 16 digit NIK"
-                autoComplete="off"
-                maxLength={16}
-                title="Nomor Identitas Kependudukan (KTP)"
-                {...(() => {
-                  const { onChange, ...rest } = register("nik");
-                  return {
-                    ...rest,
-                    onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                      e.target.value = e.target.value.replace(/\D/g, "");
-                      onChange(e);
-                    },
-                  };
-                })()}
-                className={cls(errors.nik)}
-              />
-              <p className="mt-1 text-sm text-gray-500">Contoh: 3214041701234567</p>
+              {activeMode === "autofill" ? (
+                <input
+                  type="text"
+                  readOnly
+                  autoComplete="off"
+                  maxLength={16}
+                  title="NIK tidak dapat diubah dalam mode Auto-fill"
+                  {...register("nik")}
+                  className={readonlyCls}
+                />
+              ) : (
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="Masukkan 16 digit NIK"
+                  autoComplete="off"
+                  maxLength={16}
+                  title="Nomor Identitas Kependudukan (KTP)"
+                  {...(() => {
+                    const { onChange, ...rest } = register("nik");
+                    return {
+                      ...rest,
+                      onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+                        e.target.value = e.target.value.replace(/\D/g, "");
+                        onChange(e);
+                      },
+                    };
+                  })()}
+                  className={cls(errors.nik)}
+                />
+              )}
+              {activeMode === "manual" && (
+                <p className="mt-1 text-sm text-gray-500">Contoh: 3214041701234567</p>
+              )}
               <FieldError message={errors.nik?.message} />
             </div>
+
+            {/* Fallback alert — SATUSEHAT lookup ran but found no data */}
+            {isFallback && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex flex-col gap-3">
+                <div className="flex items-start gap-3">
+                  <AlertCircle
+                    size={18}
+                    strokeWidth={2}
+                    className="text-amber-500 flex-shrink-0 mt-0.5"
+                  />
+                  <div>
+                    <p className="text-sm font-semibold text-amber-800">
+                      Data tidak ditemukan di SATUSEHAT
+                    </p>
+                    <p className="text-xs text-amber-600 mt-1 leading-relaxed">
+                      Data pasien tidak ditemukan di SATUSEHAT. Lanjutkan dengan
+                      pendaftaran manual?
+                    </p>
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setActiveMode("manual")}
+                    className="px-5 py-2 rounded-full text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+                    style={{ background: "#2BB5A0" }}
+                  >
+                    Lanjut Manual
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Rest of Section 1 — hidden while fallback prompt is shown */}
+            {!isFallback && <>
 
             {/* Nama Lengkap */}
             <div>
@@ -256,7 +358,7 @@ export default function PatientRegistrationDrawer({
             </div>
 
             {/* Jenis Kelamin | Jenis Pasien */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   Jenis Kelamin <span className="text-red-500">*</span>
@@ -306,7 +408,7 @@ export default function PatientRegistrationDrawer({
             </div>
 
             {/* Tempat Lahir | Tanggal Lahir */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   Tempat Lahir <span className="text-red-500">*</span>
@@ -330,12 +432,13 @@ export default function PatientRegistrationDrawer({
                   {...register("tanggalLahir")}
                   className={`${cls(errors.tanggalLahir)} text-gray-600`}
                 />
+                <p className="mt-1 text-sm text-gray-500">Contoh: 17/01/1990</p>
                 <FieldError message={errors.tanggalLahir?.message} />
               </div>
             </div>
 
             {/* Agama | Status Pernikahan */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   Agama <span className="text-red-500">*</span>
@@ -389,11 +492,16 @@ export default function PatientRegistrationDrawer({
                 <FieldError message={errors.statusPernikahan?.message} />
               </div>
             </div>
+
+            </>} {/* end !isFallback */}
           </div>
+
+          {/* ── Sections 2–4: hidden while fallback prompt is shown ──────────── */}
+          {!isFallback && <>
 
           {/* ── Section 2: ALAMAT LENGKAP ──────────────────────────────────── */}
           <div className="space-y-4">
-            <SectionTitle>Alamat Lengkap</SectionTitle>
+            <SectionTitle>Alamat</SectionTitle>
 
             {/* Alamat KTP */}
             <div>
@@ -411,7 +519,7 @@ export default function PatientRegistrationDrawer({
             </div>
 
             {/* Provinsi | Kabupaten/Kota */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   Provinsi <span className="text-red-500">*</span>
@@ -472,7 +580,7 @@ export default function PatientRegistrationDrawer({
             </div>
 
             {/* Kecamatan | Desa */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   Kecamatan <span className="text-red-500">*</span>
@@ -528,10 +636,10 @@ export default function PatientRegistrationDrawer({
 
           {/* ── Section 3: PEKERJAAN DAN KONTAK ───────────────────────────── */}
           <div className="space-y-4">
-            <SectionTitle>Pekerjaan dan Kontak</SectionTitle>
+            <SectionTitle>Kontak Pasien</SectionTitle>
 
             {/* Pekerjaan | Perusahaan */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   Pekerjaan <span className="text-red-500">*</span>
@@ -607,7 +715,7 @@ export default function PatientRegistrationDrawer({
             </div>
 
             {/* Hubungan | No. HP Wali */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   Hubungan
@@ -666,6 +774,8 @@ export default function PatientRegistrationDrawer({
               </div>
             </div>
           </div>
+
+          </>} {/* end !isFallback */}
         </form>
 
         {/* ── Footer (sticky, outside <form> — linked via form="patient-form") */}

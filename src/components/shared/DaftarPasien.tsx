@@ -376,6 +376,7 @@ export default function DaftarPasien({ patients }: { patients: Patient[] }) {
       <PatientRegistrationDrawer
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
+        mode="manual"
       />
     </div>
   );

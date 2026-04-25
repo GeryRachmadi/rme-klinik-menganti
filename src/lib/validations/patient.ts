@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-export const patientRegistrationSchema = z
-  .object({
+// Base object — shared between registration and update schemas.
+const patientBaseObject = z.object({
     // ── Identitas ──────────────────────────────────────────────────────────
     nik: z
       .string()
@@ -74,21 +74,31 @@ export const patientRegistrationSchema = z
     namaWali:     z.string().optional(),
     hubunganWali: z.string().optional(),
     noHpWali:     z.string().optional(),
-  })
-  // Guardian all-or-nothing: if ANY wali field is filled, ALL must be filled.
-  .superRefine((data, ctx) => {
-    const hasAny = data.namaWali || data.hubunganWali || data.noHpWali;
-    const hasAll = data.namaWali && data.hubunganWali && data.noHpWali;
-
-    if (hasAny && !hasAll) {
-      const msg = "Jika ada data wali, semua field harus diisi.";
-      if (!data.namaWali)
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: msg, path: ["namaWali"] });
-      if (!data.hubunganWali)
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: msg, path: ["hubunganWali"] });
-      if (!data.noHpWali)
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: msg, path: ["noHpWali"] });
-    }
   });
 
+// Reusable guardian superRefine: if ANY wali field is present, ALL must be present.
+function guardianRefine(
+  data: { namaWali?: string; hubunganWali?: string; noHpWali?: string },
+  ctx: z.RefinementCtx
+) {
+  const hasAny = data.namaWali || data.hubunganWali || data.noHpWali;
+  const hasAll = data.namaWali && data.hubunganWali && data.noHpWali;
+  if (hasAny && !hasAll) {
+    const msg = "Jika ada data wali, semua field harus diisi.";
+    if (!data.namaWali)
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: msg, path: ["namaWali"] });
+    if (!data.hubunganWali)
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: msg, path: ["hubunganWali"] });
+    if (!data.noHpWali)
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: msg, path: ["noHpWali"] });
+  }
+}
+
+// Creation: all required fields enforced.
+export const patientRegistrationSchema = patientBaseObject.superRefine(guardianRefine);
+
+// Partial update: every field optional; guardian rule still applies if any wali field present.
+export const patientUpdateSchema = patientBaseObject.partial().superRefine(guardianRefine);
+
 export type PatientRegistrationInput = z.infer<typeof patientRegistrationSchema>;
+export type PatientUpdateInput = z.infer<typeof patientUpdateSchema>;
