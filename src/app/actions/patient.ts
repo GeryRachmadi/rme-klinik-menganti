@@ -25,14 +25,21 @@ export async function createPatient(
   for (let attempt = 0; attempt < 3; attempt++) {
     const now = new Date();
     const yyyymm = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-    const count = await prisma.patient.count({
-      where: { createdAt: { gte: monthStart, lt: monthEnd } },
+    // Find the highest sequence number for this month (survives deletions)
+    const lastPatient = await prisma.patient.findFirst({
+      where: { noRm: { startsWith: `RM-${yyyymm}-` } },
+      orderBy: { noRm: "desc" },
+      select: { noRm: true },
     });
 
-    const noRm = `RM-${yyyymm}-${String(count + 1 + attempt).padStart(4, "0")}`;
+    let nextSequence = 1;
+    if (lastPatient) {
+      const lastSequence = parseInt(lastPatient.noRm.split("-")[2], 10);
+      nextSequence = lastSequence + 1;
+    }
+
+    const noRm = `RM-${yyyymm}-${String(nextSequence + attempt).padStart(4, "0")}`;
 
     try {
       const patient = await prisma.patient.create({
