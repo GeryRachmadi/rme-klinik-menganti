@@ -7,19 +7,37 @@ import { handleZodError } from "@/lib/api-errors";
 import type { ApiResponse, PaginatedData } from "@/types/api";
 import type { Patient } from "@/generated/prisma";
 
-// GET /api/patients?page=1&limit=10
+// GET /api/patients?page=1&limit=6&search=xxx&jenisKelamin=LAKI_LAKI&jenisPasien=UMUM
 export async function GET(
   request: NextRequest
 ): Promise<NextResponse<ApiResponse<PaginatedData<Patient>>>> {
   const { searchParams } = request.nextUrl;
-  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
-  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "10", 10)));
-  const skip = (page - 1) * limit;
+  const page  = Math.max(1, parseInt(searchParams.get("page")  ?? "1",  10));
+  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "6", 10)));
+  const skip  = (page - 1) * limit;
+
+  const search        = searchParams.get("search")?.trim() ?? "";
+  const jenisKelamin  = searchParams.get("jenisKelamin") ?? "";
+  const jenisPasien   = searchParams.get("jenisPasien")  ?? "";
+
+  const where = {
+    ...(search && {
+      OR: [
+        { namaLengkap: { contains: search, mode: "insensitive" as const } },
+        { nik:         { contains: search               } },
+        { noRm:        { contains: search, mode: "insensitive" as const } },
+        { ihs:         { contains: search, mode: "insensitive" as const } },
+      ],
+    }),
+    ...(jenisKelamin && { jenisKelamin: jenisKelamin as Patient["jenisKelamin"] }),
+    ...(jenisPasien  && { jenisPasien:  jenisPasien  as Patient["jenisPasien"]  }),
+  };
 
   try {
     const [total, patients] = await Promise.all([
-      prisma.patient.count(),
+      prisma.patient.count({ where }),
       prisma.patient.findMany({
+        where,
         orderBy: { createdAt: "desc" },
         skip,
         take: limit,

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import {
   Search,
   Eye,
@@ -9,9 +10,13 @@ import {
   ChevronLeft,
   ChevronRight,
   UserPlus,
+  Loader2,
 } from "lucide-react";
 import { Patient } from "@/generated/prisma";
 import PatientRegistrationDrawer from "@/components/shared/PatientRegistrationDrawer";
+import PatientEditDrawer from "@/components/shared/PatientEditDrawer";
+import PatientDeleteModal from "@/components/shared/PatientDeleteModal";
+import type { ApiResponse, PaginatedData } from "@/types/api";
 
 function calcAge(dob: Date): number {
   const today = new Date();
@@ -21,7 +26,7 @@ function calcAge(dob: Date): number {
   return age;
 }
 
-const ITEMS_PER_PAGE = 6;
+const LIMIT = 6;
 
 function getPageNumbers(current: number, total: number): (number | "…")[] {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
@@ -31,46 +36,102 @@ function getPageNumbers(current: number, total: number): (number | "…")[] {
   return [1, "…", current - 1, current, current + 1, "…", total];
 }
 
-export default function DaftarPasien({ patients }: { patients: Patient[] }) {
+export default function DaftarPasien() {
+  const router = useRouter();
+
+  // ── Data state ──────────────────────────────────────────────────────────────
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [total, setTotal] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // ── Filter + pagination state ───────────────────────────────────────────────
+  const [searchQuery, setSearchQuery]           = useState("");
+  const [jenisKelaminFilter, setJenisKelaminFilter] = useState("");
+  const [jenisPasienFilter, setJenisPasienFilter]   = useState("");
+  const [currentPage, setCurrentPage]           = useState(1);
+
+  // ── Modal / drawer state ────────────────────────────────────────────────────
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [jenisKelaminFilter, setJenisKelaminFilter] = useState("Semua");
-  const [jenisPasienFilter, setJenisPasienFilter] = useState("Semua");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [isEditOpen,   setIsEditOpen]   = useState(false);
+  const [editPatient,  setEditPatient]  = useState<Patient | null>(null);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [deletePatient, setDeletePatient] = useState<Patient | null>(null);
 
-  const filtered = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
-    return patients.filter((p) => {
-      if (
-        q &&
-        !p.namaLengkap.toLowerCase().includes(q) &&
-        !p.nik.includes(q) &&
-        !p.noRm.toLowerCase().includes(q) &&
-        !(p.ihs?.toLowerCase().includes(q))
-      )
-        return false;
-      if (jenisKelaminFilter !== "Semua" && p.jenisKelamin !== jenisKelaminFilter)
-        return false;
-      if (jenisPasienFilter !== "Semua" && p.jenisPasien !== jenisPasienFilter)
-        return false;
-      return true;
-    });
-  }, [patients, searchQuery, jenisKelaminFilter, jenisPasienFilter]);
+  // ── Derived ─────────────────────────────────────────────────────────────────
+  const totalPages = Math.max(1, Math.ceil(total / LIMIT));
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
-  const safePage = Math.min(currentPage, totalPages);
-  const paginated = filtered.slice(
-    (safePage - 1) * ITEMS_PER_PAGE,
-    safePage * ITEMS_PER_PAGE
-  );
+  // ── Fetch from API ──────────────────────────────────────────────────────────
+  const fetchPatients = useCallback(async (
+    page: number,
+    search: string,
+    jenisKelamin: string,
+    jenisPasien: string,
+  ) => {
+    setIsLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page:  String(page),
+        limit: String(LIMIT),
+        ...(search       && { search }),
+        ...(jenisKelamin && { jenisKelamin }),
+        ...(jenisPasien  && { jenisPasien  }),
+      });
+      const res  = await fetch(`/api/patients?${params}`);
+      const json: ApiResponse<PaginatedData<Patient>> = await res.json();
+      if (json.success) {
+        setPatients(json.data.data);
+        setTotal(json.data.total);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-  function handleDropdownChange(setter: (v: string) => void) {
+  // Debounce search — fire immediately for non-search changes
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => {
+      fetchPatients(currentPage, searchQuery, jenisKelaminFilter, jenisPasienFilter);
+    }, searchQuery ? 300 : 0);
+    return () => { if (searchTimer.current) clearTimeout(searchTimer.current); };
+  }, [currentPage, searchQuery, jenisKelaminFilter, jenisPasienFilter, fetchPatients]);
+
+  // ── Handlers ─────────────────────────────────────────────────────────────────
+  function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1);
+  }
+
+  function handleFilterChange(setter: (v: string) => void) {
     return (e: React.ChangeEvent<HTMLSelectElement>) => {
       setter(e.target.value);
       setCurrentPage(1);
     };
   }
 
+  function handleEditOpen(patient: Patient) {
+    setEditPatient(patient);
+    setIsEditOpen(true);
+  }
+
+  function handleEditClose() {
+    setIsEditOpen(false);
+    setEditPatient(null);
+  }
+
+  function handleDeleteOpen(patient: Patient) {
+    setDeletePatient(patient);
+    setIsDeleteOpen(true);
+  }
+
+  function handleDeleteClose() {
+    setIsDeleteOpen(false);
+    setDeletePatient(null);
+  }
+
+  // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <div className="grid grid-cols-12 gap-6">
 
@@ -123,10 +184,7 @@ export default function DaftarPasien({ patients }: { patients: Patient[] }) {
                 placeholder="Cari Nama, NIK, IHS, atau No.RM..."
                 autoComplete="off"
                 value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setCurrentPage(1);
-                }}
+                onChange={handleSearchChange}
                 className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 bg-gray-50 placeholder-gray-300 outline-none focus:border-[#2BB5A0]"
                 style={{ fontFamily: "var(--font-jakarta)" }}
               />
@@ -142,11 +200,11 @@ export default function DaftarPasien({ patients }: { patients: Patient[] }) {
             </label>
             <select
               value={jenisKelaminFilter}
-              onChange={handleDropdownChange(setJenisKelaminFilter)}
+              onChange={handleFilterChange(setJenisKelaminFilter)}
               className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 bg-gray-50 outline-none appearance-none cursor-pointer focus:border-[#2BB5A0]"
               style={{ fontFamily: "var(--font-jakarta)" }}
             >
-              <option value="Semua">Semua</option>
+              <option value="">Semua</option>
               <option value="LAKI_LAKI">Laki-laki</option>
               <option value="PEREMPUAN">Perempuan</option>
             </select>
@@ -161,11 +219,11 @@ export default function DaftarPasien({ patients }: { patients: Patient[] }) {
             </label>
             <select
               value={jenisPasienFilter}
-              onChange={handleDropdownChange(setJenisPasienFilter)}
+              onChange={handleFilterChange(setJenisPasienFilter)}
               className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 bg-gray-50 outline-none appearance-none cursor-pointer focus:border-[#2BB5A0]"
               style={{ fontFamily: "var(--font-jakarta)" }}
             >
-              <option value="Semua">Semua</option>
+              <option value="">Semua</option>
               <option value="UMUM">UMUM</option>
               <option value="BPJS">BPJS</option>
             </select>
@@ -195,7 +253,13 @@ export default function DaftarPasien({ patients }: { patients: Patient[] }) {
             </tr>
           </thead>
           <tbody>
-            {paginated.length === 0 ? (
+            {isLoading ? (
+              <tr>
+                <td colSpan={6} className="py-16 text-center">
+                  <Loader2 size={20} strokeWidth={2} className="inline-block animate-spin text-gray-300" />
+                </td>
+              </tr>
+            ) : patients.length === 0 ? (
               <tr>
                 <td
                   colSpan={6}
@@ -206,7 +270,7 @@ export default function DaftarPasien({ patients }: { patients: Patient[] }) {
                 </td>
               </tr>
             ) : (
-              paginated.map((patient) => (
+              patients.map((patient) => (
                 <tr
                   key={patient.id}
                   className="border-b border-gray-50 last:border-0"
@@ -281,23 +345,21 @@ export default function DaftarPasien({ patients }: { patients: Patient[] }) {
                   <td className="py-4">
                     <div className="flex items-center gap-1">
                       <button
-                        onClick={() => console.log("View patient", patient.id)}
+                        onClick={() => router.push(`/riwayat-medis/${patient.noRm}`)}
                         className="cursor-pointer p-2 rounded-lg text-gray-400 hover:bg-blue-50 hover:text-blue-500 transition-colors"
                         title="Lihat rekam medis"
                       >
                         <Eye size={15} strokeWidth={2} />
                       </button>
                       <button
-                        onClick={() => console.log("Edit patient", patient.id)}
+                        onClick={() => handleEditOpen(patient)}
                         className="cursor-pointer p-2 rounded-lg text-gray-400 hover:bg-amber-50 hover:text-amber-500 transition-colors"
                         title="Edit data pasien"
                       >
                         <Pencil size={15} strokeWidth={2} />
                       </button>
                       <button
-                        onClick={() =>
-                          console.log("Delete patient", patient.id)
-                        }
+                        onClick={() => handleDeleteOpen(patient)}
                         className="cursor-pointer p-2 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
                         title="Hapus data pasien"
                       >
@@ -315,7 +377,7 @@ export default function DaftarPasien({ patients }: { patients: Patient[] }) {
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-1 mt-8">
             <button
-              disabled={safePage === 1}
+              disabled={currentPage === 1 || isLoading}
               onClick={() => setCurrentPage((p) => p - 1)}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               style={{ fontFamily: "var(--font-jakarta)" }}
@@ -324,7 +386,7 @@ export default function DaftarPasien({ patients }: { patients: Patient[] }) {
               Sebelum
             </button>
 
-            {getPageNumbers(safePage, totalPages).map((p, i) =>
+            {getPageNumbers(currentPage, totalPages).map((p, i) =>
               p === "…" ? (
                 <span
                   key={`ellipsis-${i}`}
@@ -337,14 +399,15 @@ export default function DaftarPasien({ patients }: { patients: Patient[] }) {
                 <button
                   key={p}
                   onClick={() => setCurrentPage(p as number)}
-                  className={`w-9 h-9 rounded-xl text-sm font-semibold transition-colors ${
-                    p === safePage
+                  disabled={isLoading}
+                  className={`w-9 h-9 rounded-xl text-sm font-semibold transition-colors disabled:cursor-not-allowed ${
+                    p === currentPage
                       ? "text-white"
                       : "text-gray-500 hover:bg-gray-50"
                   }`}
                   style={{
                     fontFamily: "var(--font-jakarta)",
-                    background: p === safePage ? "#2BB5A0" : undefined,
+                    background: p === currentPage ? "#2BB5A0" : undefined,
                   }}
                 >
                   {p}
@@ -353,7 +416,7 @@ export default function DaftarPasien({ patients }: { patients: Patient[] }) {
             )}
 
             <button
-              disabled={safePage === totalPages}
+              disabled={currentPage === totalPages || isLoading}
               onClick={() => setCurrentPage((p) => p + 1)}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               style={{ fontFamily: "var(--font-jakarta)" }}
@@ -369,7 +432,9 @@ export default function DaftarPasien({ patients }: { patients: Patient[] }) {
           className="text-center text-xs text-gray-300 mt-4"
           style={{ fontFamily: "var(--font-jakarta)" }}
         >
-          Menampilkan {paginated.length} dari {filtered.length} pasien
+          {isLoading
+            ? "Memuat data..."
+            : `Menampilkan ${patients.length} dari ${total} pasien`}
         </p>
       </div>
 
@@ -377,6 +442,19 @@ export default function DaftarPasien({ patients }: { patients: Patient[] }) {
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
         mode="manual"
+      />
+
+      <PatientEditDrawer
+        isOpen={isEditOpen}
+        onClose={handleEditClose}
+        patient={editPatient}
+      />
+
+      <PatientDeleteModal
+        isOpen={isDeleteOpen}
+        onClose={handleDeleteClose}
+        onConfirm={() => {}}
+        patient={deletePatient}
       />
     </div>
   );

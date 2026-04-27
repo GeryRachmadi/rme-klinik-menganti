@@ -134,9 +134,9 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 - TR-34 ✅ Buat halaman Rekam Medis UI
 - TR-35 ✅ Buat form Tambah Pasien Baru
 - TR-36 ✅ Validasi NIK 16 digit
-- TR-37 ⏳ Integrasi SATUSEHAT API auto-fill (postponted)
+- TR-37 ⏳ Integrasi SATUSEHAT API auto-fill (postponed)
 - TR-38 ✅ Fallback pendaftaran manual
-- TR-39 ⏳ API endpoint CRUD Patient
+- TR-39 ✅ API endpoint CRUD Patient
 
 ### TR-6 [UC-05] Daftar Kunjungan
 - TR-40 ⏳ Buat form Tambah Kunjungan Baru
@@ -195,3 +195,11 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 - TR-79 ⏳ Integrasi POST ke SATUSEHAT API
 - TR-80 ⏳ Error handling retry queue
 - TR-81 ⏳ Tombol Kirim Ulang retry
+
+## TR-101 [UC-13] Kelola Rekam Medis
+- TR-102 ✅ Setup action button handlers di Rekam Medis
+- TR-103 ⏳ Implementasi tombol View route ke UC-07
+- TR-104 ⏳ Implementasi tombol Edit patient
+- TR-105 ⏳ Implementasi tombol Delete patient
+- TR-106 ⏳ Integrasi dengan API endpoints
+- TR 107 ⏳ Error handling & validation
