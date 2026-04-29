@@ -11,27 +11,14 @@ const patientBaseObject = z.object({
     namaLengkap: z.string().min(1, "Nama lengkap wajib diisi"),
     tempatLahir: z.string().min(1, "Tempat lahir wajib diisi"),
 
-    // Coerced to Date via refinements; kept as string so RHF controlled
-    // inputs stay compatible without type-bridging gymnastics.
-    tanggalLahir: z
-      .string()
+    tanggalLahir: z.string({ message: "Tanggal lahir wajib diisi" })
       .min(1, "Tanggal lahir wajib diisi")
-      .refine(
-        (s) => !isNaN(new Date(s).getTime()),
-        "Format tanggal tidak valid"
-      )
-      .refine(
-        (s) => new Date(s) <= new Date(),
-        "Tanggal lahir tidak boleh di masa depan"
-      )
-      .refine((s) => {
-        const year = new Date(s).getFullYear();
-        return year >= 1000 && year <= 9999;
-      }, "Tahun lahir harus 4 digit")
-      .refine((s) => {
-        const ageYears =
-          (Date.now() - new Date(s).getTime()) /
-          (365.25 * 24 * 60 * 60 * 1000);
+      .transform((str) => new Date(str))
+      .refine((d) => !isNaN(d.getTime()), "Format tanggal tidak valid")
+      .refine((d) => d <= new Date(), "Tanggal lahir tidak boleh di masa depan")
+      .refine((d) => d.getFullYear() >= 1000 && d.getFullYear() <= 9999, "Tahun lahir harus 4 digit")
+      .refine((d) => {
+        const ageYears = (Date.now() - d.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
         return ageYears >= 0 && ageYears <= 150;
       }, "Umur harus antara 0 hingga 150 tahun"),
 
@@ -62,7 +49,7 @@ const patientBaseObject = z.object({
 
     // ── Pekerjaan & Kontak ─────────────────────────────────────────────────
     pekerjaan:  z.string().min(1, "Pekerjaan wajib diisi"),
-    perusahaan: z.string().optional(),
+    perusahaan: z.string().nullable().optional().transform(val => (val === "" || !val) ? null : val),
 
     noHp: z
       .string()
@@ -71,14 +58,14 @@ const patientBaseObject = z.object({
       .regex(/^\d+$/, "Nomor HP hanya boleh berisi angka"),
 
     // ── Data Wali (opsional — all-or-nothing rule below) ───────────────────
-    namaWali:     z.string().optional(),
-    hubunganWali: z.string().optional(),
-    noHpWali:     z.string().optional(),
+    namaWali:     z.string().nullable().optional().transform(val => (val === "" || !val) ? null : val),
+    hubunganWali: z.string().nullable().optional().transform(val => (val === "" || !val) ? null : val),
+    noHpWali:     z.string().nullable().optional().transform(val => (val === "" || !val) ? null : val),
   });
 
 // Reusable guardian superRefine: if ANY wali field is present, ALL must be present.
 function guardianRefine(
-  data: { namaWali?: string; hubunganWali?: string; noHpWali?: string },
+  data: { namaWali?: string | null; hubunganWali?: string | null; noHpWali?: string | null },
   ctx: z.RefinementCtx
 ) {
   const hasAny = data.namaWali || data.hubunganWali || data.noHpWali;
@@ -100,5 +87,7 @@ export const patientRegistrationSchema = patientBaseObject.superRefine(guardianR
 // Partial update: every field optional; guardian rule still applies if any wali field present.
 export const patientUpdateSchema = patientBaseObject.partial().superRefine(guardianRefine);
 
-export type PatientRegistrationInput = z.infer<typeof patientRegistrationSchema>;
-export type PatientUpdateInput = z.infer<typeof patientUpdateSchema>;
+export type PatientRegistrationOutput = z.output<typeof patientRegistrationSchema>;
+export type PatientRegistrationInput = z.input<typeof patientRegistrationSchema>;
+export type PatientUpdateOutput = z.output<typeof patientUpdateSchema>;
+export type PatientUpdateInput = z.input<typeof patientUpdateSchema>;

@@ -448,6 +448,7 @@ export default function DaftarPasien() {
         isOpen={isEditOpen}
         onClose={handleEditClose}
         patient={editPatient}
+        onSuccess={() => fetchPatients(currentPage, searchQuery, jenisKelaminFilter, jenisPasienFilter)}
       />
 
       <PatientDeleteModal

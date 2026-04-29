@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { X, ChevronDown, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { X, ChevronDown, CheckCircle2, Loader2 } from "lucide-react";
 import {
   patientRegistrationSchema,
   type PatientRegistrationInput,
+  type PatientRegistrationOutput,
 } from "@/lib/validations/patient";
 import type { Patient } from "@/generated/prisma";
 
@@ -15,6 +16,7 @@ interface PatientEditDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   patient: Patient | null;
+  onSuccess?: () => void;
 }
 
 function SectionTitle({ children, suffix }: { children: React.ReactNode; suffix?: React.ReactNode }) {
@@ -39,15 +41,19 @@ function toDateInput(d: Date | string): string {
   return new Date(d).toISOString().split("T")[0];
 }
 
-export default function PatientEditDrawer({ isOpen, onClose, patient }: PatientEditDrawerProps) {
+export default function PatientEditDrawer({ isOpen, onClose, patient, onSuccess }: PatientEditDrawerProps) {
   const router = useRouter();
   const [rendered, setRendered] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [toast, setToast] = useState<{ visible: boolean; type: "success" | "error"; message: string }>({
-    visible: false, type: "success", message: "",
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toast, setToast] = useState<{ visible: boolean; message: string; type: "success" | "error" }>({
+    visible: false, message: "", type: "success"
   });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Ref for namaLengkap — merged with RHF ref so we can focus it on open
+  const namaLengkapRef = useRef<HTMLInputElement | null>(null);
+
+  // Mount/unmount for drawer animation
   useEffect(() => {
     if (isOpen) setRendered(true);
     else {
@@ -56,41 +62,49 @@ export default function PatientEditDrawer({ isOpen, onClose, patient }: PatientE
     }
   }, [isOpen]);
 
+  // Focus namaLengkap after the slide-in animation completes
+  useEffect(() => {
+    if (!isOpen) return;
+    const t = setTimeout(() => namaLengkapRef.current?.focus(), 320);
+    return () => clearTimeout(t);
+  }, [isOpen]);
+
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
 
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isValid },
-  } = useForm<PatientRegistrationInput>({
+    setError,
+    formState: { errors, isValid, isDirty },
+  } = useForm<PatientRegistrationInput, any, PatientRegistrationOutput>({
     resolver: zodResolver(patientRegistrationSchema),
     mode: "onChange",
   });
 
-  // Pre-fill form whenever the patient changes (drawer opens with new patient)
+  // Pre-fill all fields whenever patient changes and drawer is open
   useEffect(() => {
     if (patient && isOpen) {
       reset({
-        nik: patient.nik,
-        namaLengkap: patient.namaLengkap,
-        tempatLahir: patient.tempatLahir,
-        tanggalLahir: toDateInput(patient.tanggalLahir),
-        jenisKelamin: patient.jenisKelamin as PatientRegistrationInput["jenisKelamin"],
-        agama: patient.agama as PatientRegistrationInput["agama"],
-        statusPernikahan: patient.statusPernikahan as PatientRegistrationInput["statusPernikahan"],
-        jenisPasien: patient.jenisPasien as PatientRegistrationInput["jenisPasien"],
-        alamatKtp: patient.alamatKtp,
-        provinsi: patient.provinsi,
-        kabupatenKota: patient.kabupatenKota,
-        kecamatan: patient.kecamatan,
-        desa: patient.desa,
-        pekerjaan: patient.pekerjaan,
-        perusahaan: patient.perusahaan ?? "",
-        noHp: patient.noHp,
-        namaWali: patient.namaWali ?? "",
-        hubunganWali: patient.hubunganWali ?? "",
-        noHpWali: patient.noHpWali ?? "",
+        nik:               patient.nik,
+        namaLengkap:       patient.namaLengkap,
+        tempatLahir:       patient.tempatLahir,
+        tanggalLahir:      toDateInput(patient.tanggalLahir),
+        jenisKelamin:      patient.jenisKelamin      as PatientRegistrationInput["jenisKelamin"],
+        agama:             patient.agama             as PatientRegistrationInput["agama"],
+        statusPernikahan:  patient.statusPernikahan  as PatientRegistrationInput["statusPernikahan"],
+        jenisPasien:       patient.jenisPasien       as PatientRegistrationInput["jenisPasien"],
+        alamatKtp:         patient.alamatKtp,
+        provinsi:          patient.provinsi,
+        kabupatenKota:     patient.kabupatenKota,
+        kecamatan:         patient.kecamatan,
+        desa:              patient.desa,
+        pekerjaan:         patient.pekerjaan,
+        perusahaan:        patient.perusahaan   ?? "",
+        noHp:              patient.noHp,
+        namaWali:          patient.namaWali     ?? "",
+        hubunganWali:      patient.hubunganWali ?? "",
+        noHpWali:          patient.noHpWali     ?? "",
       });
     }
   }, [patient, isOpen, reset]);
@@ -106,34 +120,61 @@ export default function PatientEditDrawer({ isOpen, onClose, patient }: PatientE
 
   function showToast(message: string, type: "success" | "error" = "success") {
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    setToast({ visible: true, type, message });
+    setToast({ visible: true, message, type });
     toastTimer.current = setTimeout(
       () => setToast((t) => ({ ...t, visible: false })),
       4000
     );
   }
 
-  async function onSubmit(data: PatientRegistrationInput) {
+  async function onSubmit(data: PatientRegistrationOutput) {
     if (!patient) return;
-    setIsLoading(true);
+
+    setIsSubmitting(true);
     try {
+      // Map empty optional strings → null before preparing the request body
+      const payload = {
+        ...data,
+        perusahaan:   data.perusahaan   || null,
+        namaWali:     data.namaWali     || null,
+        hubunganWali: data.hubunganWali || null,
+        noHpWali:     data.noHpWali     || null,
+      };
+
       const res = await fetch(`/api/patients/${patient.noRm}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
-      const json = await res.json();
-      if (res.ok) {
-        showToast(`Data pasien ${patient.noRm} berhasil diperbarui.`);
-        router.refresh();
-        setTimeout(() => onClose(), 1500);
-      } else {
-        showToast(json.message ?? "Gagal memperbarui data pasien.", "error");
+
+      const json = await res.json().catch(() => null); // Safely parse JSON in case of 502/504 HTML responses
+
+      if (!res.ok) {
+        // Handle specific 409 Conflict for NIK
+        if (res.status === 409 && json?.error?.toLowerCase().includes("nik")) {
+          setError("nik", { type: "server", message: json.error });
+          return; // Stop execution here so the toast doesn't also show
+        }
+        
+        // Throw general error for the catch block
+        throw new Error(json?.error || json?.message || "Gagal menyimpan perubahan ke server.");
       }
-    } catch {
-      showToast("Terjadi kesalahan. Coba lagi.", "error");
+
+      showToast("Data pasien berhasil diperbarui.", "success");
+      if (onSuccess) onSuccess();
+      // Delay unmounting slightly so the Next.js fetch doesn't get canceled
+      setTimeout(() => {
+        onClose();
+      }, 200);
+    } catch (error: any) {
+      // Handle "TypeError: Failed to fetch" (Network/Offline error)
+      if (error.message === "Failed to fetch") {
+        showToast("Koneksi terputus. Periksa jaringan internet Anda.", "error");
+      } else {
+        showToast(error.message || "Terjadi kesalahan tidak terduga.", "error");
+      }
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   }
 
@@ -144,6 +185,9 @@ export default function PatientEditDrawer({ isOpen, onClose, patient }: PatientE
   const cls = (err?: { message?: string }) =>
     err ? `${inputBase} border-red-400 focus:border-red-400` : `${inputBase} border-gray-200 focus:border-[#2BB5A0]`;
   const selCls = (err?: { message?: string }) => `${cls(err)} appearance-none cursor-pointer`;
+
+  // Merge RHF ref with our local namaLengkapRef
+  const { ref: rhfNamaRef, ...namaRest } = register("namaLengkap");
 
   return (
     <>
@@ -189,6 +233,21 @@ export default function PatientEditDrawer({ isOpen, onClose, patient }: PatientE
           <div className="space-y-4">
             <SectionTitle>Identitas Pasien</SectionTitle>
 
+            {/* No. Rekam Medis (read-only) */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                No. Rekam Medis{" "}
+                <span className="font-normal text-gray-400">(tidak dapat diubah)</span>
+              </label>
+              <input
+                type="text"
+                value={patient?.noRm ?? ""}
+                readOnly
+                tabIndex={-1}
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-100 bg-gray-100 text-sm text-gray-400 cursor-not-allowed select-none"
+              />
+            </div>
+
             {/* NIK */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">
@@ -216,7 +275,7 @@ export default function PatientEditDrawer({ isOpen, onClose, patient }: PatientE
               <FieldError message={errors.nik?.message} />
             </div>
 
-            {/* Nama Lengkap */}
+            {/* Nama Lengkap — autofocused on drawer open */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                 Nama Lengkap <span className="text-red-500">*</span>
@@ -225,7 +284,11 @@ export default function PatientEditDrawer({ isOpen, onClose, patient }: PatientE
                 type="text"
                 placeholder="Sesuai KTP"
                 autoComplete="off"
-                {...register("namaLengkap")}
+                ref={(el) => {
+                  rhfNamaRef(el);
+                  namaLengkapRef.current = el;
+                }}
+                {...namaRest}
                 className={cls(errors.namaLengkap)}
               />
               <FieldError message={errors.namaLengkap?.message} />
@@ -506,7 +569,7 @@ export default function PatientEditDrawer({ isOpen, onClose, patient }: PatientE
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Hubungan</label>
                 <div className="relative">
                   <select {...register("hubunganWali")} className={selCls(errors.hubunganWali)}>
-                    <option value="">Pilih hubungan...</option>
+                    <option value="">-- Tidak ada / Hapus Hubungan --</option>
                     <option value="Suami">Suami</option>
                     <option value="Istri">Istri</option>
                     <option value="Ayah">Ayah</option>
@@ -561,12 +624,18 @@ export default function PatientEditDrawer({ isOpen, onClose, patient }: PatientE
           <button
             type="submit"
             form="patient-edit-form"
-            disabled={isLoading || !isValid}
+            disabled={!isValid || !isDirty || isSubmitting}
             className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-70 disabled:cursor-not-allowed"
             style={{ background: "#2BB5A0" }}
           >
-            {isLoading && <Loader2 size={14} strokeWidth={2.5} className="animate-spin" />}
-            {isLoading ? "Menyimpan..." : "Simpan Perubahan"}
+            {isSubmitting ? (
+              <>
+                <Loader2 size={16} strokeWidth={2} className="animate-spin" />
+                Menyimpan...
+              </>
+            ) : (
+              "Simpan Perubahan"
+            )}
           </button>
         </div>
       </div>
@@ -574,13 +643,11 @@ export default function PatientEditDrawer({ isOpen, onClose, patient }: PatientE
       {/* Toast */}
       {toast.visible && (
         <div
-          className={`fixed bottom-6 right-6 z-[60] flex items-center gap-3 bg-white rounded-2xl shadow-lg px-5 py-3.5 border ${
-            toast.type === "error" ? "border-red-200" : "border-green-200"
-          }`}
+          className={`fixed bottom-6 right-6 z-[60] flex items-center gap-3 bg-white rounded-2xl shadow-lg px-5 py-3.5 border ${toast.type === "error" ? "border-red-200" : "border-green-200"}`}
           style={{ fontFamily: "var(--font-jakarta)" }}
         >
           {toast.type === "error" ? (
-            <AlertCircle size={18} strokeWidth={2} className="text-red-500 flex-shrink-0" />
+            <X size={18} strokeWidth={2} className="text-red-500 flex-shrink-0" />
           ) : (
             <CheckCircle2 size={18} strokeWidth={2} className="text-green-500 flex-shrink-0" />
           )}

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { patientUpdateSchema } from "@/lib/validations/patient";
 import { okResponse, errResponse } from "@/lib/api-response";
 import { handlePrismaError, handleZodError } from "@/lib/api-errors";
+import { auth } from "@/lib/auth";
 import type { ApiResponse } from "@/types/api";
 import type { Patient } from "@/generated/prisma";
 
@@ -12,6 +13,9 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse<ApiResponse<Patient>>> {
+  const session = await auth();
+  if (!session) return errResponse("Unauthorized", 401);
+
   const { id } = await params;
 
   try {
@@ -29,6 +33,15 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse<ApiResponse<Patient>>> {
+  const session = await auth();
+  if (!session) return errResponse("Unauthorized", 401);
+  
+  // Ensure only authorized roles can update
+  const allowedRoles = ["ADMIN", "PENDAFTARAN", "PERAWAT", "DOKTER"];
+  if (!allowedRoles.includes(session.user.role)) {
+    return errResponse("Forbidden", 403);
+  }
+
   const { id } = await params;
 
   // Validate body first — return 400 before any DB round-trip
@@ -89,15 +102,15 @@ export async function PUT(
         ...(data.kecamatan !== undefined && { kecamatan: data.kecamatan }),
         ...(data.desa !== undefined && { desa: data.desa }),
         ...(data.pekerjaan !== undefined && { pekerjaan: data.pekerjaan }),
-        ...(data.perusahaan !== undefined && { perusahaan: data.perusahaan.trim() || null }),
+        ...(data.perusahaan !== undefined && { perusahaan: data.perusahaan }),
         ...(data.noHp !== undefined && { noHp: data.noHp }),
-        ...(data.namaWali !== undefined && { namaWali: data.namaWali.trim() || null }),
-        ...(data.hubunganWali !== undefined && { hubunganWali: data.hubunganWali.trim() || null }),
-        ...(data.noHpWali !== undefined && { noHpWali: data.noHpWali.trim() || null }),
+        ...(data.namaWali !== undefined && { namaWali: data.namaWali }),
+        ...(data.hubunganWali !== undefined && { hubunganWali: data.hubunganWali }),
+        ...(data.noHpWali !== undefined && { noHpWali: data.noHpWali }),
       },
     });
 
-    revalidatePath("/rekam-medis");
+    revalidatePath("/", "layout");
     return okResponse(patient, "Pasien berhasil diperbarui.");
   } catch (err) {
     const { response, status } = handlePrismaError(err);
