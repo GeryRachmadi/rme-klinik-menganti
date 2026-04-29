@@ -8,6 +8,7 @@ import { X, ChevronDown, CheckCircle2, AlertCircle, Loader2, Sparkles, PencilLin
 import {
   patientRegistrationSchema,
   type PatientRegistrationInput,
+  type PatientRegistrationOutput,
 } from "@/lib/validations/patient";
 import { createPatient } from "@/app/actions/patient";
 
@@ -22,6 +23,7 @@ interface PatientRegistrationDrawerProps {
   onClose: () => void;
   mode?: "autofill" | "manual";
   satusehatData?: SatusehatData | null;
+  onSuccess?: () => void;
 }
 
 // ── Tiny presentational helpers (defined outside to avoid remounting) ─────────
@@ -63,6 +65,7 @@ export default function PatientRegistrationDrawer({
   isOpen,
   onClose,
   mode = "manual",
+  onSuccess
   // satusehatData,
 }: PatientRegistrationDrawerProps) {
   const satusehatData = null;  // Force fallback for testing
@@ -94,7 +97,7 @@ export default function PatientRegistrationDrawer({
     handleSubmit,
     reset,
     formState: { errors, isValid },
-  } = useForm<PatientRegistrationInput>({
+  } = useForm<PatientRegistrationInput, any, PatientRegistrationOutput>({
     resolver: zodResolver(patientRegistrationSchema),
     mode: "onChange",
     defaultValues: {
@@ -145,14 +148,20 @@ export default function PatientRegistrationDrawer({
     []
   );
 
-  async function onSubmit(data: PatientRegistrationInput) {
+  async function onSubmit(data: PatientRegistrationOutput) {
     setIsLoading(true);
     try {
-      const res = await createPatient(data);
+      const payload = {
+        ...data,
+        tanggalLahir: data.tanggalLahir.toISOString().split("T")[0], // Convert to "YYYY-MM-DD"
+      } as unknown as PatientRegistrationInput;
+
+      const res = await createPatient(payload);
       if (res.success) {
         showToast(`Pasien ${res.data.noRm} berhasil didaftar.`);
         reset();
         router.refresh();
+        onSuccess?.();
         setTimeout(() => onClose(), 1500);
       } else {
         showToast(res.error, "error");

@@ -441,6 +441,7 @@ export default function DaftarPasien() {
       <PatientRegistrationDrawer
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
+        onSuccess={() => fetchPatients(currentPage, searchQuery, jenisKelaminFilter, jenisPasienFilter)}
         mode="manual"
       />
 
@@ -454,8 +455,8 @@ export default function DaftarPasien() {
       <PatientDeleteModal
         isOpen={isDeleteOpen}
         onClose={handleDeleteClose}
-        onConfirm={() => {}}
         patient={deletePatient}
+        onSuccess={() => fetchPatients(currentPage, searchQuery, jenisKelaminFilter, jenisPasienFilter)}
       />
     </div>
   );

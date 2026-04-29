@@ -199,7 +199,7 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 ## TR-101 [UC-13] Kelola Rekam Medis
 - TR-102 ✅ Setup action button handlers di Rekam Medis
 - TR-103 ✅ Implementasi tombol View route ke UC-07
-- TR-104 ⏳ Implementasi tombol Edit patient
+- TR-104 ✅ Implementasi tombol Edit patient
 - TR-105 ⏳ Implementasi tombol Delete patient
 - TR-106 ⏳ Integrasi dengan API endpoints
 - TR 107 ⏳ Error handling & validation
