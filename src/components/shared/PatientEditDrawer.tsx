@@ -194,7 +194,7 @@ export default function PatientEditDrawer({ isOpen, onClose, patient, onSuccess 
       {/* Backdrop */}
       <div
         className={`fixed inset-0 bg-black/50 z-40 transition-opacity duration-300 ${isOpen ? "opacity-100" : "opacity-0"}`}
-        onClick={onClose}
+        onClick={isSubmitting ? undefined : onClose}
       />
 
       {/* Sliding Panel */}
@@ -215,6 +215,7 @@ export default function PatientEditDrawer({ isOpen, onClose, patient, onSuccess 
           <button
             type="button"
             onClick={onClose}
+            disabled={isSubmitting}
             className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors mt-0.5"
             title="Tutup"
           >
@@ -617,6 +618,7 @@ export default function PatientEditDrawer({ isOpen, onClose, patient, onSuccess 
           <button
             type="button"
             onClick={onClose}
+            disabled={isSubmitting}
             className="px-6 py-2.5 rounded-full text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors"
           >
             Batal

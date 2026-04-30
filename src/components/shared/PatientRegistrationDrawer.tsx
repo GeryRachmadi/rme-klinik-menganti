@@ -96,6 +96,7 @@ export default function PatientRegistrationDrawer({
     register,
     handleSubmit,
     reset,
+    setError,
     formState: { errors, isValid },
   } = useForm<PatientRegistrationInput, any, PatientRegistrationOutput>({
     resolver: zodResolver(patientRegistrationSchema),
@@ -164,9 +165,17 @@ export default function PatientRegistrationDrawer({
         onSuccess?.();
         setTimeout(() => onClose(), 1500);
       } else {
-        showToast(res.error, "error");
+        const errorMsg = res.error.toLowerCase();
+        if (errorMsg.includes("nik") || errorMsg.includes("terdaftar")) {
+          setError("nik", {type:"server", message: res.error});
+        } else {
+          showToast(res.error, "error");
+        }
       }
-    } finally {
+    } catch (error) {
+      showToast("Terjadi kesalahan sistem.", "error")
+    } 
+    finally {
       setIsLoading(false);
     }
   }
@@ -195,7 +204,7 @@ export default function PatientRegistrationDrawer({
         className={`fixed inset-0 bg-black/50 z-40 transition-opacity duration-300 ${
           isOpen ? "opacity-100" : "opacity-0"
         }`}
-        onClick={onClose}
+        onClick={isLoading ? undefined : onClose}
       />
 
       {/* Sliding Panel */}
@@ -221,6 +230,7 @@ export default function PatientRegistrationDrawer({
           <button
             type="button"
             onClick={onClose}
+            disabled={isLoading}
             className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors mt-0.5"
             title="Tutup"
           >
@@ -792,7 +802,8 @@ export default function PatientRegistrationDrawer({
           <button
             type="button"
             onClick={onClose}
-            className="px-6 py-2.5 rounded-full text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors"
+            disabled={isLoading}
+            className="px-6 py-2.5 rounded-full text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Batal
           </button>
