@@ -39,10 +39,10 @@ interface Pagination {
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 const roleBadge: Record<Role, { label: string; className: string }> = {
-  DOKTER:      { label: "DOKTER",      className: "bg-blue-50 text-blue-500"    },
-  PENDAFTARAN: { label: "PENDAFTARAN", className: "bg-purple-50 text-purple-500" },
-  PERAWAT:     { label: "PERAWAT",     className: "bg-green-50 text-green-600"  },
-  ADMIN:       { label: "ADMIN",       className: "bg-gray-100 text-gray-500"   },
+  ADMIN:      { label: "ADMIN",      className: "bg-purple-50 text-purple-500 border-purple-500"    },
+  DOKTER: { label: "DOKTER", className: "bg-green-50 text-[#2BB5A0] border-[#2BB5A0]" },
+  PERAWAT:     { label: "PERAWAT",     className: "bg-orange-50 text-orange-500 border-orange-500"  },
+  PENDAFTARAN: { label: "PENDAFTARAN", className: "bg-blue-50 text-blue-500 border-blue-500"   },
 };
 
 function displayName(account: Account): string {
@@ -467,7 +467,7 @@ export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
                   {/* ROLE Badge */}
                   <td className="py-4">
                     <span
-                      className={`inline-block px-3 py-1 rounded-full text-xs font-bold tracking-wide ${badge.className}`}
+                      className={`inline-block px-3 py-0.5 rounded-md text-[10px] font-bold tracking-wide border ${badge.className}`}
                       style={{ fontFamily: "var(--font-jakarta)" }}
                     >
                       {badge.label}

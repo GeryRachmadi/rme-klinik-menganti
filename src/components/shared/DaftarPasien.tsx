@@ -330,10 +330,10 @@ export default function DaftarPasien() {
                   {/* JENIS PASIEN Badge */}
                   <td className="py-4">
                     <span
-                      className={`inline-block px-3 py-1 rounded-full text-xs font-bold tracking-wide ${
+                      className={`inline-block px-3 py-0.5 rounded-md text-[10px] font-bold tracking-wide border ${
                         patient.jenisPasien === "UMUM"
-                          ? "bg-green-50 text-green-600"
-                          : "bg-blue-50 text-blue-500"
+                          ? "bg-green-50 text-[#2BB5A0] border-[#2BB5A0]"
+                          : "bg-blue-50 text-blue-500 border-blue-500"
                       }`}
                       style={{ fontFamily: "var(--font-jakarta)" }}
                     >
@@ -346,21 +346,21 @@ export default function DaftarPasien() {
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => router.push(`/riwayat-medis/${patient.noRm}`)}
-                        className="cursor-pointer p-2 rounded-lg text-gray-400 hover:bg-blue-50 hover:text-blue-500 transition-colors"
+                        className="cursor-pointer p-2 bg-gray-50 rounded-lg text-gray-400 hover:bg-blue-50 hover:text-blue-500 transition-colors"
                         title="Lihat rekam medis"
                       >
                         <Eye size={15} strokeWidth={2} />
                       </button>
                       <button
                         onClick={() => handleEditOpen(patient)}
-                        className="cursor-pointer p-2 rounded-lg text-gray-400 hover:bg-amber-50 hover:text-amber-500 transition-colors"
+                        className="cursor-pointer p-2 bg-gray-50 rounded-lg text-gray-400 hover:bg-amber-50 hover:text-amber-500 transition-colors"
                         title="Edit data pasien"
                       >
                         <Pencil size={15} strokeWidth={2} />
                       </button>
                       <button
                         onClick={() => handleDeleteOpen(patient)}
-                        className="cursor-pointer p-2 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                        className="cursor-pointer p-2 bg-gray-50 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
                         title="Hapus data pasien"
                       >
                         <Trash2 size={15} strokeWidth={2} />
