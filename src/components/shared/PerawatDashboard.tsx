@@ -155,7 +155,7 @@ export default function PerawatDashboard({
           className="flex-shrink-0 opacity-20 select-none"
           style={{ color: "#2BB5A0" }}
         >
-          <Stethoscope size={140} strokeWidth={0.75} />
+          <Stethoscope size={140} strokeWidth={2} />
         </div>
       </div>
 
