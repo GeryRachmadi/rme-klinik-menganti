@@ -2,48 +2,30 @@
 
 import { useState, useEffect } from "react";
 import { X, Search, CheckCircle2, User, ChevronDown } from "lucide-react";
+import { SectionTitle } from "@/components/ui/SectionTitle";
 
 interface EncounterRegistrationDrawerProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-// Dummy patient data for the summary card
+// Placeholder patient — will be replaced by live search results (TR-40 backend)
 const dummyPatient = {
   initials: "B",
   name: "Budi Santoso",
   gender: "Laki-laki",
   age: "36",
   noRm: "RM-202604-0001",
-  nik: "3515000000000001"
+  nik: "3515000000000001",
 };
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="flex items-center gap-2 mb-4">
-      <span
-        className="text-xs font-bold tracking-widest uppercase"
-        style={{ color: "#2BB5A0" }}
-      >
-        {children}
-      </span>
-    </p>
-  );
-}
-
-function PatientSummaryCard({
-  variant,
-}: {
-  variant: "success" | "disabled";
-}) {
+function PatientSummaryCard({ variant }: { variant: "success" | "disabled" }) {
   const isSuccess = variant === "success";
-  
+
   return (
     <div
       className={`flex items-start gap-4 p-4 rounded-xl border ${
-        isSuccess
-          ? "bg-[#E6F5F4] border-[#4DD9C0]/50"
-          : "bg-gray-50 border-gray-200"
+        isSuccess ? "bg-[#E6F5F4] border-[#4DD9C0]/50" : "bg-gray-50 border-gray-200"
       }`}
     >
       <div
@@ -55,20 +37,12 @@ function PatientSummaryCard({
       </div>
       <div className="flex-1">
         <div className="flex items-center gap-2">
-          <p
-            className={`font-bold ${
-              isSuccess ? "text-[#009E95]" : "text-gray-500"
-            }`}
-          >
+          <p className={`font-bold ${isSuccess ? "text-[#009E95]" : "text-gray-500"}`}>
             {dummyPatient.name}
           </p>
           {isSuccess && <CheckCircle2 size={16} className="text-[#2BB5A0]" />}
         </div>
-        <p
-          className={`text-xs mt-0.5 ${
-            isSuccess ? "text-[#2BB5A0]" : "text-gray-400"
-          }`}
-        >
+        <p className={`text-xs mt-0.5 ${isSuccess ? "text-[#2BB5A0]" : "text-gray-400"}`}>
           {dummyPatient.gender} • {dummyPatient.age} thn
         </p>
         <div className="flex items-center gap-3 mt-2">
@@ -81,11 +55,7 @@ function PatientSummaryCard({
           >
             RM: {dummyPatient.noRm}
           </span>
-          <span
-            className={`text-xs ${
-              isSuccess ? "text-[#2BB5A0]" : "text-gray-400"
-            }`}
-          >
+          <span className={`text-xs ${isSuccess ? "text-[#2BB5A0]" : "text-gray-400"}`}>
             NIK: {dummyPatient.nik}
           </span>
         </div>
@@ -106,7 +76,6 @@ export default function EncounterRegistrationDrawer({
   useEffect(() => {
     if (isOpen) {
       setRendered(true);
-      // Reset state when opening
       setIsFound(false);
       setSearchQuery("");
       setJenisPasien("UMUM");
@@ -145,7 +114,7 @@ export default function EncounterRegistrationDrawer({
         }`}
         style={{ fontFamily: "var(--font-jakarta)" }}
       >
-        {/* ── Header ──────────────────────────────────────────────────────── */}
+        {/* Header */}
         <div className="px-8 pt-8 pb-6 border-b border-gray-100 flex items-start justify-between flex-shrink-0">
           <div>
             <h2
@@ -168,47 +137,45 @@ export default function EncounterRegistrationDrawer({
           </button>
         </div>
 
-        {/* ── Body ────────────────────────────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto p-8 space-y-8">
-          {/* ── Section 1: CARI PASIEN ────────────────────────────────────── */}
-          <div>
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-8">
+          {/* Section 1: Cari Pasien */}
+          <div className="space-y-4">
             <SectionTitle>CARI PASIEN</SectionTitle>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  NIK atau Nama Lengkap Pasien
-                </label>
-                <div className="relative">
-                  <Search
-                    size={18}
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
-                    strokeWidth={2}
-                  />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={handleSearch}
-                    placeholder="Ketik lalu tekan Enter untuk mencari..."
-                    className={`${inputBase} pl-10`}
-                  />
-                </div>
-              </div>
 
-              {isFound && <PatientSummaryCard variant="success" />}
-
-              <div>
-                <button
-                  type="button"
-                  className="text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors cursor-pointer"
-                >
-                  Daftarkan Pasien tanpa NIK (Anak-anak/Lansia)?
-                </button>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                NIK atau Nama Lengkap Pasien
+              </label>
+              <div className="relative">
+                <Search
+                  size={18}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
+                  strokeWidth={2}
+                />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearch}
+                  autoComplete="off"
+                  placeholder="Ketik lalu tekan Enter untuk mencari..."
+                  className={`${inputBase} pl-10`}
+                />
               </div>
             </div>
+
+            {isFound && <PatientSummaryCard variant="success" />}
+
+            <button
+              type="button"
+              className="text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors cursor-pointer"
+            >
+              Daftarkan Pasien tanpa NIK (Anak-anak/Lansia)?
+            </button>
           </div>
 
-          {/* ── Section 2: DETAIL ENCOUNTER PASIEN ────────────────────────── */}
+          {/* Section 2: Detail Encounter */}
           {isFound && (
             <div className="space-y-6 pt-4 border-t border-gray-100">
               <SectionTitle>DETAIL ENCOUNTER PASIEN</SectionTitle>
@@ -216,16 +183,14 @@ export default function EncounterRegistrationDrawer({
               <PatientSummaryCard variant="disabled" />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Prioritas Pasien */}
+                {/* Prioritas */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                     Prioritas Pasien <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <select className={`${inputBase} appearance-none cursor-pointer`}>
-                      <option value="" disabled selected>
-                        Pilih prioritas...
-                      </option>
+                    <select defaultValue="" className={`${inputBase} appearance-none cursor-pointer`}>
+                      <option value="" disabled>Pilih prioritas...</option>
                       <option value="NORMAL">Normal (Sesuai Antrean)</option>
                       <option value="URGENT">Mendesak (Darurat)</option>
                     </select>
@@ -243,10 +208,8 @@ export default function EncounterRegistrationDrawer({
                     Poli Tujuan <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <select className={`${inputBase} appearance-none cursor-pointer`}>
-                      <option value="" disabled selected>
-                        Pilih poli...
-                      </option>
+                    <select defaultValue="" className={`${inputBase} appearance-none cursor-pointer`}>
+                      <option value="" disabled>Pilih poli...</option>
                       <option value="POLI_UMUM">Poli Umum</option>
                       <option value="POLI_GIGI">Poli Gigi</option>
                       <option value="KIA">KIA</option>
@@ -260,14 +223,14 @@ export default function EncounterRegistrationDrawer({
                 </div>
               </div>
 
-              {/* Dokter (ReadOnly) */}
+              {/* Dokter (ReadOnly — auto-assigned) */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   Dokter <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <User
-                    size={16}
+                    size={15}
                     className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
                     strokeWidth={2}
                   />
@@ -292,7 +255,7 @@ export default function EncounterRegistrationDrawer({
                 />
               </div>
 
-              {/* Jenis Pasien (Toggle) */}
+              {/* Jenis Pasien */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Jenis Pasien <span className="text-red-500">*</span>
@@ -338,7 +301,7 @@ export default function EncounterRegistrationDrawer({
           )}
         </div>
 
-        {/* ── Footer ──────────────────────────────────────────────────────── */}
+        {/* Footer */}
         <div className="border-t border-gray-100 px-8 py-5 flex justify-end gap-3 flex-shrink-0 bg-white">
           <button
             type="button"

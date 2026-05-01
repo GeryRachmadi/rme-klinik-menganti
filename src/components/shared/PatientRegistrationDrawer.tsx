@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { X, ChevronDown, CheckCircle2, AlertCircle, Loader2, Sparkles, PencilLine } from "lucide-react";
+import { SectionTitle } from "@/components/ui/SectionTitle";
 import {
   patientRegistrationSchema,
   type PatientRegistrationInput,
@@ -24,32 +25,6 @@ interface PatientRegistrationDrawerProps {
   mode?: "autofill" | "manual";
   satusehatData?: SatusehatData | null;
   onSuccess?: () => void;
-}
-
-// ── Tiny presentational helpers (defined outside to avoid remounting) ─────────
-
-function SectionTitle({
-  children,
-  suffix,
-}: {
-  children: React.ReactNode;
-  suffix?: React.ReactNode;
-}) {
-  return (
-    <p className="flex items-center gap-2">
-      <span
-        className="text-xs font-bold tracking-widest uppercase"
-        style={{ color: "#2BB5A0" }}
-      >
-        {children}
-      </span>
-      {suffix && (
-        <span className="text-xs font-normal tracking-widest uppercase text-gray-400">
-          {suffix}
-        </span>
-      )}
-    </p>
-  );
 }
 
 function FieldError({ message }: { message?: string }) {

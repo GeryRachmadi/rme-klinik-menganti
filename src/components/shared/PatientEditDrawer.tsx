@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, startTransition } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,25 +11,13 @@ import {
   type PatientRegistrationOutput,
 } from "@/lib/validations/patient";
 import type { Patient } from "@/generated/prisma";
+import { SectionTitle } from "@/components/ui/SectionTitle";
 
 interface PatientEditDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   patient: Patient | null;
   onSuccess?: () => void;
-}
-
-function SectionTitle({ children, suffix }: { children: React.ReactNode; suffix?: React.ReactNode }) {
-  return (
-    <p className="flex items-center gap-2">
-      <span className="text-xs font-bold tracking-widest uppercase" style={{ color: "#2BB5A0" }}>
-        {children}
-      </span>
-      {suffix && (
-        <span className="text-xs font-normal tracking-widest uppercase text-gray-400">{suffix}</span>
-      )}
-    </p>
-  );
 }
 
 function FieldError({ message }: { message?: string }) {

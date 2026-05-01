@@ -11,7 +11,9 @@
       "Bash(node -e \"console.log\\(require\\('./node_modules/zod/package.json'\\).version\\)\")",
       "Bash(npx prisma *)",
       "Bash(sed -n '85,95p' src/components/shared/DokterDashboard.tsx)",
-      "Bash(sed -n '85,95p' src/components/shared/PerawatDashboard.tsx)"
+      "Bash(sed -n '85,95p' src/components/shared/PerawatDashboard.tsx)",
+      "Bash(git diff *)",
+      "Bash(grep -v \"Binary\\\\|^$\")"
     ]
   }
 }
