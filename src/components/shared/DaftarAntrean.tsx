@@ -12,6 +12,7 @@ import {
   Loader2,
   Calendar,
 } from "lucide-react";
+import EncounterRegistrationDrawer from "@/components/shared/EncounterRegistrationDrawer";
 
 // --- TYPES ---
 type Prioritas = "Stabil" | "Cukup Berisiko" | "Berisiko" | "Berisiko Tinggi" | string;
@@ -42,6 +43,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
   // State untuk nyimpen data asli dari API
   const [antreanData, setAntreanData] = useState<AntreanData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAddEncounterOpen, setIsAddEncounterOpen] = useState(false);
 
   // State untuk filter
   const [searchQuery, setSearchQuery] = useState("");
@@ -121,7 +123,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
         </div>
         
         {isAuthorized && (
-          <button className="flex items-center gap-2 px-5 py-2.5 rounded-full text-white text-sm font-semibold hover:opacity-90 transition-opacity" style={{ background: "#2BB5A0", fontFamily: "var(--font-jakarta)" }} onClick={() => alert("Membuka form Tambah Kunjungan...")}>
+          <button className="flex items-center gap-2 px-5 py-2.5 rounded-full text-white text-sm font-semibold hover:opacity-90 transition-opacity" style={{ background: "#2BB5A0", fontFamily: "var(--font-jakarta)" }} onClick={() => setIsAddEncounterOpen(true)}>
             <UserPlus size={16} strokeWidth={2.5} />
             + Tambah Kunjungan Baru
           </button>
@@ -305,6 +307,14 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
           </div>
         )}
       </div>
+
+      {/* ... (kode pagination yang sudah ada) */}
+      
+      {/* Komponen Drawer Tambah Kunjungan */}
+      <EncounterRegistrationDrawer 
+        isOpen={isAddEncounterOpen} 
+        onClose={() => setIsAddEncounterOpen(false)} 
+      />
     </div>
   );
 }

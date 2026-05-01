@@ -147,11 +147,11 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 - TR-45 ⏳ API endpoint Encounter baru
 
 ### TR-7 [UC-06] Lihat Daftar Antrean
-- TR-46 ⏳ Buat halaman Rawat Jalan UI
-- TR-47 ⏳ Filter antrean
-- TR-48 ⏳ Role-based action Petugas Pendaftaran
-- TR-49 ⏳ Empty state dan error state
-- TR-50 ⏳ API endpoint fetch Encounter aktif
+- TR-46 ✅ Buat halaman Rawat Jalan UI
+- TR-47 ✅ Filter antrean
+- TR-48 ✅ Role-based action Petugas Pendaftaran
+- TR-49 ✅ Empty state dan error state
+- TR-50 ✅ API endpoint fetch Encounter aktif
 
 ### TR-8 [UC-07] Lihat Riwayat Medis
 - TR-51 ⏳ Buat halaman Riwayat Medis UI
@@ -202,4 +202,4 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 - TR-104 ✅ Implementasi tombol Edit patient
 - TR-105 ✅ Implementasi tombol Delete patient
 - TR-106 ✅ Integrasi dengan API endpoints
-- TR 107 ⏳ Error handling & validation
+- TR 107 ✅ Error handling & validation
