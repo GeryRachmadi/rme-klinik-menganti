@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Search,
   Eye,
@@ -66,26 +66,27 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
 
   const isAuthorized = userRole === "PENDAFTARAN" || userRole === "ADMIN";
 
-  useEffect(() => {
-    const fetchAntrean = async () => {
-      try {
-        setIsLoading(true);
-        const res = await fetch("/api/encounters");
-        const json = await res.json();
-        if (json.success) {
-          setAntreanData(json.data);
-        } else {
-          console.error("Gagal memuat antrean:", json.error);
-        }
-      } catch (error) {
-        console.error("Terjadi kesalahan jaringan:", error);
-      } finally {
-        setIsLoading(false);
+  const fetchAntrean = useCallback(async () => {
+    try {
+      const res = await fetch("/api/encounters");
+      const json = await res.json();
+      if (json.success) {
+        setAntreanData(json.data);
+      } else {
+        console.error("Gagal memuat antrean:", json.error);
       }
-    };
-
-    fetchAntrean();
+    } catch (error) {
+      console.error("Terjadi kesalahan jaringan:", error);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchAntrean();
+    const interval = setInterval(fetchAntrean, 5000);
+    return () => clearInterval(interval);
+  }, [fetchAntrean]);
 
   const filteredData = antreanData.filter((item) => {
     const matchSearch =
@@ -337,6 +338,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
       <EncounterRegistrationDrawer
         isOpen={isAddEncounterOpen}
         onClose={() => setIsAddEncounterOpen(false)}
+        onEncounterCreated={fetchAntrean}
       />
     </div>
   );

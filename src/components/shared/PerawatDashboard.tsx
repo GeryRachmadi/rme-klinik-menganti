@@ -495,7 +495,7 @@ export default function PerawatDashboard({
                 const initials = getInitials(enc.patient.namaLengkap);
                 const { bg, color } = getAvatarColor(enc.patient.namaLengkap);
                 const selesaiTime = formatWIB(enc.periodEnd ?? enc.updatedAt);
-                const poli = getPoliLabel(enc.queueNumber);
+                const poli = getPoliLabel(enc.queueNumber ?? "");
 
                 return (
                   <div key={enc.id} className="flex items-center gap-3 py-1">

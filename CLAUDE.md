@@ -100,7 +100,18 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 - Current progress: TR-35 Subtask 3 Done (UC-04 Patient Registration UI & Backend logic complete)
 - Next: TR-35 Subtask 4 (Migrate Daftar Pasien table to live Prisma data)
 
-## Jira Tickets Summary
+## LATEST REFACTORING (P2 Quality Polish)
+
+**Branch:** claude (merged from gemini)
+
+**Changes:**
+- Extracted SectionTitle → src/components/ui/SectionTitle.tsx (4 duplicates consolidated)
+- encounters/route.ts: Removed any types, moved formatTitleCase to module level
+- DaftarAntrean.tsx: Removed ~50 inline font styles, removed Indonesian comments, aligned badges to rounded-full
+- EncounterRegistrationDrawer.tsx: Fixed JSX (selected → defaultValue), aligned padding p-8 → p-6
+- PatientEditDrawer & PatientRegistrationDrawer: Removed unused imports, use shared SectionTitle
+
+**Status:** Code quality aligned. Ready for P0 logic implementation.
 
 ### TR-1 [SETUP] Project Infrastructure
 - TR-14 ✅ Setup Next.js project dengan TypeScript dan Tailwind CSS
@@ -139,7 +150,7 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 - TR-39 ✅ API endpoint CRUD Patient
 
 ### TR-6 [UC-05] Daftar Kunjungan
-- TR-40 ⏳ Buat form Tambah Kunjungan Baru
+- TR-40 ✅ Buat form Tambah Kunjungan Baru
 - TR-41 ⏳ Generate nomor antrean U- dan G-
 - TR-42 ⏳ Form detail kunjungan
 - TR-43 ⏳ Opsi pendaftaran tanpa NIK

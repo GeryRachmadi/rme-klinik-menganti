@@ -333,7 +333,7 @@ export default function PendaftaranDashboard({
                       className="py-3 text-sm text-gray-500"
                       style={{ fontFamily: "var(--font-jakarta)" }}
                     >
-                      {getPoliLabel(enc.queueNumber)}
+                      {getPoliLabel(enc.queueNumber ?? "")}
                     </td>
                     <td className="py-3">
                       <span

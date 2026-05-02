@@ -13,7 +13,16 @@
       "Bash(sed -n '85,95p' src/components/shared/DokterDashboard.tsx)",
       "Bash(sed -n '85,95p' src/components/shared/PerawatDashboard.tsx)",
       "Bash(git diff *)",
-      "Bash(grep -v \"Binary\\\\|^$\")"
+      "Bash(grep -v \"Binary\\\\|^$\")",
+      "Bash(sed -n '330,340p' src/components/shared/PendaftaranDashboard.tsx)",
+      "Bash(sed -n '493,500p' src/components/shared/PerawatDashboard.tsx)",
+      "Bash(npx tsx *)",
+      "Bash(npm run *)",
+      "Bash(curl *)",
+      "Bash(node -e ' *)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\('next-auth:', p.dependencies['next-auth']\\); console.log\\('next:', p.dependencies['next']\\);\")",
+      "Bash(dir \"C:\\\\Users\\\\Gery Rachmadi\\\\Documents\\\\akademik\\\\kuliah\\\\MataKuliah\\\\Semester8\\\\TA\\\\rme-klinik-menganti\" /a:h /b)",
+      "Bash(findstr env *)"
     ]
   }
 }

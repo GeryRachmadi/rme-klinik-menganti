@@ -116,19 +116,20 @@ model Patient {
 }
 
 model Encounter {
-  id            String   @id @default(cuid())
-  queueNumber   String   @unique
-  status        String   @default("MENUNGGU")
-  priority      String   @default("STABIL")
-  periodStart   DateTime @default(now())
+  id            String    @id @default(cuid())
+  queueNumber   String?                  // e.g. "U-001", "G-007" — null until assigned at registration
+  queueDate     DateTime? @db.Date       // DATE portion of registration day — scopes daily uniqueness
+  status        String    @default("MENUNGGU")
+  priority      String    @default("STABIL")
+  periodStart   DateTime  @default(now())
   periodEnd     DateTime?
   reasonCode    String?
-  patientType   String   @default("UMUM")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  patientType   String    @default("UMUM")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   patientId       String
-  patient         Patient      @relation(fields: [patientId], references: [id])
+  patient         Patient       @relation(fields: [patientId], references: [id])
   practitionerId  String?
   practitioner    Practitioner? @relation(fields: [practitionerId], references: [id])
 
@@ -138,6 +139,8 @@ model Encounter {
   serviceRequests     ServiceRequest[]
   medicationRequests  MedicationRequest[]
   syncQueues          SyncQueue[]
+
+  @@unique([queueNumber, queueDate])
 }
 
 // ============================================
