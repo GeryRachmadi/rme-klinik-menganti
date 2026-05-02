@@ -24,7 +24,7 @@ const POLI_TO_POLICY: Record<string, PolicyType> = {
 interface EncounterRegistrationDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  onEncounterCreated?: () => void;
+  onEncounterCreated?: () => Promise<void>;
 }
 
 // Placeholder patient — id and fields will come from live search results (TR-40 backend)
@@ -198,7 +198,7 @@ export default function EncounterRegistrationDrawer({
       }
 
       setSuccessQueueNumber(json.data.queueNumber);
-      onEncounterCreated?.();
+      await onEncounterCreated?.();
     } catch {
       showToast("Terjadi kesalahan tidak terduga. Silakan coba lagi.", "error");
     } finally {
@@ -337,8 +337,10 @@ export default function EncounterRegistrationDrawer({
                           className={`${inputBase} appearance-none cursor-pointer`}
                         >
                           <option value="" disabled>Pilih prioritas...</option>
-                          <option value="STABIL">Normal (Sesuai Antrean)</option>
-                          <option value="URGENT">Mendesak (Darurat)</option>
+                          <option value="Stabil">Stabil</option>
+                          <option value="Cukup Berisiko">Cukup Berisiko</option>
+                          <option value="Berisiko">Berisiko</option>
+                          <option value="Berisiko Tinggi">Berisiko Tinggi</option>
                         </select>
                         <ChevronDown
                           size={15}
