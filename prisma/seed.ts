@@ -65,10 +65,10 @@ async function main() {
   });
 
   const dokter = await prisma.account.upsert({
-    where: { username: "strange.practitioner" },
+    where: { username: "strange.doctor" },
     update: {},
     create: {
-      username: "strange.practitioner",
+      username: "strange.doctor",
       password: hashedPassword,
       role: "DOKTER",
       isActive: true,
