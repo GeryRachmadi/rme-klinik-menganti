@@ -12,6 +12,7 @@ import {
   ChevronDown,
   Loader2,
   Ticket,
+  UserX,
 } from "lucide-react";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { type PolicyType } from "@/lib/queue-utils";
@@ -113,6 +114,7 @@ export default function EncounterRegistrationDrawer({
   // Search
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchEmpty, setIsSearchEmpty] = useState(false);
 
   // Advanced Search
   const [isAdvancedSearch, setIsAdvancedSearch] = useState(false);
@@ -208,6 +210,7 @@ export default function EncounterRegistrationDrawer({
     if (!isOpen) {
       setSelectedPatient(null);
       setSearchQuery("");
+      setIsSearchEmpty(false);
       setIsAdvancedSearch(false);
       setAdvName("");
       setAdvRm("");
@@ -242,13 +245,16 @@ export default function EncounterRegistrationDrawer({
         const patientsArray = json.data?.data || (Array.isArray(json.data) ? json.data : []);
         if (res.ok && patientsArray.length > 0) {
           setSelectedPatient(patientsArray[0]);
+          setIsSearchEmpty(false);
         } else {
           showToast("Pasien tidak ditemukan.", "error");
           setSelectedPatient(null);
+          setIsSearchEmpty(true);
         }
       } catch (err) {
         showToast("Gagal mencari pasien.", "error");
         setSelectedPatient(null);
+        setIsSearchEmpty(true);
       }
     }
   }
@@ -273,13 +279,16 @@ export default function EncounterRegistrationDrawer({
       
       if (patientsArray.length > 0) {
         setSelectedPatient(patientsArray[0]);
+        setIsSearchEmpty(false);
       } else {
         showToast("Pasien tidak ditemukan.", "error");
         setSelectedPatient(null);
+        setIsSearchEmpty(true);
       }
     } catch (err) {
       showToast("Gagal melakukan pencarian spesifik.", "error");
       setSelectedPatient(null);
+      setIsSearchEmpty(true);
     }
   }
 
@@ -406,7 +415,7 @@ export default function EncounterRegistrationDrawer({
                         <input
                           type="text"
                           value={advName}
-                          onChange={(e) => setAdvName(e.target.value)}
+                          onChange={(e) => { setAdvName(e.target.value); setIsSearchEmpty(false); }}
                           autoComplete="off"
                           placeholder="Masukkan nama pasien"
                           className={inputBase}
@@ -419,7 +428,7 @@ export default function EncounterRegistrationDrawer({
                         <input
                           type="text"
                           value={advRm}
-                          onChange={(e) => setAdvRm(e.target.value)}
+                          onChange={(e) => { setAdvRm(e.target.value); setIsSearchEmpty(false); }}
                           autoComplete="off"
                           placeholder="Contoh: RM-2024..."
                           className={inputBase}
@@ -433,7 +442,7 @@ export default function EncounterRegistrationDrawer({
                       <input
                         type="date"
                         value={advDob}
-                        onChange={(e) => setAdvDob(e.target.value)}
+                        onChange={(e) => { setAdvDob(e.target.value); setIsSearchEmpty(false); }}
                         autoComplete="off"
                         className={inputBase}
                       />
@@ -471,7 +480,7 @@ export default function EncounterRegistrationDrawer({
                         <input
                           type="text"
                           value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
+                          onChange={(e) => { setSearchQuery(e.target.value); setIsSearchEmpty(false); }}
                           onKeyDown={handleSearch}
                           autoComplete="off"
                           placeholder="Ketik lalu tekan Enter untuk mencari..."
@@ -498,6 +507,26 @@ export default function EncounterRegistrationDrawer({
                       </button>
                     </div>
                   </>
+                )}
+
+                {isSearchEmpty && !selectedPatient && (
+                  <div className="flex flex-col items-center justify-center p-6 mt-4 rounded-xl border border-red-100 bg-red-50 text-center">
+                    <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm mb-3">
+                      <UserX size={24} className="text-red-400" />
+                    </div>
+                    <h3 className="text-sm font-bold text-red-800 mb-1">Pasien Tidak Ditemukan</h3>
+                    <p className="text-xs text-red-600 mb-4 max-w-[80%]">
+                      Data pasien tidak ditemukan di sistem. Silakan periksa kembali kata kunci pencarian atau daftarkan pasien baru.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setIsPatientDrawerOpen(true)}
+                      className="px-5 py-2 rounded-full text-xs font-semibold text-white transition-opacity"
+                      style={{ background: "#2BB5A0" }}
+                    >
+                      Daftarkan Pasien Baru
+                    </button>
+                  </div>
                 )}
 
                 {selectedPatient && <PatientSummaryCard variant="success" patient={selectedPatient} />}
