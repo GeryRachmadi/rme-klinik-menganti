@@ -81,6 +81,24 @@ async function main() {
     },
   });
 
+  const cynthia = await prisma.account.upsert({
+    where: { username: "cynthia.doctor" },
+    update: {},
+    create: {
+      username: "cynthia.doctor",
+      password: hashedPassword, 
+      role: "DOKTER",
+      isActive: true,
+      practitioner: {
+        create: {
+          name: "drg. Cynthia",
+          speciality: "Poli Gigi",
+        },
+      },
+    },
+  });
+  console.log("Upserted Doctor: cynthia.doctor");
+
   console.log("Seeded accounts:", {
     admin: admin.username,
     pendaftaran: pendaftaran.username,

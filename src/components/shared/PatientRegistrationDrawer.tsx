@@ -24,7 +24,8 @@ interface PatientRegistrationDrawerProps {
   onClose: () => void;
   mode?: "autofill" | "manual";
   satusehatData?: SatusehatData | null;
-  onSuccess?: () => void;
+  onSuccess?: (newPatient: any) => void;
+  defaultWithoutNik?: boolean;
 }
 
 function FieldError({ message }: { message?: string }) {
@@ -40,13 +41,15 @@ export default function PatientRegistrationDrawer({
   isOpen,
   onClose,
   mode = "manual",
-  onSuccess
+  onSuccess,
+  defaultWithoutNik = false,
   // satusehatData,
 }: PatientRegistrationDrawerProps) {
   const satusehatData = null;  // Force fallback for testing
   const router = useRouter();
   const [rendered, setRendered] = useState(false);
   const [activeMode, setActiveMode] = useState<"autofill" | "manual">(mode);
+  const [isWithoutNik, setIsWithoutNik] = useState(defaultWithoutNik);
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<{ visible: boolean; type: "success" | "error"; message: string }>({
     visible: false, type: "success", message: "",
@@ -58,6 +61,7 @@ export default function PatientRegistrationDrawer({
     if (isOpen) {
       setRendered(true);
       setActiveMode(mode);
+      setIsWithoutNik(defaultWithoutNik);
     } else {
       const t = setTimeout(() => setRendered(false), 300);
       return () => clearTimeout(t);
@@ -137,7 +141,7 @@ export default function PatientRegistrationDrawer({
         showToast(`Pasien ${res.data.noRm} berhasil didaftar.`);
         reset();
         router.refresh();
-        onSuccess?.();
+        onSuccess?.(res.data);
         setTimeout(() => onClose(), 1500);
       } else {
         const errorMsg = res.error.toLowerCase();
@@ -258,12 +262,28 @@ export default function PatientRegistrationDrawer({
 
             {/* NIK */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                NIK <span className="text-red-500">*</span>{" "}
-                <span className="font-normal text-gray-400">
-                  (Nomor Induk Kependudukan)
-                </span>
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-semibold text-gray-700">
+                  NIK {!isWithoutNik && <span className="text-red-500">*</span>}{" "}
+                  <span className="font-normal text-gray-400">
+                    (Nomor Induk Kependudukan)
+                  </span>
+                </label>
+                {activeMode === "manual" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsWithoutNik(!isWithoutNik);
+                      if (!isWithoutNik) {
+                        reset({ nik: "" });
+                      }
+                    }}
+                    className="text-xs font-medium text-blue-500 hover:text-blue-600"
+                  >
+                    {isWithoutNik ? "Punya NIK? Daftarkan dengan NIK" : "Daftarkan tanpa NIK?"}
+                  </button>
+                )}
+              </div>
               {activeMode === "autofill" ? (
                 <input
                   type="text"
@@ -273,6 +293,13 @@ export default function PatientRegistrationDrawer({
                   title="NIK tidak dapat diubah dalam mode Auto-fill"
                   {...register("nik")}
                   className={readonlyCls}
+                />
+              ) : isWithoutNik ? (
+                <input
+                  type="text"
+                  disabled
+                  placeholder="Mendaftar tanpa NIK (Otomatis dibuatkan sistem)"
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-100 text-sm text-gray-400 cursor-not-allowed"
                 />
               ) : (
                 <input
@@ -295,7 +322,7 @@ export default function PatientRegistrationDrawer({
                   className={cls(errors.nik)}
                 />
               )}
-              {activeMode === "manual" && (
+              {activeMode === "manual" && !isWithoutNik && (
                 <p className="mt-1 text-sm text-gray-500">Contoh: 3214041701234567</p>
               )}
               <FieldError message={errors.nik?.message} />

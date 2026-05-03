@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
-import { requireAdminRole } from "@/lib/auth";
+import { requireAdminRole, auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { okResponse, errResponse } from "@/lib/api-response";
 import { createAccountSchema } from "@/lib/validation";
@@ -28,22 +28,34 @@ const ACCOUNT_SELECT = {
 } as const;
 
 export async function GET(request: NextRequest) {
-  const authResult = await requireAdminRole();
-  if (!authResult.authorized) return errResponse(authResult.error, 403);
-
   const { searchParams } = request.nextUrl;
+  const role = searchParams.get("role")?.trim() ?? "";
+
+  // If requesting doctors specifically, just require basic authentication
+  // Otherwise, require full admin privileges
+  if (role === "DOKTER") {
+    const session = await auth();
+    if (!session) return errResponse("Akses ditolak: Tidak diizinkan.", 401);
+  } else {
+    const authResult = await requireAdminRole();
+    if (!authResult.authorized) return errResponse(authResult.error, 403);
+  }
+
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
   const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "10", 10)));
   const search = searchParams.get("search")?.trim() ?? "";
 
-  const where = search
-    ? {
-        OR: [
-          { username: { contains: search, mode: "insensitive" as const } },
-          { practitioner: { name: { contains: search, mode: "insensitive" as const } } },
-        ],
-      }
-    : {};
+  const where: any = {
+    ...(role ? { role } : {}),
+    ...(search
+      ? {
+          OR: [
+            { username: { contains: search, mode: "insensitive" as const } },
+            { practitioner: { name: { contains: search, mode: "insensitive" as const } } },
+          ],
+        }
+      : {}),
+  };
 
   const [total, accounts] = await Promise.all([
     prisma.account.count({ where }),
