@@ -110,13 +110,28 @@ export async function POST(req: Request) {
     const {
       patientId,
       policyType,
-      priority    = "STABIL",
-      reasonCode  = null,
-      patientType = "UMUM",
-      practitionerId = null,
+      priority,
+      reasonCode,
+      patientType,
+      practitionerId,
     } = body as Record<string, unknown>;
 
-    if (typeof patientId !== "string" || !patientId) {
+    // Validate that ALL required fields are present
+    if (
+      !patientId ||
+      !practitionerId ||
+      !policyType ||
+      !priority ||
+      !patientType ||
+      !reasonCode
+    ) {
+      return NextResponse.json(
+        { success: false, error: "Missing required fields." },
+        { status: 400 }
+      );
+    }
+
+    if (typeof patientId !== "string") {
       return NextResponse.json({ success: false, error: "patientId wajib diisi." }, { status: 400 });
     }
     if (typeof policyType !== "string" || !VALID_POLICY_TYPES.has(policyType as PolicyType)) {
@@ -156,11 +171,12 @@ export async function POST(req: Request) {
     // race — return 409 so the client can retry and get the next number.
     // Gaps from losing requests are acceptable.
     try {
-      const encounter = await prisma.encounter.create({
+      const newEncounter = await prisma.encounter.create({
         data: {
           queueNumber,
           queueDate,
-          status:     "MENUNGGU",
+          status:     "PLANNED", // Required for future SATUSEHAT compliance
+          // class:   "AMB",     // Required for future SATUSEHAT compliance (not yet in Prisma schema)
           priority:   typeof priority    === "string" ? priority    : "STABIL",
           reasonCode: typeof reasonCode  === "string" ? reasonCode  : null,
           patientType: typeof patientType === "string" ? patientType : "UMUM",
@@ -186,13 +202,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           success: true,
-          data: {
-            id:          encounter.id,
-            queueNumber: encounter.queueNumber,
-            status:      encounter.status,
-            patient:     encounter.patient,
-            practitioner: encounter.practitioner,
-          },
+          data: newEncounter,
         },
         { status: 201 }
       );
@@ -213,13 +223,13 @@ export async function POST(req: Request) {
           : err
       );
       return NextResponse.json(
-        { success: false, error: "Gagal membuat kunjungan, coba lagi." },
+        { success: false, error: "Internal server error" },
         { status: 500 }
       );
     }
 
   } catch (error) {
     console.error("[POST /api/encounters] Unexpected error:", error);
-    return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
   }
 }

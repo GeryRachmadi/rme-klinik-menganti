@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import {
   X,
   Search,
@@ -9,9 +12,11 @@ import {
   ChevronDown,
   Loader2,
   Ticket,
+  UserX,
 } from "lucide-react";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { type PolicyType } from "@/lib/queue-utils";
+import PatientRegistrationDrawer from "@/components/shared/PatientRegistrationDrawer";
 
 // Maps the Poli select value to the PolicyType accepted by generateQueueNumber.
 // KIA shares the Umum queue pool for now — extend when KIA gets its own prefix.
@@ -21,25 +26,41 @@ const POLI_TO_POLICY: Record<string, PolicyType> = {
   KIA:       "UMUM",
 };
 
+export const encounterRegistrationSchema = z.object({
+  policyType: z.enum(["UMUM", "GIGI"], {
+    error: "Poli Tujuan wajib dipilih."
+  }),
+  practitionerId: z.string().min(1, "Dokter wajib dipilih."),
+  priority: z.enum(["STABIL", "CUKUP_BERISIKO", "BERISIKO", "BERISIKO_TINGGI"], {
+    error: "Prioritas wajib dipilih."
+  }),
+  patientType: z.enum(["UMUM", "BPJS"], {
+    error: "Jenis Pasien wajib dipilih."
+  }),
+  reasonCode: z.string()
+    .trim()
+    .min(1, "Keluhan Utama wajib diisi.")
+    .max(500, "Keluhan Utama maksimal 500 karakter."),
+}).strict();
+
+export type EncounterRegistrationFormData = z.infer<typeof encounterRegistrationSchema>;
+
 interface EncounterRegistrationDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onEncounterCreated?: () => Promise<void>;
 }
 
-// Placeholder patient — id and fields will come from live search results (TR-40 backend)
-const dummyPatient = {
-  id:       "cmogv3h2q0000wcuxu4xj8x7c",
-  initials: "B",
-  name:     "Budi Santoso",
-  gender:   "Laki-laki",
-  age:      "36",
-  noRm:     "RM-202604-0001",
-  nik:      "3515000000000001",
-};
-
-function PatientSummaryCard({ variant }: { variant: "success" | "disabled" }) {
+function PatientSummaryCard({ variant, patient }: { variant: "success" | "disabled"; patient: any }) {
   const isSuccess = variant === "success";
+
+  if (!patient) return null;
+
+  const initials = patient.namaLengkap ? patient.namaLengkap.charAt(0).toUpperCase() : "?";
+  const age = patient.tanggalLahir
+    ? Math.floor((new Date().getTime() - new Date(patient.tanggalLahir).getTime()) / 3.15576e10)
+    : "?";
+  const gender = patient.jenisKelamin === "LAKI_LAKI" ? "Laki-laki" : "Perempuan";
 
   return (
     <div
@@ -52,17 +73,17 @@ function PatientSummaryCard({ variant }: { variant: "success" | "disabled" }) {
           isSuccess ? "bg-[#2BB5A0] text-white" : "bg-gray-200 text-gray-400"
         }`}
       >
-        {dummyPatient.initials}
+        {initials}
       </div>
       <div className="flex-1">
         <div className="flex items-center gap-2">
           <p className={`font-bold ${isSuccess ? "text-[#009E95]" : "text-gray-500"}`}>
-            {dummyPatient.name}
+            {patient.namaLengkap}
           </p>
           {isSuccess && <CheckCircle2 size={16} className="text-[#2BB5A0]" />}
         </div>
         <p className={`text-xs mt-0.5 ${isSuccess ? "text-[#2BB5A0]" : "text-gray-400"}`}>
-          {dummyPatient.gender} • {dummyPatient.age} thn
+          {gender} • {age} thn
         </p>
         <div className="flex items-center gap-3 mt-2">
           <span
@@ -72,10 +93,10 @@ function PatientSummaryCard({ variant }: { variant: "success" | "disabled" }) {
                 : "bg-white text-gray-500 border border-gray-200"
             }`}
           >
-            RM: {dummyPatient.noRm}
+            RM: {patient.noRm}
           </span>
           <span className={`text-xs ${isSuccess ? "text-[#2BB5A0]" : "text-gray-400"}`}>
-            NIK: {dummyPatient.nik}
+            NIK: {patient.nik}
           </span>
         </div>
       </div>
@@ -91,17 +112,41 @@ export default function EncounterRegistrationDrawer({
   const [rendered, setRendered] = useState(false);
 
   // Search
-  const [isFound, setIsFound]         = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchEmpty, setIsSearchEmpty] = useState(false);
 
-  // Form fields
-  const [selectedPoli,      setSelectedPoli]      = useState("");
-  const [selectedPrioritas, setSelectedPrioritas] = useState("");
-  const [keluhanUtama,      setKeluhanUtama]      = useState("");
-  const [jenisPasien,       setJenisPasien]       = useState<"UMUM" | "BPJS">("UMUM");
+  // Advanced Search
+  const [isAdvancedSearch, setIsAdvancedSearch] = useState(false);
+  const [advName, setAdvName] = useState("");
+  const [advRm, setAdvRm] = useState("");
+  const [advDob, setAdvDob] = useState("");
+
+  // Doctors (Placeholder for TR-42.3 actual fetch implementation)
+  const [practitioners, setPractitioners] = useState<any[]>([]);
+  const [isLoadingDoctors, setIsLoadingDoctors] = useState(false);
+
+  // New Patient Drawer
+  const [isPatientDrawerOpen, setIsPatientDrawerOpen] = useState(false);
+
+  // Form hook
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm<EncounterRegistrationFormData>({
+    resolver: zodResolver(encounterRegistrationSchema),
+    defaultValues: {
+      patientType: "UMUM",
+      reasonCode: "",
+      practitionerId: "",
+      priority: undefined,
+      policyType: undefined,
+    },
+  });
 
   // Submission
-  const [isSubmitting,      setIsSubmitting]      = useState(false);
   const [successQueueNumber, setSuccessQueueNumber] = useState<string | null>(null);
 
   // Toast
@@ -122,21 +167,60 @@ export default function EncounterRegistrationDrawer({
     }
   }, [isOpen]);
 
+  // Fetch Doctors
+  useEffect(() => {
+    if (isOpen) {
+      const fetchDoctors = async () => {
+        setIsLoadingDoctors(true);
+        try {
+          const res = await fetch("/api/accounts?role=DOKTER");
+          const json = await res.json();
+          
+          if (!res.ok) {
+            console.error("API Error:", json.error || "Failed to fetch doctors");
+            return;
+          }
+
+          // Extract the array from the paginated response
+          const accountList = json.data?.accounts || json.data || json.accounts || (Array.isArray(json) ? json : []);
+
+          if (!Array.isArray(accountList)) {
+            console.error("Expected an array of accounts, got:", accountList);
+            return;
+          }
+
+          // Filter accounts that have a practitioner profile, then extract just the practitioner object
+          const validDoctors = accountList
+            .filter((acc: any) => acc.practitioner)
+            .map((acc: any) => acc.practitioner);
+
+          setPractitioners(validDoctors);
+        } catch (error) {
+          console.error("Failed to fetch doctors:", error);
+        } finally {
+          setIsLoadingDoctors(false);
+        }
+      };
+      fetchDoctors();
+    }
+  }, [isOpen]);
+
   // Reset all state when drawer closes
   useEffect(() => {
     if (!isOpen) {
-      setIsFound(false);
+      setSelectedPatient(null);
       setSearchQuery("");
-      setSelectedPoli("");
-      setSelectedPrioritas("");
-      setKeluhanUtama("");
-      setJenisPasien("UMUM");
-      setIsSubmitting(false);
+      setIsSearchEmpty(false);
+      setIsAdvancedSearch(false);
+      setAdvName("");
+      setAdvRm("");
+      setAdvDob("");
+      reset();
       setSuccessQueueNumber(null);
       setToast((t) => ({ ...t, visible: false }));
       if (toastTimer.current) clearTimeout(toastTimer.current);
     }
-  }, [isOpen]);
+  }, [isOpen, reset]);
 
   // Cleanup toast timer on unmount
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
@@ -152,41 +236,79 @@ export default function EncounterRegistrationDrawer({
     );
   }
 
-  function handleSearch(e: React.KeyboardEvent<HTMLInputElement>) {
+  async function handleSearch(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter" && searchQuery.trim() !== "") {
       e.preventDefault();
-      setIsFound(true);
+      try {
+        const res = await fetch(`/api/patients?search=${encodeURIComponent(searchQuery)}`);
+        const json = await res.json();
+        const patientsArray = json.data?.data || (Array.isArray(json.data) ? json.data : []);
+        if (res.ok && patientsArray.length > 0) {
+          setSelectedPatient(patientsArray[0]);
+          setIsSearchEmpty(false);
+        } else {
+          showToast("Pasien tidak ditemukan.", "error");
+          setSelectedPatient(null);
+          setIsSearchEmpty(true);
+        }
+      } catch (err) {
+        showToast("Gagal mencari pasien.", "error");
+        setSelectedPatient(null);
+        setIsSearchEmpty(true);
+      }
     }
   }
 
-  async function handleSave() {
-    if (!isFound) {
+  async function handleAdvancedSearch() {
+    if (!advName.trim() && !advRm.trim() && !advDob.trim()) {
+      showToast("Isi minimal satu kolom pencarian.", "error");
+      return;
+    }
+    
+    const params = new URLSearchParams();
+    if (advName.trim()) params.append("name", advName.trim());
+    if (advRm.trim()) params.append("rm", advRm.trim());
+    if (advDob.trim()) params.append("dob", advDob.trim());
+
+    try {
+      const res = await fetch(`/api/patients?${params.toString()}`);
+      if (!res.ok) throw new Error("Search failed");
+      const json = await res.json();
+      
+      const patientsArray = json.data?.data || (Array.isArray(json.data) ? json.data : []);
+      
+      if (patientsArray.length > 0) {
+        setSelectedPatient(patientsArray[0]);
+        setIsSearchEmpty(false);
+      } else {
+        showToast("Pasien tidak ditemukan.", "error");
+        setSelectedPatient(null);
+        setIsSearchEmpty(true);
+      }
+    } catch (err) {
+      showToast("Gagal melakukan pencarian spesifik.", "error");
+      setSelectedPatient(null);
+      setIsSearchEmpty(true);
+    }
+  }
+
+  const onSubmit = async (data: EncounterRegistrationFormData) => {
+    if (!selectedPatient) {
       showToast("Cari dan pilih pasien terlebih dahulu.", "error");
       return;
     }
-    if (!selectedPoli) {
-      showToast("Pilih poli tujuan terlebih dahulu.", "error");
-      return;
-    }
-    if (!selectedPrioritas) {
-      showToast("Pilih prioritas pasien terlebih dahulu.", "error");
-      return;
-    }
 
-    const policyType = POLI_TO_POLICY[selectedPoli] ?? "UMUM";
-
-    setIsSubmitting(true);
     try {
       const res = await fetch("/api/encounters", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          patientId:      dummyPatient.id,
-          policyType,
-          priority:       selectedPrioritas,
-          patientType:    jenisPasien,
-          reasonCode:     keluhanUtama.trim() || null,
-          practitionerId: null,
+          patientId:      selectedPatient.id,
+          policyType:     data.policyType,
+          priority:       data.priority,
+          patientType:    data.patientType,
+          reasonCode:     data.reasonCode || null,
+          practitionerId: data.practitionerId,
         }),
       });
 
@@ -201,10 +323,8 @@ export default function EncounterRegistrationDrawer({
       await onEncounterCreated?.();
     } catch {
       showToast("Terjadi kesalahan tidak terduga. Silakan coba lagi.", "error");
-    } finally {
-      setIsSubmitting(false);
     }
-  }
+  };
 
   const inputBase =
     "w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-700 placeholder-gray-300 outline-none focus:bg-white focus:border-[#2BB5A0] transition-colors";
@@ -271,7 +391,7 @@ export default function EncounterRegistrationDrawer({
                 </p>
               </div>
 
-              <PatientSummaryCard variant="success" />
+              <PatientSummaryCard variant="success" patient={selectedPatient} />
 
               <p className="text-xs text-gray-400 text-center max-w-xs">
                 Informasikan nomor antrean ini kepada pasien dan minta untuk menunggu
@@ -280,49 +400,144 @@ export default function EncounterRegistrationDrawer({
             </div>
           ) : (
             /* ── Form ─────────────────────────────────────────────────────── */
-            <div className="space-y-8">
+            <form id="encounter-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8">
               {/* Section 1: Cari Pasien */}
               <div className="space-y-4">
                 <SectionTitle>CARI PASIEN</SectionTitle>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                    NIK atau Nama Lengkap Pasien
-                  </label>
-                  <div className="relative">
-                    <Search
-                      size={18}
-                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
-                      strokeWidth={2}
-                    />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyDown={handleSearch}
-                      autoComplete="off"
-                      placeholder="Ketik lalu tekan Enter untuk mencari..."
-                      className={`${inputBase} pl-10`}
-                    />
+                {isAdvancedSearch ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                          Nama Pasien
+                        </label>
+                        <input
+                          type="text"
+                          value={advName}
+                          onChange={(e) => { setAdvName(e.target.value); setIsSearchEmpty(false); }}
+                          autoComplete="off"
+                          placeholder="Masukkan nama pasien"
+                          className={inputBase}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                          No. Rekam Medis
+                        </label>
+                        <input
+                          type="text"
+                          value={advRm}
+                          onChange={(e) => { setAdvRm(e.target.value); setIsSearchEmpty(false); }}
+                          autoComplete="off"
+                          placeholder="Contoh: RM-2024..."
+                          className={inputBase}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                        Tanggal Lahir
+                      </label>
+                      <input
+                        type="date"
+                        value={advDob}
+                        onChange={(e) => { setAdvDob(e.target.value); setIsSearchEmpty(false); }}
+                        autoComplete="off"
+                        className={inputBase}
+                      />
+                    </div>
+                    <div className="flex items-center gap-3 mt-2">
+                      <button
+                        type="button"
+                        onClick={handleAdvancedSearch}
+                        className="px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity"
+                        style={{ background: "#2BB5A0" }}
+                      >
+                        Cari Pasien
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsAdvancedSearch(false)}
+                        className="text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
+                      >
+                        Kembali ke Pencarian NIK
+                      </button>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                        NIK atau Nama Lengkap Pasien
+                      </label>
+                      <div className="relative">
+                        <Search
+                          size={18}
+                          className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
+                          strokeWidth={2}
+                        />
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => { setSearchQuery(e.target.value); setIsSearchEmpty(false); }}
+                          onKeyDown={handleSearch}
+                          autoComplete="off"
+                          placeholder="Ketik lalu tekan Enter untuk mencari..."
+                          className={`${inputBase} pl-10`}
+                        />
+                      </div>
+                    </div>
 
-                {isFound && <PatientSummaryCard variant="success" />}
+                    <div className="flex items-center justify-between mt-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsAdvancedSearch(true)}
+                        className="text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors cursor-pointer"
+                      >
+                        Pencarian Spesifik (Nama / No. RM)?
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={() => setIsPatientDrawerOpen(true)}
+                        className="text-sm font-semibold text-[#2BB5A0] hover:text-[#009E95] transition-colors cursor-pointer"
+                      >
+                        + Tambah Pasien Baru
+                      </button>
+                    </div>
+                  </>
+                )}
 
-                <button
-                  type="button"
-                  className="text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors cursor-pointer"
-                >
-                  Daftarkan Pasien tanpa NIK (Anak-anak/Lansia)?
-                </button>
+                {isSearchEmpty && !selectedPatient && (
+                  <div className="flex flex-col items-center justify-center p-6 mt-4 rounded-xl border border-red-100 bg-red-50 text-center">
+                    <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm mb-3">
+                      <UserX size={24} className="text-red-400" />
+                    </div>
+                    <h3 className="text-sm font-bold text-red-800 mb-1">Pasien Tidak Ditemukan</h3>
+                    <p className="text-xs text-red-600 mb-4 max-w-[80%]">
+                      Data pasien tidak ditemukan di sistem. Silakan periksa kembali kata kunci pencarian atau daftarkan pasien baru.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setIsPatientDrawerOpen(true)}
+                      className="px-5 py-2 rounded-full text-xs font-semibold text-white transition-opacity"
+                      style={{ background: "#2BB5A0" }}
+                    >
+                      Daftarkan Pasien Baru
+                    </button>
+                  </div>
+                )}
+
+                {selectedPatient && <PatientSummaryCard variant="success" patient={selectedPatient} />}
               </div>
 
               {/* Section 2: Detail Encounter */}
-              {isFound && (
+              {selectedPatient && (
                 <div className="space-y-6 pt-4 border-t border-gray-100">
                   <SectionTitle>DETAIL ENCOUNTER PASIEN</SectionTitle>
 
-                  <PatientSummaryCard variant="disabled" />
+                  <PatientSummaryCard variant="disabled" patient={selectedPatient} />
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Prioritas */}
@@ -330,24 +545,33 @@ export default function EncounterRegistrationDrawer({
                       <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                         Prioritas Pasien <span className="text-red-500">*</span>
                       </label>
-                      <div className="relative">
-                        <select
-                          value={selectedPrioritas}
-                          onChange={(e) => setSelectedPrioritas(e.target.value)}
-                          className={`${inputBase} appearance-none cursor-pointer`}
-                        >
-                          <option value="" disabled>Pilih prioritas...</option>
-                          <option value="Stabil">Stabil</option>
-                          <option value="Cukup Berisiko">Cukup Berisiko</option>
-                          <option value="Berisiko">Berisiko</option>
-                          <option value="Berisiko Tinggi">Berisiko Tinggi</option>
-                        </select>
-                        <ChevronDown
-                          size={15}
-                          strokeWidth={2}
-                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                        />
-                      </div>
+                      <Controller
+                        name="priority"
+                        control={control}
+                        render={({ field }) => (
+                          <>
+                            <div className="relative">
+                              <select
+                                {...field}
+                                value={field.value || ""}
+                                className={`${inputBase} appearance-none cursor-pointer ${errors.priority ? "border-red-500" : "border-gray-200 focus:border-[#2BB5A0]"}`}
+                              >
+                                <option value="" disabled>Pilih prioritas...</option>
+                                <option value="STABIL">Stabil</option>
+                                <option value="CUKUP_BERISIKO">Cukup Berisiko</option>
+                                <option value="BERISIKO">Berisiko</option>
+                                <option value="BERISIKO_TINGGI">Berisiko Tinggi</option>
+                              </select>
+                              <ChevronDown
+                                size={15}
+                                strokeWidth={2}
+                                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                              />
+                            </div>
+                            {errors.priority && <p className="text-red-500 text-xs mt-1">{errors.priority.message}</p>}
+                          </>
+                        )}
+                      />
                     </div>
 
                     {/* Poli Tujuan */}
@@ -355,44 +579,76 @@ export default function EncounterRegistrationDrawer({
                       <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                         Poli Tujuan <span className="text-red-500">*</span>
                       </label>
-                      <div className="relative">
-                        <select
-                          value={selectedPoli}
-                          onChange={(e) => setSelectedPoli(e.target.value)}
-                          className={`${inputBase} appearance-none cursor-pointer`}
-                        >
-                          <option value="" disabled>Pilih poli...</option>
-                          <option value="POLI_UMUM">Poli Umum</option>
-                          <option value="POLI_GIGI">Poli Gigi</option>
-                          <option value="KIA">KIA</option>
-                        </select>
-                        <ChevronDown
-                          size={15}
-                          strokeWidth={2}
-                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                        />
-                      </div>
+                      <Controller
+                        name="policyType"
+                        control={control}
+                        render={({ field }) => (
+                          <>
+                            <div className="relative">
+                              <select
+                                {...field}
+                                value={field.value || ""}
+                                className={`${inputBase} appearance-none cursor-pointer ${errors.policyType ? "border-red-500" : "border-gray-200 focus:border-[#2BB5A0]"}`}
+                              >
+                                <option value="" disabled>Pilih poli...</option>
+                                <option value="UMUM">Poli Umum</option>
+                                <option value="GIGI">Poli Gigi</option>
+                              </select>
+                              <ChevronDown
+                                size={15}
+                                strokeWidth={2}
+                                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                              />
+                            </div>
+                            {errors.policyType && <p className="text-red-500 text-xs mt-1">{errors.policyType.message}</p>}
+                          </>
+                        )}
+                      />
                     </div>
                   </div>
 
-                  {/* Dokter (ReadOnly — auto-assigned) */}
+                  {/* Dokter */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                       Dokter <span className="text-red-500">*</span>
                     </label>
-                    <div className="relative">
-                      <User
-                        size={15}
-                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
-                        strokeWidth={2}
-                      />
-                      <input
-                        type="text"
-                        readOnly
-                        value="Dr. Strange (Otomatis)"
-                        className={`${inputBase} pl-10 bg-gray-100 text-gray-500 cursor-not-allowed`}
-                      />
-                    </div>
+                    <Controller
+                      name="practitionerId"
+                      control={control}
+                      render={({ field }) => (
+                        <>
+                          <div className="relative">
+                            <User
+                              size={15}
+                              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 z-10"
+                              strokeWidth={2}
+                            />
+                            <select
+                              {...field}
+                              disabled={isLoadingDoctors}
+                              className={`${inputBase} pl-10 appearance-none cursor-pointer ${errors.practitionerId ? "border-red-500" : "border-gray-200 focus:border-[#2BB5A0]"}`}
+                            >
+                              <option value="" disabled>
+                                {isLoadingDoctors 
+                                  ? "Memuat dokter..." 
+                                  : practitioners.length === 0 
+                                    ? "Tidak ada dokter tersedia" 
+                                    : "Pilih Dokter..."}
+                              </option>
+                              {practitioners.map((p) => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                              ))}
+                            </select>
+                            <ChevronDown
+                              size={15}
+                              strokeWidth={2}
+                              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                            />
+                          </div>
+                          {errors.practitionerId && <p className="text-red-500 text-xs mt-1">{errors.practitionerId.message}</p>}
+                        </>
+                      )}
+                    />
                   </div>
 
                   {/* Keluhan Utama */}
@@ -400,12 +656,21 @@ export default function EncounterRegistrationDrawer({
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                       Keluhan Utama <span className="text-red-500">*</span>
                     </label>
-                    <textarea
-                      value={keluhanUtama}
-                      onChange={(e) => setKeluhanUtama(e.target.value)}
-                      placeholder="Deskripsikan keluhan utama pasien..."
-                      rows={3}
-                      className={`${inputBase} resize-none`}
+                    <Controller
+                      name="reasonCode"
+                      control={control}
+                      render={({ field }) => (
+                        <>
+                          <textarea
+                            {...field}
+                            value={field.value || ""}
+                            placeholder="Deskripsikan keluhan utama pasien..."
+                            rows={3}
+                            className={`${inputBase} resize-none ${errors.reasonCode ? "border-red-500" : "border-gray-200 focus:border-[#2BB5A0]"}`}
+                          />
+                          {errors.reasonCode && <p className="text-red-500 text-xs mt-1">{errors.reasonCode.message}</p>}
+                        </>
+                      )}
                     />
                   </div>
 
@@ -414,46 +679,41 @@ export default function EncounterRegistrationDrawer({
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Jenis Pasien <span className="text-red-500">*</span>
                     </label>
-                    <div className="flex gap-3">
-                      <label
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 border rounded-xl cursor-pointer transition-colors ${
-                          jenisPasien === "UMUM"
-                            ? "bg-[#E6F5F4] border-[#2BB5A0] text-[#009E95]"
-                            : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="jenisPasien"
-                          value="UMUM"
-                          checked={jenisPasien === "UMUM"}
-                          onChange={() => setJenisPasien("UMUM")}
-                          className="sr-only"
-                        />
-                        <span className="font-semibold text-sm">Umum</span>
-                      </label>
-                      <label
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 border rounded-xl cursor-pointer transition-colors ${
-                          jenisPasien === "BPJS"
-                            ? "bg-blue-50 border-blue-500 text-blue-600"
-                            : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="jenisPasien"
-                          value="BPJS"
-                          checked={jenisPasien === "BPJS"}
-                          onChange={() => setJenisPasien("BPJS")}
-                          className="sr-only"
-                        />
-                        <span className="font-semibold text-sm">BPJS Kesehatan</span>
-                      </label>
-                    </div>
+                    <Controller
+                      name="patientType"
+                      control={control}
+                      render={({ field }) => (
+                        <>
+                          <div className="flex gap-3">
+                            <label
+                              onClick={() => field.onChange("UMUM")}
+                              className={`flex-1 flex items-center justify-center gap-2 py-3 border rounded-xl cursor-pointer transition-colors ${
+                                field.value === "UMUM"
+                                  ? "bg-[#E6F5F4] border-[#2BB5A0] text-[#009E95]"
+                                  : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
+                              }`}
+                            >
+                              <span className="font-semibold text-sm">Umum</span>
+                            </label>
+                            <label
+                              onClick={() => field.onChange("BPJS")}
+                              className={`flex-1 flex items-center justify-center gap-2 py-3 border rounded-xl cursor-pointer transition-colors ${
+                                field.value === "BPJS"
+                                  ? "bg-blue-50 border-blue-500 text-blue-600"
+                                  : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
+                              }`}
+                            >
+                              <span className="font-semibold text-sm">BPJS Kesehatan</span>
+                            </label>
+                          </div>
+                          {errors.patientType && <p className="text-red-500 text-xs mt-1">{errors.patientType.message}</p>}
+                        </>
+                      )}
+                    />
                   </div>
                 </div>
               )}
-            </div>
+            </form>
           )}
         </div>
 
@@ -479,9 +739,9 @@ export default function EncounterRegistrationDrawer({
                 Batal
               </button>
               <button
-                type="button"
-                onClick={handleSave}
-                disabled={isSubmitting || !isFound}
+                type="submit"
+                form="encounter-form"
+                disabled={isSubmitting || !selectedPatient}
                 className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ background: "#2BB5A0" }}
               >
@@ -515,6 +775,35 @@ export default function EncounterRegistrationDrawer({
           <p className="text-sm text-gray-700 font-medium">{toast.message}</p>
         </div>
       )}
+
+      <PatientRegistrationDrawer
+        isOpen={isPatientDrawerOpen}
+        onClose={() => setIsPatientDrawerOpen(false)}
+        mode="manual"
+        defaultWithoutNik={true}
+        onSuccess={async (newPatient) => {
+          // 1. Tutup drawer pendaftaran pasien biar tampilannya smooth
+          setIsPatientDrawerOpen(false);
+          try {
+            // 2. Tarik data pasien yang baru dibuat untuk ditaruh di state
+            const res = await fetch(`/api/patients?rm=${newPatient.noRm}`);
+            const json = await res.json();
+            
+            // Ekstrak array pasiennya seperti biasa
+            const patientsArray = json.data?.data || (Array.isArray(json.data) ? json.data : []);
+
+            if (patientsArray.length > 0) {
+              // 3. Set data pasien LENGKAP ke state
+              setSelectedPatient(patientsArray[0]);
+              showToast("Pasien otomatis dipilih, silakan lanjut isi kunjungan.", "success");
+            } else {
+              showToast("Pasien berhasil didaftar, tapi gagal memuat otomatis.", "error");
+            }
+          } catch (error) {
+            showToast("Terjadi kesalahan saat menarik data pasien baru.", "error");
+          }
+        }}
+      />
     </>
   );
 }

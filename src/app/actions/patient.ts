@@ -11,8 +11,13 @@ export type CreatePatientResponse =
 export async function createPatient(
   data: PatientRegistrationInput
 ): Promise<CreatePatientResponse> {
+  let finalNik = data.nik?.trim() || "";
+  if (!finalNik) {
+    finalNik = `NONIK-${Date.now()}`;
+  }
+
   const existingPatient = await prisma.patient.findUnique({
-    where: { nik: data.nik },
+    where: { nik: finalNik },
   });
 
   if (existingPatient) {
@@ -45,7 +50,7 @@ export async function createPatient(
       const patient = await prisma.patient.create({
         data: {
           noRm,
-          nik: data.nik,
+          nik: finalNik,
           namaLengkap: data.namaLengkap,
           tempatLahir: data.tempatLahir,
           tanggalLahir: new Date(data.tanggalLahir),

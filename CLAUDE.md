@@ -151,8 +151,8 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 
 ### TR-6 [UC-05] Daftar Kunjungan
 - TR-40 ✅ Buat form Tambah Kunjungan Baru
-- TR-41 ⏳ Generate nomor antrean U- dan G-
-- TR-42 ⏳ Form detail kunjungan
+- TR-41 ✅ Generate nomor antrean U- dan G-
+- TR-42 ✅ Form detail kunjungan
 - TR-43 ⏳ Opsi pendaftaran tanpa NIK
 - TR-44 ⏳ Error handling pasien belum terdaftar
 - TR-45 ⏳ API endpoint Encounter baru

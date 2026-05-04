@@ -4,9 +4,12 @@ import { z } from "zod";
 const patientBaseObject = z.object({
   // ── Identitas ──────────────────────────────────────────────────────────
   nik: z
-    .string({ message: "NIK wajib diisi" })
-    .length(16, "NIK wajib tepat 16 digit angka")
-    .regex(/^\d+$/, "NIK hanya boleh berisi angka"),
+    .string({ message: "NIK wajib diisi dalam bentuk teks" })
+    .optional()
+    .transform(val => val?.trim() || "")
+    .refine(val => val === "" || (val.length === 16 && /^\d+$/.test(val)), {
+      message: "NIK harus 16 digit angka jika diisi",
+    }),
 
   namaLengkap: z
     .string({ message: "Nama lengkap wajib diisi" })

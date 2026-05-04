@@ -20,6 +20,10 @@ export async function GET(
   const jenisKelamin  = searchParams.get("jenisKelamin") ?? "";
   const jenisPasien   = searchParams.get("jenisPasien")  ?? "";
 
+  const name = searchParams.get("name")?.trim() ?? "";
+  const rm = searchParams.get("rm")?.trim() ?? "";
+  const dob = searchParams.get("dob")?.trim() ?? "";
+
   const where = {
     ...(search && {
       OR: [
@@ -28,6 +32,14 @@ export async function GET(
         { noRm:        { contains: search, mode: "insensitive" as const } },
         { ihs:         { contains: search, mode: "insensitive" as const } },
       ],
+    }),
+    ...(name && { namaLengkap: { contains: name, mode: "insensitive" as const } }),
+    ...(rm && { noRm: { contains: rm, mode: "insensitive" as const } }),
+    ...(dob && {
+      tanggalLahir: {
+        gte: new Date(`${dob}T00:00:00.000Z`),
+        lte: new Date(`${dob}T23:59:59.999Z`),
+      },
     }),
     ...(jenisKelamin && { jenisKelamin: jenisKelamin as Patient["jenisKelamin"] }),
     ...(jenisPasien  && { jenisPasien:  jenisPasien  as Patient["jenisPasien"]  }),
@@ -70,8 +82,14 @@ export async function POST(
 
   const data = parsed.data;
 
+  // Intercept empty NIK and generate a dummy unique NIK
+  let finalNik = data.nik?.trim() || "";
+  if (!finalNik) {
+    finalNik = `NONIK-${Date.now()}`;
+  }
+
   // Pre-check duplicate NIK before entering retry loop
-  const existing = await prisma.patient.findUnique({ where: { nik: data.nik } });
+  const existing = await prisma.patient.findUnique({ where: { nik: finalNik } });
   if (existing) {
     return errResponse("NIK sudah terdaftar. Silakan hubungi admin.", 409);
   }
@@ -100,7 +118,7 @@ export async function POST(
       const patient = await prisma.patient.create({
         data: {
           noRm,
-          nik: data.nik,
+          nik: finalNik,
           namaLengkap: data.namaLengkap,
           tempatLahir: data.tempatLahir,
           tanggalLahir: new Date(data.tanggalLahir),

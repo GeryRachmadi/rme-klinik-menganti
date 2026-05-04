@@ -65,10 +65,10 @@ async function main() {
   });
 
   const dokter = await prisma.account.upsert({
-    where: { username: "strange.practitioner" },
+    where: { username: "strange.doctor" },
     update: {},
     create: {
-      username: "strange.practitioner",
+      username: "strange.doctor",
       password: hashedPassword,
       role: "DOKTER",
       isActive: true,
@@ -80,6 +80,24 @@ async function main() {
       },
     },
   });
+
+  const cynthia = await prisma.account.upsert({
+    where: { username: "cynthia.doctor" },
+    update: {},
+    create: {
+      username: "cynthia.doctor",
+      password: hashedPassword, 
+      role: "DOKTER",
+      isActive: true,
+      practitioner: {
+        create: {
+          name: "drg. Cynthia",
+          speciality: "Poli Gigi",
+        },
+      },
+    },
+  });
+  console.log("Upserted Doctor: cynthia.doctor");
 
   console.log("Seeded accounts:", {
     admin: admin.username,
