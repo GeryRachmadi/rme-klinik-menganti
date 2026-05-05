@@ -23,8 +23,8 @@ const TimelineSkeleton = () => {
   );
 };
 
-const EncounterCard = ({ encounter, index }: { encounter: Encounter; index: number }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+export const EncounterCard = ({ encounter, index, defaultExpanded = false }: { encounter: Encounter; index: number; defaultExpanded?: boolean }) => {
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   const mr = encounter.medicalRecord;
   const vitals = mr?.vitalSigns;

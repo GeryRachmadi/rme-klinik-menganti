@@ -7,6 +7,7 @@ import type { Patient } from "@/generated/prisma";
 // Import komponen tab Profil yang barusan dibikin
 import PatientProfileTabContent from "@/app/riwayat-medis/[noRm]/components/PatientProfileTabContent";
 import EncounterHistoryTab from "@/app/riwayat-medis/[noRm]/components/EncounterHistoryTab";
+import ClinicalSummaryTab from "@/app/riwayat-medis/[noRm]/components/ClinicalSummaryTab";
 
 const TABS: TabItem[] = [
   { id: "ringkasan",          label: "Ringkasan" },
@@ -38,7 +39,7 @@ export default function PatientHistoryTabs({ patient }: { patient: Patient }) {
 
       <div className="px-8 py-8">
         {activeTab === "ringkasan" && (
-          <PlaceholderTab message="Ringkasan klinis akan ditampilkan di sini." />
+          <ClinicalSummaryTab />
         )}
 
         {/* Cukup panggil 1 baris ini aja! Elegan banget kan? */}
