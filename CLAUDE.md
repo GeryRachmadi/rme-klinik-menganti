@@ -20,7 +20,7 @@ Methodology: ICONIX Process. Language: Bahasa Indonesia (UI), English (code).
 - ADMIN → gery.admin → /beranda
 - PENDAFTARAN → gabrielle.frontdesk → /beranda
 - PERAWAT → fanny.nurse → /beranda
-- DOKTER → strange.practitioner → /beranda
+- DOKTER → strange.doctor & cynthia.doctor → /beranda
 - All test accounts use password: password123
 
 ## Folder Structure
@@ -153,9 +153,9 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 - TR-40 ✅ Buat form Tambah Kunjungan Baru
 - TR-41 ✅ Generate nomor antrean U- dan G-
 - TR-42 ✅ Form detail kunjungan
-- TR-43 ⏳ Opsi pendaftaran tanpa NIK
-- TR-44 ⏳ Error handling pasien belum terdaftar
-- TR-45 ⏳ API endpoint Encounter baru
+- TR-43 ✅ Opsi pendaftaran tanpa NIK
+- TR-44 ✅ Error handling pasien belum terdaftar
+- TR-45 ✅ API endpoint Encounter baru
 
 ### TR-7 [UC-06] Lihat Daftar Antrean
 - TR-46 ✅ Buat halaman Rawat Jalan UI

@@ -5,26 +5,18 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
-  X,
-  Search,
   CheckCircle2,
-  User,
   ChevronDown,
   Loader2,
+  Search,
   Ticket,
+  User,
   UserX,
+  X,
 } from "lucide-react";
 import { SectionTitle } from "@/components/ui/SectionTitle";
-import { type PolicyType } from "@/lib/queue-utils";
 import PatientRegistrationDrawer from "@/components/shared/PatientRegistrationDrawer";
-
-// Maps the Poli select value to the PolicyType accepted by generateQueueNumber.
-// KIA shares the Umum queue pool for now — extend when KIA gets its own prefix.
-const POLI_TO_POLICY: Record<string, PolicyType> = {
-  POLI_UMUM: "UMUM",
-  POLI_GIGI: "GIGI",
-  KIA:       "UMUM",
-};
+import { usePatientSearch } from "@/hooks/usePatientSearch";
 
 export const encounterRegistrationSchema = z.object({
   policyType: z.enum(["UMUM", "GIGI"], {
@@ -52,10 +44,9 @@ interface EncounterRegistrationDrawerProps {
 }
 
 function PatientSummaryCard({ variant, patient }: { variant: "success" | "disabled"; patient: any }) {
-  const isSuccess = variant === "success";
-
   if (!patient) return null;
 
+  const isSuccess = variant === "success";
   const initials = patient.namaLengkap ? patient.namaLengkap.charAt(0).toUpperCase() : "?";
   const age = patient.tanggalLahir
     ? Math.floor((new Date().getTime() - new Date(patient.tanggalLahir).getTime()) / 3.15576e10)
@@ -110,26 +101,28 @@ export default function EncounterRegistrationDrawer({
   onEncounterCreated,
 }: EncounterRegistrationDrawerProps) {
   const [rendered, setRendered] = useState(false);
-
-  // Search
-  const [selectedPatient, setSelectedPatient] = useState<any>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isSearchEmpty, setIsSearchEmpty] = useState(false);
-
-  // Advanced Search
-  const [isAdvancedSearch, setIsAdvancedSearch] = useState(false);
-  const [advName, setAdvName] = useState("");
-  const [advRm, setAdvRm] = useState("");
-  const [advDob, setAdvDob] = useState("");
-
-  // Doctors (Placeholder for TR-42.3 actual fetch implementation)
   const [practitioners, setPractitioners] = useState<any[]>([]);
   const [isLoadingDoctors, setIsLoadingDoctors] = useState(false);
-
-  // New Patient Drawer
   const [isPatientDrawerOpen, setIsPatientDrawerOpen] = useState(false);
+  const [successQueueNumber, setSuccessQueueNumber] = useState<string | null>(null);
+  const [toast, setToast] = useState<{
+    visible: boolean;
+    message: string;
+    type: "success" | "error";
+  }>({ visible: false, message: "", type: "success" });
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Form hook
+  function showToast(message: string, type: "success" | "error" = "success") {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast({ visible: true, message, type });
+    toastTimer.current = setTimeout(
+      () => setToast((t) => ({ ...t, visible: false })),
+      4000
+    );
+  }
+
+  const search = usePatientSearch(showToast);
+
   const {
     control,
     handleSubmit,
@@ -146,17 +139,6 @@ export default function EncounterRegistrationDrawer({
     },
   });
 
-  // Submission
-  const [successQueueNumber, setSuccessQueueNumber] = useState<string | null>(null);
-
-  // Toast
-  const [toast, setToast] = useState<{
-    visible: boolean;
-    message: string;
-    type: "success" | "error";
-  }>({ visible: false, message: "", type: "success" });
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   // Drawer mount/unmount animation
   useEffect(() => {
     if (isOpen) {
@@ -167,143 +149,52 @@ export default function EncounterRegistrationDrawer({
     }
   }, [isOpen]);
 
-  // Fetch Doctors
+  // Fetch doctors when drawer opens
   useEffect(() => {
-    if (isOpen) {
-      const fetchDoctors = async () => {
-        setIsLoadingDoctors(true);
-        try {
-          const res = await fetch("/api/accounts?role=DOKTER");
-          const json = await res.json();
-          
-          if (!res.ok) {
-            console.error("API Error:", json.error || "Failed to fetch doctors");
-            return;
-          }
-
-          // Extract the array from the paginated response
-          const accountList = json.data?.accounts || json.data || json.accounts || (Array.isArray(json) ? json : []);
-
-          if (!Array.isArray(accountList)) {
-            console.error("Expected an array of accounts, got:", accountList);
-            return;
-          }
-
-          // Filter accounts that have a practitioner profile, then extract just the practitioner object
-          const validDoctors = accountList
-            .filter((acc: any) => acc.practitioner)
-            .map((acc: any) => acc.practitioner);
-
-          setPractitioners(validDoctors);
-        } catch (error) {
-          console.error("Failed to fetch doctors:", error);
-        } finally {
-          setIsLoadingDoctors(false);
+    if (!isOpen) return;
+    setIsLoadingDoctors(true);
+    fetch("/api/accounts?role=DOKTER")
+      .then((res) => res.json())
+      .then((json) => {
+        const list = json.data?.accounts || json.data || json.accounts || (Array.isArray(json) ? json : []);
+        if (Array.isArray(list)) {
+          setPractitioners(list.filter((a: any) => a.practitioner).map((a: any) => a.practitioner));
         }
-      };
-      fetchDoctors();
-    }
+      })
+      .catch(() => {})
+      .finally(() => setIsLoadingDoctors(false));
   }, [isOpen]);
 
   // Reset all state when drawer closes
   useEffect(() => {
     if (!isOpen) {
-      setSelectedPatient(null);
-      setSearchQuery("");
-      setIsSearchEmpty(false);
-      setIsAdvancedSearch(false);
-      setAdvName("");
-      setAdvRm("");
-      setAdvDob("");
+      search.reset();
       reset();
       setSuccessQueueNumber(null);
       setToast((t) => ({ ...t, visible: false }));
       if (toastTimer.current) clearTimeout(toastTimer.current);
     }
-  }, [isOpen, reset]);
+  }, [isOpen, reset, search.reset]);
 
   // Cleanup toast timer on unmount
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
 
   if (!rendered) return null;
 
-  function showToast(message: string, type: "success" | "error" = "success") {
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    setToast({ visible: true, message, type });
-    toastTimer.current = setTimeout(
-      () => setToast((t) => ({ ...t, visible: false })),
-      4000
-    );
-  }
-
-  async function handleSearch(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter" && searchQuery.trim() !== "") {
-      e.preventDefault();
-      try {
-        const res = await fetch(`/api/patients?search=${encodeURIComponent(searchQuery)}`);
-        const json = await res.json();
-        const patientsArray = json.data?.data || (Array.isArray(json.data) ? json.data : []);
-        if (res.ok && patientsArray.length > 0) {
-          setSelectedPatient(patientsArray[0]);
-          setIsSearchEmpty(false);
-        } else {
-          showToast("Pasien tidak ditemukan.", "error");
-          setSelectedPatient(null);
-          setIsSearchEmpty(true);
-        }
-      } catch (err) {
-        showToast("Gagal mencari pasien.", "error");
-        setSelectedPatient(null);
-        setIsSearchEmpty(true);
-      }
-    }
-  }
-
-  async function handleAdvancedSearch() {
-    if (!advName.trim() && !advRm.trim() && !advDob.trim()) {
-      showToast("Isi minimal satu kolom pencarian.", "error");
-      return;
-    }
-    
-    const params = new URLSearchParams();
-    if (advName.trim()) params.append("name", advName.trim());
-    if (advRm.trim()) params.append("rm", advRm.trim());
-    if (advDob.trim()) params.append("dob", advDob.trim());
-
-    try {
-      const res = await fetch(`/api/patients?${params.toString()}`);
-      if (!res.ok) throw new Error("Search failed");
-      const json = await res.json();
-      
-      const patientsArray = json.data?.data || (Array.isArray(json.data) ? json.data : []);
-      
-      if (patientsArray.length > 0) {
-        setSelectedPatient(patientsArray[0]);
-        setIsSearchEmpty(false);
-      } else {
-        showToast("Pasien tidak ditemukan.", "error");
-        setSelectedPatient(null);
-        setIsSearchEmpty(true);
-      }
-    } catch (err) {
-      showToast("Gagal melakukan pencarian spesifik.", "error");
-      setSelectedPatient(null);
-      setIsSearchEmpty(true);
-    }
-  }
+  const inputBase =
+    "w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-700 placeholder-gray-300 outline-none focus:bg-white focus:border-[#2BB5A0] transition-colors";
 
   const onSubmit = async (data: EncounterRegistrationFormData) => {
-    if (!selectedPatient) {
+    if (!search.selectedPatient) {
       showToast("Cari dan pilih pasien terlebih dahulu.", "error");
       return;
     }
-
     try {
       const res = await fetch("/api/encounters", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          patientId:      selectedPatient.id,
+          patientId:      search.selectedPatient.id,
           policyType:     data.policyType,
           priority:       data.priority,
           patientType:    data.patientType,
@@ -311,23 +202,17 @@ export default function EncounterRegistrationDrawer({
           practitionerId: data.practitionerId,
         }),
       });
-
       const json = await res.json();
-
       if (!res.ok || !json.success) {
         showToast(json.error ?? "Gagal menyimpan kunjungan.", "error");
         return;
       }
-
       setSuccessQueueNumber(json.data.queueNumber);
       await onEncounterCreated?.();
     } catch {
       showToast("Terjadi kesalahan tidak terduga. Silakan coba lagi.", "error");
     }
   };
-
-  const inputBase =
-    "w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-700 placeholder-gray-300 outline-none focus:bg-white focus:border-[#2BB5A0] transition-colors";
 
   return (
     <>
@@ -391,7 +276,7 @@ export default function EncounterRegistrationDrawer({
                 </p>
               </div>
 
-              <PatientSummaryCard variant="success" patient={selectedPatient} />
+              <PatientSummaryCard variant="success" patient={search.selectedPatient} />
 
               <p className="text-xs text-gray-400 text-center max-w-xs">
                 Informasikan nomor antrean ini kepada pasien dan minta untuk menunggu
@@ -405,7 +290,7 @@ export default function EncounterRegistrationDrawer({
               <div className="space-y-4">
                 <SectionTitle>CARI PASIEN</SectionTitle>
 
-                {isAdvancedSearch ? (
+                {search.isAdvancedSearch ? (
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
@@ -414,8 +299,8 @@ export default function EncounterRegistrationDrawer({
                         </label>
                         <input
                           type="text"
-                          value={advName}
-                          onChange={(e) => { setAdvName(e.target.value); setIsSearchEmpty(false); }}
+                          value={search.advName}
+                          onChange={(e) => search.onAdvFieldChange("name", e.target.value)}
                           autoComplete="off"
                           placeholder="Masukkan nama pasien"
                           className={inputBase}
@@ -427,8 +312,8 @@ export default function EncounterRegistrationDrawer({
                         </label>
                         <input
                           type="text"
-                          value={advRm}
-                          onChange={(e) => { setAdvRm(e.target.value); setIsSearchEmpty(false); }}
+                          value={search.advRm}
+                          onChange={(e) => search.onAdvFieldChange("rm", e.target.value)}
                           autoComplete="off"
                           placeholder="Contoh: RM-2024..."
                           className={inputBase}
@@ -441,8 +326,8 @@ export default function EncounterRegistrationDrawer({
                       </label>
                       <input
                         type="date"
-                        value={advDob}
-                        onChange={(e) => { setAdvDob(e.target.value); setIsSearchEmpty(false); }}
+                        value={search.advDob}
+                        onChange={(e) => search.onAdvFieldChange("dob", e.target.value)}
                         autoComplete="off"
                         className={inputBase}
                       />
@@ -450,7 +335,7 @@ export default function EncounterRegistrationDrawer({
                     <div className="flex items-center gap-3 mt-2">
                       <button
                         type="button"
-                        onClick={handleAdvancedSearch}
+                        onClick={search.handleAdvancedSearch}
                         className="px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity"
                         style={{ background: "#2BB5A0" }}
                       >
@@ -458,7 +343,7 @@ export default function EncounterRegistrationDrawer({
                       </button>
                       <button
                         type="button"
-                        onClick={() => setIsAdvancedSearch(false)}
+                        onClick={() => search.setIsAdvancedSearch(false)}
                         className="text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
                       >
                         Kembali ke Pencarian NIK
@@ -479,9 +364,9 @@ export default function EncounterRegistrationDrawer({
                         />
                         <input
                           type="text"
-                          value={searchQuery}
-                          onChange={(e) => { setSearchQuery(e.target.value); setIsSearchEmpty(false); }}
-                          onKeyDown={handleSearch}
+                          value={search.searchQuery}
+                          onChange={(e) => search.onSearchQueryChange(e.target.value)}
+                          onKeyDown={search.handleSearch}
                           autoComplete="off"
                           placeholder="Ketik lalu tekan Enter untuk mencari..."
                           className={`${inputBase} pl-10`}
@@ -492,12 +377,11 @@ export default function EncounterRegistrationDrawer({
                     <div className="flex items-center justify-between mt-2">
                       <button
                         type="button"
-                        onClick={() => setIsAdvancedSearch(true)}
+                        onClick={() => search.setIsAdvancedSearch(true)}
                         className="text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors cursor-pointer"
                       >
                         Pencarian Spesifik (Nama / No. RM)?
                       </button>
-                      
                       <button
                         type="button"
                         onClick={() => setIsPatientDrawerOpen(true)}
@@ -509,7 +393,7 @@ export default function EncounterRegistrationDrawer({
                   </>
                 )}
 
-                {isSearchEmpty && !selectedPatient && (
+                {search.showEmptyState && (
                   <div className="flex flex-col items-center justify-center p-6 mt-4 rounded-xl border border-red-100 bg-red-50 text-center">
                     <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm mb-3">
                       <UserX size={24} className="text-red-400" />
@@ -529,15 +413,17 @@ export default function EncounterRegistrationDrawer({
                   </div>
                 )}
 
-                {selectedPatient && <PatientSummaryCard variant="success" patient={selectedPatient} />}
+                {search.selectedPatient && (
+                  <PatientSummaryCard variant="success" patient={search.selectedPatient} />
+                )}
               </div>
 
               {/* Section 2: Detail Encounter */}
-              {selectedPatient && (
+              {search.selectedPatient && (
                 <div className="space-y-6 pt-4 border-t border-gray-100">
                   <SectionTitle>DETAIL ENCOUNTER PASIEN</SectionTitle>
 
-                  <PatientSummaryCard variant="disabled" patient={selectedPatient} />
+                  <PatientSummaryCard variant="disabled" patient={search.selectedPatient} />
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Prioritas */}
@@ -629,10 +515,10 @@ export default function EncounterRegistrationDrawer({
                               className={`${inputBase} pl-10 appearance-none cursor-pointer ${errors.practitionerId ? "border-red-500" : "border-gray-200 focus:border-[#2BB5A0]"}`}
                             >
                               <option value="" disabled>
-                                {isLoadingDoctors 
-                                  ? "Memuat dokter..." 
-                                  : practitioners.length === 0 
-                                    ? "Tidak ada dokter tersedia" 
+                                {isLoadingDoctors
+                                  ? "Memuat dokter..."
+                                  : practitioners.length === 0
+                                    ? "Tidak ada dokter tersedia"
                                     : "Pilih Dokter..."}
                               </option>
                               {practitioners.map((p) => (
@@ -741,7 +627,7 @@ export default function EncounterRegistrationDrawer({
               <button
                 type="submit"
                 form="encounter-form"
-                disabled={isSubmitting || !selectedPatient}
+                disabled={isSubmitting || !search.selectedPatient}
                 className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ background: "#2BB5A0" }}
               >
@@ -776,30 +662,29 @@ export default function EncounterRegistrationDrawer({
         </div>
       )}
 
+      {/*
+       * PatientRegistrationDrawer — opened from empty state or "Tambah Pasien Baru" CTA.
+       * onSuccess implements the Magic Transition: after creation, the new patient is
+       * fetched by noRm and auto-selected in this drawer without a manual search step.
+       */}
       <PatientRegistrationDrawer
         isOpen={isPatientDrawerOpen}
         onClose={() => setIsPatientDrawerOpen(false)}
         mode="manual"
         defaultWithoutNik={true}
         onSuccess={async (newPatient) => {
-          // 1. Tutup drawer pendaftaran pasien biar tampilannya smooth
           setIsPatientDrawerOpen(false);
           try {
-            // 2. Tarik data pasien yang baru dibuat untuk ditaruh di state
             const res = await fetch(`/api/patients?rm=${newPatient.noRm}`);
             const json = await res.json();
-            
-            // Ekstrak array pasiennya seperti biasa
             const patientsArray = json.data?.data || (Array.isArray(json.data) ? json.data : []);
-
             if (patientsArray.length > 0) {
-              // 3. Set data pasien LENGKAP ke state
-              setSelectedPatient(patientsArray[0]);
+              search.setSelectedPatient(patientsArray[0]);
               showToast("Pasien otomatis dipilih, silakan lanjut isi kunjungan.", "success");
             } else {
               showToast("Pasien berhasil didaftar, tapi gagal memuat otomatis.", "error");
             }
-          } catch (error) {
+          } catch {
             showToast("Terjadi kesalahan saat menarik data pasien baru.", "error");
           }
         }}

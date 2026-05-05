@@ -22,7 +22,8 @@
       "Bash(node -e ' *)",
       "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\('next-auth:', p.dependencies['next-auth']\\); console.log\\('next:', p.dependencies['next']\\);\")",
       "Bash(dir \"C:\\\\Users\\\\Gery Rachmadi\\\\Documents\\\\akademik\\\\kuliah\\\\MataKuliah\\\\Semester8\\\\TA\\\\rme-klinik-menganti\" /a:h /b)",
-      "Bash(findstr env *)"
+      "Bash(findstr env *)",
+      "Bash(git merge *)"
     ]
   }
 }

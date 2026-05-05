@@ -43,9 +43,8 @@ export default function PatientRegistrationDrawer({
   mode = "manual",
   onSuccess,
   defaultWithoutNik = false,
-  // satusehatData,
+  satusehatData = null,
 }: PatientRegistrationDrawerProps) {
-  const satusehatData = null;  // Force fallback for testing
   const router = useRouter();
   const [rendered, setRendered] = useState(false);
   const [activeMode, setActiveMode] = useState<"autofill" | "manual">(mode);
@@ -102,6 +101,11 @@ export default function PatientRegistrationDrawer({
       noHpWali: "",
     },
   });
+
+  function handleNiklessToggle() {
+    if (!isWithoutNik) reset({ nik: "" });
+    setIsWithoutNik(!isWithoutNik);
+  }
 
   function showToast(message: string, type: "success" | "error" = "success") {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -272,12 +276,7 @@ export default function PatientRegistrationDrawer({
                 {activeMode === "manual" && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setIsWithoutNik(!isWithoutNik);
-                      if (!isWithoutNik) {
-                        reset({ nik: "" });
-                      }
-                    }}
+                    onClick={handleNiklessToggle}
                     className="text-xs font-medium text-blue-500 hover:text-blue-600"
                   >
                     {isWithoutNik ? "Punya NIK? Daftarkan dengan NIK" : "Daftarkan tanpa NIK?"}
