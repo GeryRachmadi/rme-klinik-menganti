@@ -14,6 +14,7 @@ Methodology: ICONIX Process. Language: Bahasa Indonesia (UI), English (code).
 - Auth: NextAuth.js beta (credentials provider, JWT strategy)
 - Icons: lucide-react
 - Fonts: Poppins (headings), Plus Jakarta Sans (body/form)
+- RM-Number: #006B4E with semibold white font text
 - Package runner: tsx (NOT ts-node)
 
 ## System Actors & Roles

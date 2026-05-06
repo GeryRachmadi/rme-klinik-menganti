@@ -4,10 +4,13 @@ import { useState } from "react";
 import Tabs, { type TabItem } from "./Tabs";
 import type { Patient } from "@/generated/prisma";
 
-// Import komponen tab Profil yang barusan dibikin
-import PatientProfileTabContent from "@/app/riwayat-medis/[noRm]/components/PatientProfileTabContent";
+// Import sudah disesuaikan dengan nama file baru
+import PatientProfileTab from "@/app/riwayat-medis/[noRm]/components/PatientProfileTab";
 import EncounterHistoryTab from "@/app/riwayat-medis/[noRm]/components/EncounterHistoryTab";
 import ClinicalSummaryTab from "@/app/riwayat-medis/[noRm]/components/ClinicalSummaryTab";
+import ConditionTab from "@/app/riwayat-medis/[noRm]/components/ConditionTab";
+import AllergyHistoryTab from "@/app/riwayat-medis/[noRm]/components/AllergyHistoryTab";
+import MedicationTab from "@/app/riwayat-medis/[noRm]/components/MedicationTab";
 
 const TABS: TabItem[] = [
   { id: "ringkasan",          label: "Ringkasan" },
@@ -42,9 +45,9 @@ export default function PatientHistoryTabs({ patient }: { patient: Patient }) {
           <ClinicalSummaryTab />
         )}
 
-        {/* Cukup panggil 1 baris ini aja! Elegan banget kan? */}
+        {/* Pemanggilan komponen disesuaikan dengan nama baru */}
         {activeTab === "profil" && (
-          <PatientProfileTabContent patient={patient} />
+          <PatientProfileTab patient={patient} />
         )}
 
         {activeTab === "riwayat-kunjungan" && (
@@ -52,15 +55,15 @@ export default function PatientHistoryTabs({ patient }: { patient: Patient }) {
         )}
 
         {activeTab === "kondisi" && (
-          <PlaceholderTab message="Data kondisi pasien akan ditampilkan di sini." />
+          <ConditionTab />
         )}
 
         {activeTab === "riwayat-alergi" && (
-          <PlaceholderTab message="Riwayat alergi pasien akan ditampilkan di sini." />
+          <AllergyHistoryTab />
         )}
 
         {activeTab === "pengobatan-rutin" && (
-          <PlaceholderTab message="Data pengobatan rutin pasien akan ditampilkan di sini." />
+          <MedicationTab />
         )}
       </div>
     </div>
