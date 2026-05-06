@@ -3,6 +3,13 @@
 import { useState } from "react";
 import Tabs, { type TabItem } from "./Tabs";
 import type { Patient } from "@/generated/prisma";
+import {
+  ClinicalSummary,
+  MappedCondition,
+  MappedAllergy,
+  MappedMedication,
+  MappedEncounter
+} from "@/lib/mappers/medical-records-mapper";
 
 // Tab Components
 import PatientProfileTab from "@/app/riwayat-medis/[noRm]/components/PatientProfileTab";
@@ -20,12 +27,22 @@ interface PatientHistoryTabsProps {
   patient: Patient;
   hasMedicalRecord?: boolean; // TODO: Pass this dynamically from parent or database later
   userRole?: string;          // TODO: Pass the current user's role from session
+  clinicalSummary?: ClinicalSummary;
+  conditions?: MappedCondition[];
+  allergies?: MappedAllergy[];
+  medications?: MappedMedication[];
+  encounters?: MappedEncounter[];
 }
 
 export default function PatientHistoryTabs({ 
   patient, 
   hasMedicalRecord = false, // Set to false by default right now to test the Empty UI
-  userRole = "dokter" 
+  userRole = "dokter",
+  clinicalSummary,
+  conditions,
+  allergies,
+  medications,
+  encounters
 }: PatientHistoryTabsProps) {
   const [activeTab, setActiveTab] = useState("ringkasan");
 
@@ -53,41 +70,28 @@ export default function PatientHistoryTabs({
       </div>
 
       <div className="px-8 py-8">
-        {/* ========================================= */}
-        {/* 1. PROFILE TAB: Always render normally    */}
-        {/* ========================================= */}
         {activeTab === "profil" && (
           <PatientProfileTab patient={patient} />
         )}
 
-        {/* ========================================= */}
-        {/* 2. EMPTY STATE: For non-profile tabs      */}
-        {/* ========================================= */}
-        {activeTab !== "profil" && !hasMedicalRecord && (
-          <EmptyMedicalRecord userRole={userRole} />
+        {activeTab === "ringkasan" && (
+          <ClinicalSummaryTab data={clinicalSummary} />
         )}
 
-        {/* ========================================= */}
-        {/* 3. NORMAL STATE: Render if records exist  */}
-        {/* ========================================= */}
-        {activeTab === "ringkasan" && hasMedicalRecord && (
-          <ClinicalSummaryTab />
+        {activeTab === "riwayat-kunjungan" && (
+          <EncounterHistoryTab data={encounters} />
         )}
 
-        {activeTab === "riwayat-kunjungan" && hasMedicalRecord && (
-          <EncounterHistoryTab />
+        {activeTab === "kondisi" && (
+          <ConditionTab data={conditions} />
         )}
 
-        {activeTab === "kondisi" && hasMedicalRecord && (
-          <ConditionTab />
+        {activeTab === "riwayat-alergi" && (
+          <AllergyHistoryTab data={allergies} />
         )}
 
-        {activeTab === "riwayat-alergi" && hasMedicalRecord && (
-          <AllergyHistoryTab />
-        )}
-
-        {activeTab === "pengobatan-rutin" && hasMedicalRecord && (
-          <MedicationTab />
+        {activeTab === "pengobatan-rutin" && (
+          <MedicationTab data={medications} />
         )}
       </div>
     </div>

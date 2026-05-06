@@ -4,6 +4,7 @@ import Breadcrumb from "@/components/shared/Breadcrumb";
 import PatientHistoryTabs from "@/components/shared/PatientHistoryTabs";
 import PatientHeader from "./components/PatientHeader";
 import { auth } from "@/lib/auth";
+import { mapPatientMedicalRecords } from "@/lib/mappers/medical-records-mapper";
 
 export default async function RiwayatMedisPage({
   params,
@@ -15,8 +16,31 @@ export default async function RiwayatMedisPage({
   const session = await auth();
   const userRole = (session?.user as any)?.role || "";
 
-  const patient = await prisma.patient.findUnique({ where: { noRm } });
+  const patient = await prisma.patient.findUnique({
+    where: { noRm },
+    include: {
+      conditionHistories: true,
+      allergyIntolerances: true,
+      medicationStatements: true,
+      encounters: {
+        take: 50,
+        orderBy: { periodStart: "desc" },
+        include: {
+          practitioner: true,
+          observations: {
+            take: 1,
+            orderBy: { createdAt: "desc" },
+          },
+          conditionDiagnoses: true,
+          medicationRequests: true,
+          procedures: true,
+        },
+      },
+    },
+  });
   if (!patient) notFound();
+
+  const mappedData = mapPatientMedicalRecords(patient, userRole);
 
   return (
     <div className="grid grid-cols-12 gap-6">
@@ -33,7 +57,16 @@ export default async function RiwayatMedisPage({
       <PatientHeader patient={patient} userRole={userRole} />
 
       {/* Tabs */}
-      <PatientHistoryTabs patient={patient} />
+      <PatientHistoryTabs 
+        patient={patient} 
+        hasMedicalRecord={mappedData.hasMedicalRecord}
+        clinicalSummary={mappedData.clinicalSummary}
+        encounters={mappedData.encounters}
+        conditions={mappedData.conditions}
+        allergies={mappedData.allergies}
+        medications={mappedData.medications}
+        userRole={userRole}
+      />
 
     </div>
   );
