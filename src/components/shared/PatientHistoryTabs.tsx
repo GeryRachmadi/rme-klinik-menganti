@@ -4,7 +4,7 @@ import { useState } from "react";
 import Tabs, { type TabItem } from "./Tabs";
 import type { Patient } from "@/generated/prisma";
 
-// Import sudah disesuaikan dengan nama file baru
+// Tab Components
 import PatientProfileTab from "@/app/riwayat-medis/[noRm]/components/PatientProfileTab";
 import EncounterHistoryTab from "@/app/riwayat-medis/[noRm]/components/EncounterHistoryTab";
 import ClinicalSummaryTab from "@/app/riwayat-medis/[noRm]/components/ClinicalSummaryTab";
@@ -12,27 +12,39 @@ import ConditionTab from "@/app/riwayat-medis/[noRm]/components/ConditionTab";
 import AllergyHistoryTab from "@/app/riwayat-medis/[noRm]/components/AllergyHistoryTab";
 import MedicationTab from "@/app/riwayat-medis/[noRm]/components/MedicationTab";
 
-const TABS: TabItem[] = [
-  { id: "ringkasan",          label: "Ringkasan" },
-  { id: "profil",             label: "Profil" },
-  { id: "riwayat-kunjungan",  label: "Riwayat Kunjungan" },
-  { id: "kondisi",            label: "Kondisi" },
-  { id: "riwayat-alergi",     label: "Riwayat Alergi" },
-  { id: "pengobatan-rutin",   label: "Pengobatan Rutin" },
-];
+// Empty State Component
+import EmptyMedicalRecord from "@/app/riwayat-medis/[noRm]/components/EmptyMedicalRecord";
 
-function PlaceholderTab({ message }: { message: string }) {
-  return (
-    <div className="py-20 flex items-center justify-center">
-      <p className="text-sm text-gray-300" style={{ fontFamily: "var(--font-jakarta)" }}>
-        {message}
-      </p>
-    </div>
-  );
+// Define props to include the new TR-54 requirements
+interface PatientHistoryTabsProps {
+  patient: Patient;
+  hasMedicalRecord?: boolean; // TODO: Pass this dynamically from parent or database later
+  userRole?: string;          // TODO: Pass the current user's role from session
 }
 
-export default function PatientHistoryTabs({ patient }: { patient: Patient }) {
+export default function PatientHistoryTabs({ 
+  patient, 
+  hasMedicalRecord = false, // Set to false by default right now to test the Empty UI
+  userRole = "dokter" 
+}: PatientHistoryTabsProps) {
   const [activeTab, setActiveTab] = useState("ringkasan");
+
+  // UI Badge indicator for empty tabs
+  const EmptyBadge = () => (
+    <span className="text-[10px] px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full font-bold uppercase tracking-wide">
+      Kosong
+    </span>
+  );
+
+  // Moved TABS array inside the component so it can react to `hasMedicalRecord` state
+  const TABS: TabItem[] = [
+    { id: "ringkasan",          label: "Ringkasan",         badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
+    { id: "profil",             label: "Profil" },          // Profile tab never gets the "Kosong" badge
+    { id: "riwayat-kunjungan",  label: "Riwayat Kunjungan", badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
+    { id: "kondisi",            label: "Kondisi",           badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
+    { id: "riwayat-alergi",     label: "Riwayat Alergi",    badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
+    { id: "pengobatan-rutin",   label: "Pengobatan Rutin",  badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
+  ];
 
   return (
     <div className="col-span-12 bg-white rounded-3xl overflow-hidden">
@@ -41,28 +53,40 @@ export default function PatientHistoryTabs({ patient }: { patient: Patient }) {
       </div>
 
       <div className="px-8 py-8">
-        {activeTab === "ringkasan" && (
-          <ClinicalSummaryTab />
-        )}
-
-        {/* Pemanggilan komponen disesuaikan dengan nama baru */}
+        {/* ========================================= */}
+        {/* 1. PROFILE TAB: Always render normally    */}
+        {/* ========================================= */}
         {activeTab === "profil" && (
           <PatientProfileTab patient={patient} />
         )}
 
-        {activeTab === "riwayat-kunjungan" && (
+        {/* ========================================= */}
+        {/* 2. EMPTY STATE: For non-profile tabs      */}
+        {/* ========================================= */}
+        {activeTab !== "profil" && !hasMedicalRecord && (
+          <EmptyMedicalRecord userRole={userRole} />
+        )}
+
+        {/* ========================================= */}
+        {/* 3. NORMAL STATE: Render if records exist  */}
+        {/* ========================================= */}
+        {activeTab === "ringkasan" && hasMedicalRecord && (
+          <ClinicalSummaryTab />
+        )}
+
+        {activeTab === "riwayat-kunjungan" && hasMedicalRecord && (
           <EncounterHistoryTab />
         )}
 
-        {activeTab === "kondisi" && (
+        {activeTab === "kondisi" && hasMedicalRecord && (
           <ConditionTab />
         )}
 
-        {activeTab === "riwayat-alergi" && (
+        {activeTab === "riwayat-alergi" && hasMedicalRecord && (
           <AllergyHistoryTab />
         )}
 
-        {activeTab === "pengobatan-rutin" && (
+        {activeTab === "pengobatan-rutin" && hasMedicalRecord && (
           <MedicationTab />
         )}
       </div>
