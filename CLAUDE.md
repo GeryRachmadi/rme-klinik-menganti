@@ -166,11 +166,11 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 - TR-50 ✅ API endpoint fetch Encounter aktif
 
 ### TR-8 [UC-07] Lihat Riwayat Medis
-- TR-51 ⏳ Buat halaman Riwayat Medis UI
-- TR-52 ⏳ Komponen Riwayat Kunjungan timeline
-- TR-53 ⏳ Komponen Ringkasan Klinis
-- TR-54 ⏳ Empty state riwayat kosong
-- TR-55 ⏳ API endpoint fetch riwayat medis
+- TR-51 ✅ Buat halaman Riwayat Medis UI
+- TR-52 ✅ Komponen Riwayat Kunjungan timeline
+- TR-53 ✅ Komponen Ringkasan Klinis
+- TR-54 ✅ Empty state riwayat kosong
+- TR-55 ✅ API endpoint fetch riwayat medis
 
 ### TR-9 [UC-08] Catat Kajian Awal
 - TR-56 ⏳ Buat halaman Asesmen UI

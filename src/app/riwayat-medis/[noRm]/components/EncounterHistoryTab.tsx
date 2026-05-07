@@ -156,13 +156,6 @@ export default function EncounterHistoryTab({ data }: Props) {
           <p className="text-slate-500 mb-6 max-w-md text-sm leading-relaxed" style={{ fontFamily: "var(--font-jakarta)" }}>
             Pasien belum memiliki riwayat kunjungan atau rekam medis di sistem. Silakan buat asesmen baru untuk memulai pencatatan SOAP.
           </p>
-          <button 
-            className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-3 rounded-full font-semibold transition-all shadow-sm hover:shadow-md"
-            style={{ fontFamily: "var(--font-poppins)" }}
-            onClick={() => console.log("Arahkan ke form SOAP baru!")}
-          >
-            Buat Asesmen Pertama
-          </button>
         </div>
       ) : (
         <div className="relative pl-7 sm:pl-10 py-2">
