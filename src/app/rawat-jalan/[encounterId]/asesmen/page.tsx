@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Breadcrumb from "@/components/shared/Breadcrumb";
 import PatientAssessmentHeader from "./components/PatientAssessmentHeader";
+import AssessmentForm from "./components/AssessmentForm";
 import { calculateAge } from "@/lib/utils/date";
 
 export const metadata: Metadata = {
@@ -36,6 +37,9 @@ export default async function AsesmenPage({
           tanggalLahir: true,
           jenisKelamin: true,
           nik: true,
+          conditionHistories: true,
+          allergyIntolerances: true,
+          medicationStatements: true,
         },
       },
       practitioner: {
@@ -51,6 +55,15 @@ export default async function AsesmenPage({
   }
 
   const age = calculateAge(encounter.patient.tanggalLahir);
+
+  const defaultValues = {
+    penyakit: encounter.patient.conditionHistories?.map((c: any) => c.name) || [],
+    alergi: encounter.patient.allergyIntolerances?.map((a: any) => `${a.name} (${a.criticality})`) || [],
+    obat: encounter.patient.medicationStatements?.map((m: any) => `${m.name} (${m.dosage})`) || [],
+    catatanPenyakit: "",
+    catatanAlergi: "",
+    catatanObat: "",
+  };
 
   return (
     <div className="grid grid-cols-12 gap-6">
@@ -82,22 +95,7 @@ export default async function AsesmenPage({
       <div className="col-span-12 max-w-6xl mx-auto w-full px-4 py-2">
         <div className="h-px bg-gray-200 mb-6" />
 
-        <div
-          className="bg-slate-50 p-8 rounded-lg text-center text-gray-500 text-sm"
-          style={{ fontFamily: "var(--font-jakarta)" }}
-        >
-          Formulir akan ditambahkan di TR-57
-        </div>
-
-        <div className="mt-6 flex justify-end">
-          <button
-            disabled
-            className="opacity-50 cursor-not-allowed inline-flex items-center justify-center px-6 py-2.5 text-sm font-semibold text-white bg-teal-600 rounded-full h-[44px]"
-            style={{ fontFamily: "var(--font-jakarta)" }}
-          >
-            Simpan & Lanjut
-          </button>
-        </div>
+        <AssessmentForm defaultValues={defaultValues} />
       </div>
     </div>
   );
