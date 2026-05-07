@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   Search,
   Eye,
@@ -11,6 +12,7 @@ import {
   UserPlus,
   Loader2,
   Calendar,
+  ClipboardList,
 } from "lucide-react";
 import EncounterRegistrationDrawer from "@/components/shared/EncounterRegistrationDrawer";
 
@@ -65,6 +67,8 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
   const [filterStatus, setFilterStatus] = useState("");
 
   const isAuthorized = userRole === "PENDAFTARAN" || userRole === "ADMIN";
+  const canAssess = userRole === "ADMIN" || userRole === "DOKTER" || userRole === "PERAWAT";
+  const router = useRouter();
 
   const fetchAntrean = useCallback(async () => {
     try {
@@ -206,12 +210,13 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
             <thead>
               <tr className="border-b border-gray-100">
                 {[
-                  { label: "NO. ANTREAN", width: "w-[12%]" },
-                  { label: "PASIEN",      width: "w-[30%]" },
-                  { label: "POLI & DOKTER", width: "w-[20%]" },
-                  { label: "PRIORITAS",  width: "w-[15%]" },
-                  { label: "STATUS",     width: "w-[15%]" },
-                  { label: "ACTION",     width: "w-[8%]"  },
+                  { label: "NO. ANTREAN",   width: "w-[10%]" },
+                  { label: "PASIEN",        width: "w-[25%]" },
+                  { label: "POLI & DOKTER", width: "w-[18%]" },
+                  { label: "PRIORITAS",     width: "w-[12%]" },
+                  { label: "STATUS",        width: "w-[13%]" },
+                  { label: "ASESMEN",       width: "w-[14%]" },
+                  { label: "ACTION",        width: "w-[8%]"  },
                 ].map((col) => (
                   <th
                     key={col.label}
@@ -225,7 +230,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="py-16 text-center">
+                  <td colSpan={7} className="py-16 text-center">
                     <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
                       <Loader2 size={16} className="animate-spin" /> Memuat data...
                     </div>
@@ -233,7 +238,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
                 </tr>
               ) : filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-16 text-center">
+                  <td colSpan={7} className="py-16 text-center">
                     <p className="text-sm text-gray-400">
                       Tidak ada antrean yang ditemukan.
                     </p>
@@ -296,6 +301,21 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
                       >
                         {row.status}
                       </span>
+                    </td>
+
+                    <td className="py-4 align-top">
+                      {canAssess && (row.status === "Menunggu" || row.status === "Diperiksa") ? (
+                        <button
+                          onClick={() => router.push(`/rawat-jalan/${row.id}/asesmen`)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white transition-colors"
+                          style={{ fontFamily: "var(--font-poppins)" }}
+                        >
+                          <ClipboardList size={13} strokeWidth={2} />
+                          Mulai Asesmen
+                        </button>
+                      ) : (
+                        <span className="text-xs text-gray-300">—</span>
+                      )}
                     </td>
 
                     <td className="py-4 align-top">

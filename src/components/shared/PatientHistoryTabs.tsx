@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Tabs, { type TabItem } from "./Tabs";
 import type { Patient } from "@/generated/prisma";
 import {
@@ -11,22 +12,18 @@ import {
   MappedEncounter
 } from "@/lib/mappers/medical-records-mapper";
 
-// Tab Components
 import PatientProfileTab from "@/app/riwayat-medis/[noRm]/components/PatientProfileTab";
 import EncounterHistoryTab from "@/app/riwayat-medis/[noRm]/components/EncounterHistoryTab";
 import ClinicalSummaryTab from "@/app/riwayat-medis/[noRm]/components/ClinicalSummaryTab";
 import ConditionTab from "@/app/riwayat-medis/[noRm]/components/ConditionTab";
 import AllergyHistoryTab from "@/app/riwayat-medis/[noRm]/components/AllergyHistoryTab";
 import MedicationTab from "@/app/riwayat-medis/[noRm]/components/MedicationTab";
-
-// Empty State Component
 import EmptyMedicalRecord from "@/app/riwayat-medis/[noRm]/components/EmptyMedicalRecord";
 
-// Define props to include the new TR-54 requirements
 interface PatientHistoryTabsProps {
   patient: Patient;
-  hasMedicalRecord?: boolean; // TODO: Pass this dynamically from parent or database later
-  userRole?: string;          // TODO: Pass the current user's role from session
+  hasMedicalRecord?: boolean;
+  userRole?: string;
   clinicalSummary?: ClinicalSummary;
   conditions?: MappedCondition[];
   allergies?: MappedAllergy[];
@@ -34,33 +31,44 @@ interface PatientHistoryTabsProps {
   encounters?: MappedEncounter[];
 }
 
-export default function PatientHistoryTabs({ 
-  patient, 
-  hasMedicalRecord = false, // Set to false by default right now to test the Empty UI
-  userRole = "dokter",
+export default function PatientHistoryTabs({
+  patient,
+  hasMedicalRecord = false,
+  userRole = "DOKTER",
   clinicalSummary,
   conditions,
   allergies,
   medications,
   encounters
 }: PatientHistoryTabsProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("ringkasan");
 
-  // UI Badge indicator for empty tabs
+  async function handleMulaiAsesmen() {
+    const res = await fetch(`/api/patients/${patient.id}/active-encounter`);
+    const data = await res.json();
+    if (data.success) {
+      router.push(`/rawat-jalan/${data.encounterId}/asesmen`);
+    } else {
+      throw new Error(
+        data.message || "Pasien belum terdaftar hari ini."
+      );
+    }
+  }
+
   const EmptyBadge = () => (
     <span className="text-[10px] px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full font-bold uppercase tracking-wide">
       Kosong
     </span>
   );
 
-  // Moved TABS array inside the component so it can react to `hasMedicalRecord` state
   const TABS: TabItem[] = [
-    { id: "ringkasan",          label: "Ringkasan",         badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
-    { id: "profil",             label: "Profil" },          // Profile tab never gets the "Kosong" badge
-    { id: "riwayat-kunjungan",  label: "Riwayat Kunjungan", badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
-    { id: "kondisi",            label: "Kondisi",           badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
-    { id: "riwayat-alergi",     label: "Riwayat Alergi",    badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
-    { id: "pengobatan-rutin",   label: "Pengobatan Rutin",  badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
+    { id: "ringkasan",         label: "Ringkasan",         badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
+    { id: "profil",            label: "Profil" },
+    { id: "riwayat-kunjungan", label: "Riwayat Kunjungan", badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
+    { id: "kondisi",           label: "Kondisi",           badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
+    { id: "riwayat-alergi",    label: "Riwayat Alergi",    badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
+    { id: "pengobatan-rutin",  label: "Pengobatan Rutin",  badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
   ];
 
   return (
@@ -74,8 +82,19 @@ export default function PatientHistoryTabs({
           <PatientProfileTab patient={patient} />
         )}
 
-        {activeTab === "ringkasan" && (
-          <ClinicalSummaryTab data={clinicalSummary} />
+        {activeTab === "ringkasan" && !hasMedicalRecord && (
+          <EmptyMedicalRecord
+            userRole={userRole}
+            onCreateEncounterClick={handleMulaiAsesmen}
+          />
+        )}
+
+        {activeTab === "ringkasan" && hasMedicalRecord && (
+          <ClinicalSummaryTab
+            data={clinicalSummary}
+            userRole={userRole}
+            onCreateEncounterClick={handleMulaiAsesmen}
+          />
         )}
 
         {activeTab === "riwayat-kunjungan" && (
