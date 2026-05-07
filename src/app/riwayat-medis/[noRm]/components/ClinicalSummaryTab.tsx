@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Activity, Stethoscope, Calendar, Plus, Loader2 } from "lucide-react";
+import { Activity, Stethoscope, Calendar, Plus, Loader2, AlertCircle, X } from "lucide-react";
 import { ClinicalSummary } from "@/lib/mappers/medical-records-mapper";
 
 const ActiveDiagnosisCard = ({ primaryDiagnosis }: { primaryDiagnosis: any | null }) => {
@@ -158,57 +158,71 @@ export default function ClinicalSummaryTab({ data, userRole, onCreateEncounterCl
     try {
       await onCreateEncounterClick();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Terjadi kesalahan. Silakan coba lagi."
-      );
+      const msg = err instanceof Error ? err.message : "Terjadi kesalahan. Silakan coba lagi.";
+      setError(msg);
+      setTimeout(() => setError(null), 4000);
     } finally {
       setIsLoading(false);
     }
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
-      <div className="col-span-1 lg:col-span-12">
-        <h2 className="text-xl font-bold text-gray-900 mb-6" style={{ fontFamily: "var(--font-poppins)" }}>
-          Ringkasan Klinis
-        </h2>
+    <>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
+        <div className="col-span-1 lg:col-span-12">
+          <h2 className="text-xl font-bold text-gray-900 mb-6" style={{ fontFamily: "var(--font-poppins)" }}>
+            Ringkasan Klinis
+          </h2>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ActiveDiagnosisCard primaryDiagnosis={data?.primaryDiagnosis} />
-          <LatestVitalsCard vitals={data?.latestVitals} />
-        </div>
-
-        {hasNoData && (
-          <div className="mt-8 flex flex-col items-center justify-center py-10 px-4 text-center bg-slate-50 border border-slate-200 border-dashed rounded-3xl">
-            <h3 className="text-lg font-bold text-slate-800 mb-2" style={{ fontFamily: "var(--font-poppins)" }}>
-              Belum Ada Rekam Medis
-            </h3>
-            <p className="text-slate-500 mb-4 max-w-md text-sm leading-relaxed" style={{ fontFamily: "var(--font-jakarta)" }}>
-              Mulai pencatatan SOAP pertama untuk pasien ini dengan membuat asesmen baru.
-            </p>
-            {error && (
-              <p className="text-sm text-red-600 mb-4" style={{ fontFamily: "var(--font-jakarta)" }}>
-                {error}
-              </p>
-            )}
-            {canStartAssessment && (
-              <button
-                onClick={handleMulaiAsesmen}
-                disabled={isLoading}
-                className="flex items-center space-x-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-60 disabled:cursor-not-allowed text-white px-8 py-3 rounded-full font-semibold transition-all shadow-sm hover:shadow-md"
-                style={{ fontFamily: "var(--font-poppins)" }}
-              >
-                {isLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <Plus className="w-5 h-5" />
-                )}
-                <span>{isLoading ? "Memeriksa..." : "Buat Asesmen Pertama"}</span>
-              </button>
-            )}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ActiveDiagnosisCard primaryDiagnosis={data?.primaryDiagnosis} />
+            <LatestVitalsCard vitals={data?.latestVitals} />
           </div>
-        )}
+
+          {hasNoData && (
+            <div className="mt-8 flex flex-col items-center justify-center py-10 px-4 text-center bg-slate-50 border border-slate-200 border-dashed rounded-3xl">
+              <h3 className="text-lg font-bold text-slate-800 mb-2" style={{ fontFamily: "var(--font-poppins)" }}>
+                Belum Ada Rekam Medis
+              </h3>
+              <p className="text-slate-500 mb-4 max-w-md text-sm leading-relaxed" style={{ fontFamily: "var(--font-jakarta)" }}>
+                Mulai pencatatan SOAP pertama untuk pasien ini dengan membuat asesmen baru.
+              </p>
+              {canStartAssessment && (
+                <button
+                  onClick={handleMulaiAsesmen}
+                  disabled={isLoading}
+                  className="flex items-center space-x-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-60 disabled:cursor-not-allowed text-white px-8 py-3 rounded-full font-semibold transition-all shadow-sm hover:shadow-md"
+                  style={{ fontFamily: "var(--font-poppins)" }}
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Plus className="w-5 h-5" />
+                  )}
+                  <span>{isLoading ? "Memeriksa..." : "Buat Asesmen Pertama"}</span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      {error && (
+        <div className="fixed top-6 right-6 z-50 animate-in fade-in slide-in-from-top-4 duration-300 flex items-start gap-3 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl shadow-lg max-w-sm">
+          <AlertCircle className="w-5 h-5 mt-0.5 shrink-0 text-red-500" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold" style={{ fontFamily: "var(--font-poppins)" }}>
+              Gagal Memulai Asesmen
+            </p>
+            <p className="text-sm mt-0.5" style={{ fontFamily: "var(--font-jakarta)" }}>
+              {error}
+            </p>
+          </div>
+          <button onClick={() => setError(null)} className="shrink-0 text-red-400 hover:text-red-600 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+    </>
   );
 }
