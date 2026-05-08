@@ -92,7 +92,8 @@ export default async function AsesmenPage({
         age={age}
       />
 
-      <div className="col-span-12 max-w-6xl mx-auto w-full px-4 py-2">
+      {/* Kita hapus max-w-6xl, mx-auto, dan px-4 agar rata dengan Header */}
+      <div className="col-span-12 w-full pt-2 pb-10">
         <div className="h-px bg-gray-200 mb-6" />
 
         <AssessmentForm defaultValues={defaultValues} />

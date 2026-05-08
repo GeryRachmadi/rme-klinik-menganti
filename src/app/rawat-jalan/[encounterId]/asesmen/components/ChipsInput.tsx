@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState, KeyboardEvent } from 'react';
+import React, { useState, KeyboardEvent, useRef } from 'react';
 import { X, Plus } from 'lucide-react';
 
 export interface ChipsInputProps {
-  label: string;
   addLabel?: string;
   value: string[];
   onChange: (newValue: string[]) => void;
@@ -13,10 +12,14 @@ export interface ChipsInputProps {
   getChipColor?: (chip: string) => string;
   formatOnAdd?: (value: string) => string;
   extraInputNode?: React.ReactNode;
+  negationLabel?: string;
+  negationChecked?: boolean;
+  onNegationChange?: (checked: boolean) => void;
+  /* FITUR BARU: Array untuk dropdown rekomendasi */
+  suggestions?: string[];
 }
 
 export default function ChipsInput({
-  label,
   addLabel,
   value,
   onChange,
@@ -25,28 +28,40 @@ export default function ChipsInput({
   getChipColor,
   formatOnAdd,
   extraInputNode,
+  negationLabel,
+  negationChecked,
+  onNegationChange,
+  suggestions = [],
 }: ChipsInputProps) {
   const [inputValue, setInputValue] = useState('');
   const [isInputVisible, setIsInputVisible] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
-  const handleAdd = () => {
-    const trimmed = inputValue.trim();
+  // Filter rekomendasi berdasarkan ketikan user & pastikan belum ada di daftar chip
+  const filteredSuggestions = suggestions.filter(
+    (item) => 
+      item.toLowerCase().includes(inputValue.toLowerCase()) && 
+      !value.some(v => v.toLowerCase().includes(item.toLowerCase()))
+  );
+
+  const handleAdd = (textToAdd: string = inputValue) => {
+    const trimmed = textToAdd.trim();
     if (!trimmed) return;
 
     const formatted = formatOnAdd ? formatOnAdd(trimmed) : trimmed;
     
-    // Prevent exact duplicates
     if (!value.includes(formatted)) {
       onChange([...value, formatted]);
     }
     
     setInputValue('');
+    setShowSuggestions(false);
     setIsInputVisible(false);
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      e.preventDefault(); // Prevent form submission
+      e.preventDefault();
       handleAdd();
     }
   };
@@ -57,43 +72,101 @@ export default function ChipsInput({
 
   return (
     <div className="flex flex-col w-full font-jakarta">
-      {/* ROW 1: Label and Toggle Button */}
-      <div className="flex justify-between items-center mb-3">
-        <label className="text-sm font-bold text-teal-800 uppercase tracking-wider font-poppins">
-          {label}
-        </label>
+      {/* ROW 1: Chips Render */}
+      {value.length > 0 && (
+        <div className="flex flex-wrap gap-2 items-center mb-3">
+          {value.map((chip, index) => {
+            const colorClass = getChipColor ? getChipColor(chip) : 'bg-[#E6F5F4] border-[#B2DFDB] text-[#0F766E]';
+            return (
+              <span key={`${chip}-${index}`} className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-sm font-medium border ${colorClass}`}>
+                {chip}
+                {!disabled && (
+                  <button type="button" onClick={() => handleRemove(chip)} className="hover:bg-black/10 rounded-full p-0.5">
+                    <X size={14} />
+                  </button>
+                )}
+              </span>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ROW 2: Checkbox & Toggle Button */}
+      <div className="flex justify-between items-center mb-1">
+        {negationLabel ? (
+          <label className={`flex items-center gap-2.5 text-sm cursor-pointer ${disabled && !negationChecked ? 'opacity-50' : 'text-gray-700 hover:text-gray-900'}`}>
+            <input 
+              type="checkbox" 
+              checked={negationChecked}
+              onChange={(e) => onNegationChange && onNegationChange(e.target.checked)}
+              className="rounded border-gray-300 text-[#0F766E] focus:ring-[#0F766E] w-4 h-4 cursor-pointer"
+            />
+            <span className="font-medium">{negationLabel}</span>
+          </label>
+        ) : <div />}
+
         {!disabled && !isInputVisible && (
           <button
             type="button"
             onClick={() => setIsInputVisible(true)}
-            className="text-sm font-semibold text-teal-600 hover:text-teal-800 transition-colors flex items-center gap-1"
+            className="text-sm font-semibold text-[#0F766E] hover:text-teal-900 transition-colors whitespace-nowrap ml-4"
           >
             + Tambah {addLabel || 'Riwayat'}
           </button>
         )}
       </div>
 
-      {/* ROW 2: Input Area (When toggled) */}
+      {/* ROW 3: Input Area dengan Autocomplete Dropdown */}
       {isInputVisible && (
-        <div className="flex gap-3 items-center mb-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder}
-            disabled={disabled}
-            className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 bg-white"
-          />
+        <div className="flex gap-3 items-center mt-3 p-3 bg-gray-50 rounded-xl border border-gray-200 shadow-sm relative">
+          
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => {
+                setInputValue(e.target.value);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)} // Delay kecil agar onClick item dropdown sempat terbaca
+              onKeyDown={handleKeyDown}
+              placeholder={placeholder}
+              disabled={disabled}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] bg-white outline-none"
+            />
+            
+            {/* DROPDOWN REKOMENDASI */}
+            {showSuggestions && inputValue.length > 0 && filteredSuggestions.length > 0 && (
+              <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto top-full left-0">
+                {filteredSuggestions.map((suggestion, idx) => (
+                  <li
+                    key={idx}
+                    // Gunakan onMouseDown bukan onClick agar tidak kalah cepat dengan onBlur milik input
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleAdd(suggestion);
+                    }}
+                    className="px-4 py-2.5 text-sm text-gray-700 hover:bg-[#E6F5F4] hover:text-[#0F766E] cursor-pointer transition-colors"
+                  >
+                    {suggestion}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
           {extraInputNode}
+          
           <button
             type="button"
-            onClick={handleAdd}
+            onClick={() => handleAdd(inputValue)}
             disabled={disabled || !inputValue.trim()}
-            className="px-4 py-2.5 bg-teal-600 text-white text-sm font-semibold rounded-lg hover:bg-teal-700 disabled:opacity-50 flex items-center gap-2"
+            className="px-5 py-2.5 bg-[#0F766E] text-white text-sm font-semibold rounded-lg hover:bg-teal-800 disabled:opacity-50 flex items-center gap-2"
           >
             <Plus size={16} /> Simpan
           </button>
+          
           <button
             type="button"
             onClick={() => setIsInputVisible(false)}
@@ -103,27 +176,6 @@ export default function ChipsInput({
           </button>
         </div>
       )}
-
-      {/* ROW 3: Chips Render */}
-      <div className="flex flex-wrap gap-2 mb-1 min-h-[32px] items-center">
-        {value.length > 0 ? (
-          value.map((chip, index) => {
-            const colorClass = getChipColor ? getChipColor(chip) : 'bg-teal-50 border-teal-200 text-teal-800';
-            return (
-              <span key={`${chip}-${index}`} className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium border ${colorClass}`}>
-                {chip}
-                {!disabled && (
-                  <button type="button" onClick={() => handleRemove(chip)} className="hover:bg-black/10 rounded-full p-0.5">
-                    <X size={14} />
-                  </button>
-                )}
-              </span>
-            );
-          })
-        ) : (
-          <span className="text-sm text-gray-400 italic">Belum ada riwayat tercatat.</span>
-        )}
-      </div>
     </div>
   );
 }
