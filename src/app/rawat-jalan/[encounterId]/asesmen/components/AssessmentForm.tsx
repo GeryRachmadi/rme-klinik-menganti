@@ -2,25 +2,14 @@
 
 import React, { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { AssessmentSchema, type AssessmentFormValues } from '@/lib/schemas/assessment-schema';
 import ChipsInput from './ChipsInput';
-
-export interface AssessmentFormValues {
-  penyakit: string[];
-  alergi: string[];
-  obat: string[];
-  catatanPenyakit: string;
-  catatanAlergi: string;
-  catatanObat: string;
-  tidakAdaPenyakit: boolean;
-  tidakAdaAlergi: boolean;
-  tidakAdaObat: boolean;
-}
 
 interface AssessmentFormProps {
   defaultValues?: Partial<AssessmentFormValues>;
 }
 
-// DUMMY DATA REKOMENDASI (Nanti diganti API ICD-10 / Master Obat)
 const SUGGESTIONS_PENYAKIT = [
   "Hipertensi", "Diabetes Melitus Tipe 2", "Maag (Dispepsia)", "Radang Tenggorokan (Faringitis)", 
   "Asma", "Asam Urat (Gout)", "Kolesterol Tinggi", "Tuberkulosis (TBC)", "ISPA", "Diare"
@@ -40,7 +29,8 @@ export default function AssessmentForm({ defaultValues }: AssessmentFormProps) {
   const [alergiSeverity, setAlergiSeverity] = useState("Sedang");
   const [obatDosage, setObatDosage] = useState("");
 
-  const { control, handleSubmit, register, watch, setValue } = useForm<AssessmentFormValues>({
+  const { control, handleSubmit, register, watch, setValue, formState: { errors } } = useForm<AssessmentFormValues>({
+    resolver: zodResolver(AssessmentSchema),
     defaultValues: {
       penyakit: defaultValues?.penyakit || [],
       alergi: defaultValues?.alergi || [],
@@ -48,9 +38,9 @@ export default function AssessmentForm({ defaultValues }: AssessmentFormProps) {
       catatanPenyakit: defaultValues?.catatanPenyakit || '',
       catatanAlergi: defaultValues?.catatanAlergi || '',
       catatanObat: defaultValues?.catatanObat || '',
-      tidakAdaPenyakit: false,
-      tidakAdaAlergi: false,
-      tidakAdaObat: false,
+      tidakAdaPenyakit: defaultValues?.tidakAdaPenyakit || false,
+      tidakAdaAlergi: defaultValues?.tidakAdaAlergi || false,
+      tidakAdaObat: defaultValues?.tidakAdaObat || false,
     },
   });
 
@@ -59,8 +49,8 @@ export default function AssessmentForm({ defaultValues }: AssessmentFormProps) {
   const isObatNull = watch("tidakAdaObat");
 
   const onSubmitForm = (data: AssessmentFormValues) => {
-    console.log("Form Data:", data);
-    alert("Data tersimpan di console! Silakan cek.");
+    console.log("Form Data Valid:", data);
+    alert("Validasi Zod Sukses! Data tersimpan di console.");
   };
 
   return (
@@ -95,15 +85,15 @@ export default function AssessmentForm({ defaultValues }: AssessmentFormProps) {
                   negationLabel="Pasien menyangkal ada riwayat penyakit"
                   negationChecked={isPenyakitNull}
                   onNegationChange={(checked) => {
-                    setValue("tidakAdaPenyakit", checked);
+                    setValue("tidakAdaPenyakit", checked, { shouldValidate: true });
                     if (checked) {
-                      setValue("penyakit", []);
-                      setValue("catatanPenyakit", "");
+                      setValue("penyakit", [], { shouldValidate: true });
+                      setValue("catatanPenyakit", "", { shouldValidate: true });
                     }
                   }}
                   onChange={(newVal) => {
                     field.onChange(newVal);
-                    if (newVal.length > 0) setValue("tidakAdaPenyakit", false);
+                    if (newVal.length > 0) setValue("tidakAdaPenyakit", false, { shouldValidate: true });
                   }}
                   placeholder="Contoh: Maag, Radang Tenggorokan"
                 />
@@ -113,9 +103,12 @@ export default function AssessmentForm({ defaultValues }: AssessmentFormProps) {
               {...register("catatanPenyakit")} 
               disabled={isPenyakitNull}
               placeholder={isPenyakitNull ? "Tidak ada catatan" : "Tambahkan catatan disini..."} 
-              className={`w-full mt-2 border rounded-xl p-4 text-sm resize-y focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] min-h-[90px] transition-colors
-                ${isPenyakitNull ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#F9FAFB] border-gray-200 text-gray-900 placeholder-gray-400'}`} 
+              className={`w-full mt-2 border rounded-xl p-4 text-sm resize-y focus:outline-none focus:ring-1 min-h-[90px] transition-colors
+                ${errors.penyakit ? 'border-red-500 focus:ring-red-500' : 'focus:ring-[#0F766E] focus:border-[#0F766E] border-gray-200'}
+                ${isPenyakitNull ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-[#F9FAFB] text-gray-900 placeholder-gray-400'}`} 
             />
+            {/* UI ERROR MESSAGE PENYAKIT (Clean & Consistent) */}
+            {errors.penyakit && <p className="text-red-500 text-[13px] mt-1.5">{errors.penyakit.message}</p>}
           </div>
 
           {/* SECTION: ALERGI */}
@@ -138,15 +131,15 @@ export default function AssessmentForm({ defaultValues }: AssessmentFormProps) {
                   negationLabel="No Known Allergies (NKA)"
                   negationChecked={isAlergiNull}
                   onNegationChange={(checked) => {
-                    setValue("tidakAdaAlergi", checked);
+                    setValue("tidakAdaAlergi", checked, { shouldValidate: true });
                     if (checked) {
-                      setValue("alergi", []);
-                      setValue("catatanAlergi", "");
+                      setValue("alergi", [], { shouldValidate: true });
+                      setValue("catatanAlergi", "", { shouldValidate: true });
                     }
                   }}
                   onChange={(newVal) => {
                     field.onChange(newVal);
-                    if (newVal.length > 0) setValue("tidakAdaAlergi", false);
+                    if (newVal.length > 0) setValue("tidakAdaAlergi", false, { shouldValidate: true });
                   }}
                   placeholder="Contoh: Amoxicillin"
                   extraInputNode={
@@ -175,9 +168,12 @@ export default function AssessmentForm({ defaultValues }: AssessmentFormProps) {
               {...register("catatanAlergi")} 
               disabled={isAlergiNull}
               placeholder={isAlergiNull ? "Tidak ada catatan" : "Tambahkan catatan disini..."} 
-              className={`w-full mt-2 border rounded-xl p-4 text-sm resize-y focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] min-h-[90px] transition-colors
-                ${isAlergiNull ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#F9FAFB] border-gray-200 text-gray-900 placeholder-gray-400'}`} 
+              className={`w-full mt-2 border rounded-xl p-4 text-sm resize-y focus:outline-none focus:ring-1 min-h-[90px] transition-colors
+                ${errors.alergi ? 'border-red-500 focus:ring-red-500' : 'focus:ring-[#0F766E] focus:border-[#0F766E] border-gray-200'}
+                ${isAlergiNull ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-[#F9FAFB] text-gray-900 placeholder-gray-400'}`} 
             />
+            {/* UI ERROR MESSAGE ALERGI (Clean & Consistent) */}
+            {errors.alergi && <p className="text-red-500 text-[13px] mt-1.5">{errors.alergi.message}</p>}
           </div>
 
           {/* SECTION: OBAT */}
@@ -200,15 +196,15 @@ export default function AssessmentForm({ defaultValues }: AssessmentFormProps) {
                   negationLabel="Tidak ada pengobatan rutin"
                   negationChecked={isObatNull}
                   onNegationChange={(checked) => {
-                    setValue("tidakAdaObat", checked);
+                    setValue("tidakAdaObat", checked, { shouldValidate: true });
                     if (checked) {
-                      setValue("obat", []);
-                      setValue("catatanObat", "");
+                      setValue("obat", [], { shouldValidate: true });
+                      setValue("catatanObat", "", { shouldValidate: true });
                     }
                   }}
                   onChange={(newVal) => {
                     field.onChange(newVal);
-                    if (newVal.length > 0) setValue("tidakAdaObat", false);
+                    if (newVal.length > 0) setValue("tidakAdaObat", false, { shouldValidate: true });
                   }}
                   placeholder="Contoh: Paracetamol"
                   extraInputNode={
@@ -229,9 +225,12 @@ export default function AssessmentForm({ defaultValues }: AssessmentFormProps) {
               {...register("catatanObat")} 
               disabled={isObatNull}
               placeholder={isObatNull ? "Tidak ada catatan" : "Tambahkan catatan disini..."} 
-              className={`w-full mt-2 border rounded-xl p-4 text-sm resize-y focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] min-h-[90px] transition-colors
-                ${isObatNull ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#F9FAFB] border-gray-200 text-gray-900 placeholder-gray-400'}`} 
+              className={`w-full mt-2 border rounded-xl p-4 text-sm resize-y focus:outline-none focus:ring-1 min-h-[90px] transition-colors
+                ${errors.obat ? 'border-red-500 focus:ring-red-500' : 'focus:ring-[#0F766E] focus:border-[#0F766E] border-gray-200'}
+                ${isObatNull ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-[#F9FAFB] text-gray-900 placeholder-gray-400'}`} 
             />
+            {/* UI ERROR MESSAGE OBAT (Clean & Consistent) */}
+            {errors.obat && <p className="text-red-500 text-[13px] mt-1.5">{errors.obat.message}</p>}
           </div>
 
         </div>

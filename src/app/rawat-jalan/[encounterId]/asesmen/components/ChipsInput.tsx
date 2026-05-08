@@ -164,7 +164,7 @@ export default function ChipsInput({
             disabled={disabled || !inputValue.trim()}
             className="px-5 py-2.5 bg-[#0F766E] text-white text-sm font-semibold rounded-lg hover:bg-teal-800 disabled:opacity-50 flex items-center gap-2"
           >
-            <Plus size={16} /> Simpan
+            Simpan
           </button>
           
           <button
