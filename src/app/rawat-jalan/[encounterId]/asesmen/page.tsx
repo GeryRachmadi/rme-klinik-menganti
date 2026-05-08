@@ -96,7 +96,7 @@ export default async function AsesmenPage({
       <div className="col-span-12 w-full pt-2 pb-10">
         <div className="h-px bg-gray-200 mb-6" />
 
-        <AssessmentForm defaultValues={defaultValues} />
+        <AssessmentForm encounterId={encounterId} defaultValues={defaultValues} />
       </div>
     </div>
   );
