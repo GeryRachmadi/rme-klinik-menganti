@@ -173,15 +173,15 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 - TR-55 ✅ API endpoint fetch riwayat medis
 
 ### TR-9 [UC-08] Catat Kajian Awal
-- TR-56 ⏳ Buat halaman Asesmen UI
-- TR-57 ⏳ Form Kajian Awal input chips
-- TR-58 ⏳ Opsi "tidak ada" tiap field
-- TR-59 ⏳ Error handling preserve input state
-- TR-60 ⏳ API endpoint ConditionHistory, AllergyIntolerance, MedicationStatement
+- TR-56 ✅ Buat halaman Asesmen UI
+- TR-57 ✅ Form Kajian Awal input chips
+- TR-58 ✅ Opsi "tidak ada" tiap field
+- TR-59 ✅ Error handling preserve input state
+- TR-60 ✅ API endpoint ConditionHistory, AllergyIntolerance, MedicationStatement
 
 ### TR-10 [UC-09] Catat Pemeriksaan Fisik
-- TR-61 ⏳ Form Pemeriksaan Fisik
-- TR-62 ⏳ Kalkulasi BMI otomatis
+- TR-61 ✅ Form Pemeriksaan Fisik
+- TR-62 ✅ Kalkulasi BMI otomatis
 - TR-63 ⏳ Validasi batas logis tanda vital
 - TR-64 ⏳ Konfirmasi dua opsi Kembali/Lanjut
 - TR-65 ⏳ API endpoint Observation
