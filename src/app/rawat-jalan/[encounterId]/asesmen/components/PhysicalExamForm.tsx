@@ -4,14 +4,14 @@ import React, { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
-import { Loader2, FileText } from 'lucide-react';
+import { Loader2, FileText, AlertCircle, CheckCircle2 } from 'lucide-react';
 
-import { physicalExamSchema, type PhysicalExamData } from '@/lib/schemas/physical-exam-schema';
+import { PhysicalExamSchema, type PhysicalExamData } from '@/lib/schemas/physical-exam-schema';
+import { getOutOfBoundsFields } from '@/lib/utils/bounds-validator';
 import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft';
 import { useFormToast } from '@/hooks/useFormToast';
 import { getPhysicalExamDraftKey } from '@/lib/constants/storage-keys';
 import { calculateBMI, getBMIStatus } from '@/lib/utils/bmi-calculator';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import VitalSignInput from './VitalSignInput';
 import BMIDisplay from './BMIDisplay';
 
@@ -103,24 +103,24 @@ export default function PhysicalExamForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast, showSuccess, showError } = useFormToast();
 
+  const [outOfBoundsFields, setOutOfBoundsFields] = useState<string[]>([]);
+
   const {
     control,
-    handleSubmit,
     register,
     watch,
     setValue,
     reset,
-    formState: { errors },
   } = useForm<PhysicalExamData>({
-    resolver: zodResolver(physicalExamSchema),
+    resolver: zodResolver(PhysicalExamSchema),
     mode: 'onChange',
     defaultValues: {
       tekananDarah: '',
-      suhu: '',
-      nadi: '',
-      napas: '',
-      tinggiBadan: '',
-      beratBadan: '',
+      suhu: '' as any,
+      nadi: '' as any,
+      napas: '' as any,
+      tinggiBadan: '' as any,
+      beratBadan: '' as any,
       bmi: undefined,
       catatan: '',
     },
@@ -128,6 +128,11 @@ export default function PhysicalExamForm({
 
   const formValues = watch();
   useAutoSaveDraft(draftKey, formValues);
+
+  useEffect(() => {
+    const outOfBounds = getOutOfBoundsFields(formValues);
+    setOutOfBoundsFields(outOfBounds);
+  }, [formValues]);
 
   // Draft restoration on mount
   useEffect(() => {
@@ -188,6 +193,7 @@ export default function PhysicalExamForm({
     setIsSubmitting(true);
     try {
       console.log('PhysicalExam form data:', data);
+      console.log('Out of bounds fields detected:', outOfBoundsFields);
       // TODO TR-65: replace with POST /api/encounters/${encounterId}/physical-exam
       // Simulate success for now
       localStorage.removeItem(draftKey);
@@ -226,7 +232,15 @@ export default function PhysicalExamForm({
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onSubmitForm)} className="w-full">
+      <form 
+        onSubmit={(e) => {
+          e.preventDefault();
+          // By passing the current form values directly, we allow submission even if Zod schema has bounds warnings.
+          // This fulfills the requirement "Form still allows submission with invalid data (modal blocks, not schema)"
+          onSubmitForm(formValues as PhysicalExamData);
+        }} 
+        className="w-full"
+      >
         <h2
           className="mb-5 text-[22px] font-bold text-[#0F766E] uppercase tracking-wide font-poppins"
           style={{ WebkitTextStroke: '0.4px #0F766E' }}
@@ -247,10 +261,10 @@ export default function PhysicalExamForm({
                     label="Tekanan Darah"
                     unit="mmHg"
                     type="text"
-                    value={field.value}
+                    value={field.value ?? ''}
                     onChange={field.onChange}
                     placeholder="130/85"
-                    error={errors.tekananDarah?.message}
+                    warning={outOfBoundsFields.includes('tekananDarah')}
                   />
                 )}
               />
@@ -263,10 +277,10 @@ export default function PhysicalExamForm({
                     unit="°C"
                     type="number"
                     step={0.1}
-                    value={field.value}
+                    value={field.value ?? ''}
                     onChange={field.onChange}
                     placeholder="36.5"
-                    error={errors.suhu?.message}
+                    warning={outOfBoundsFields.includes('suhu')}
                   />
                 )}
               />
@@ -278,10 +292,10 @@ export default function PhysicalExamForm({
                     label="Nadi"
                     unit="bpm"
                     type="number"
-                    value={field.value}
+                    value={field.value ?? ''}
                     onChange={field.onChange}
                     placeholder="80"
-                    error={errors.nadi?.message}
+                    warning={outOfBoundsFields.includes('nadi')}
                   />
                 )}
               />
@@ -293,10 +307,10 @@ export default function PhysicalExamForm({
                     label="Napas"
                     unit="x/mnt"
                     type="number"
-                    value={field.value}
+                    value={field.value ?? ''}
                     onChange={field.onChange}
                     placeholder="20"
-                    error={errors.napas?.message}
+                    warning={outOfBoundsFields.includes('napas')}
                   />
                 )}
               />
@@ -313,10 +327,10 @@ export default function PhysicalExamForm({
                     unit="cm"
                     type="number"
                     step={0.1}
-                    value={field.value}
+                    value={field.value ?? ''}
                     onChange={field.onChange}
                     placeholder="170"
-                    error={errors.tinggiBadan?.message}
+                    warning={outOfBoundsFields.includes('tinggiBadan')}
                   />
                 )}
               />
@@ -329,10 +343,10 @@ export default function PhysicalExamForm({
                     unit="kg"
                     type="number"
                     step={0.1}
-                    value={field.value}
+                    value={field.value ?? ''}
                     onChange={field.onChange}
                     placeholder="65"
-                    error={errors.beratBadan?.message}
+                    warning={outOfBoundsFields.includes('beratBadan')}
                   />
                 )}
               />
@@ -347,7 +361,6 @@ export default function PhysicalExamForm({
                 </div>
                 <BMIDisplay bmi={bmi} status={bmiStatus} />
               </div>
-              {/* empty 4th column — reserved for TR-63 out-of-bounds indicator */}
               <div />
             </div>
 
@@ -365,9 +378,6 @@ export default function PhysicalExamForm({
               <p className="text-[12px] text-gray-400 text-right">
                 {catatan.length}/500 karakter
               </p>
-              {errors.catatan && (
-                <p className="text-red-500 text-[12px]">{errors.catatan.message}</p>
-              )}
             </div>
 
           </div>

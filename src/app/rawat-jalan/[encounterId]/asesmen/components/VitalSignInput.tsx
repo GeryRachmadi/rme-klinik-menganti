@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { AlertCircle } from 'lucide-react';
 
 interface VitalSignInputProps {
   label: string;
@@ -12,6 +13,7 @@ interface VitalSignInputProps {
   error?: string;
   disabled?: boolean;
   step?: number;
+  warning?: boolean;
 }
 
 function formatBloodPressure(raw: string): string {
@@ -31,6 +33,7 @@ export default function VitalSignInput({
   error,
   disabled = false,
   step,
+  warning,
 }: VitalSignInputProps) {
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(formatBloodPressure(e.target.value));
@@ -49,17 +52,23 @@ export default function VitalSignInput({
     disabled:opacity-50 disabled:cursor-not-allowed
   `.trim();
 
-  const groupBorder = error
-    ? 'border-red-400 focus-within:border-red-400 focus-within:ring-1 focus-within:ring-red-400'
-    : 'border-gray-200 focus-within:border-[#0F766E] focus-within:ring-1 focus-within:ring-[#0F766E]';
+  let groupBorder = 'border-gray-200 focus-within:border-[#0F766E] focus-within:ring-1 focus-within:ring-[#0F766E]';
+  if (error) {
+    groupBorder = 'border-red-400 focus-within:border-red-400 focus-within:ring-1 focus-within:ring-red-400';
+  } else if (warning) {
+    groupBorder = 'border-yellow-500 border-2 focus-within:border-yellow-500 focus-within:ring-0';
+  }
 
   return (
     <div className="flex flex-col gap-1.5" style={{ fontFamily: 'var(--font-jakarta)' }}>
-      <label className="text-xs font-bold text-[#0F766E] uppercase tracking-wider">
-        {label}
-      </label>
+      <div className={`flex items-center gap-2 ${warning ? "text-yellow-600" : ""}`}>
+        <label className="text-xs font-bold text-[#0F766E] uppercase tracking-wider">
+          {label}
+        </label>
+        {warning && <AlertCircle className="h-4 w-4" />}
+      </div>
 
-      <div className={`flex items-stretch rounded-xl border overflow-hidden transition-colors ${groupBorder}`}>
+      <div className={`flex items-stretch rounded-xl overflow-hidden transition-colors ${groupBorder} ${!warning && !error ? 'border' : ''}`}>
         {type === 'text' ? (
           <input
             type="text"
