@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { ASSESSMENT_CONFIG } from '@/lib/constants/assessment-validation';
 
-export type ToastType = 'success' | 'error';
+export type ToastType = 'success' | 'error' | 'warning';
 
 export interface ToastState {
   type: ToastType;
@@ -31,6 +31,7 @@ export function useFormToast() {
     toast,
     showSuccess: (text: string) => setToast({ type: 'success', text }),
     showError: (text: string) => setToast({ type: 'error', text }),
+    showWarning: (text: string) => setToast({ type: 'warning', text }),
     clearToast: () => setToast(null),
   };
 }

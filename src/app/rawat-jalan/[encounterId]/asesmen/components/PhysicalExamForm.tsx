@@ -14,6 +14,7 @@ import { getPhysicalExamDraftKey } from '@/lib/constants/storage-keys';
 import { calculateBMI, getBMIStatus } from '@/lib/utils/bmi-calculator';
 import VitalSignInput from './VitalSignInput';
 import BMIDisplay from './BMIDisplay';
+import OutOfBoundsConfirmModal from './OutOfBoundsConfirmModal';
 
 // ─── Prop types ──────────────────────────────────────────────────────────────
 
@@ -32,6 +33,7 @@ interface PhysicalExamFormProps {
   patient: PatientData;
   encounter: EncounterData;
   isEditMode?: boolean;
+  canEdit?: boolean;
 }
 
 // ─── Draft payload ────────────────────────────────────────────────────────────
@@ -94,6 +96,7 @@ function DraftRestoreModal({
 export default function PhysicalExamForm({
   encounterId,
   isEditMode = false,
+  canEdit = true,
 }: PhysicalExamFormProps) {
   const router = useRouter();
   const draftKey = getPhysicalExamDraftKey(encounterId);
@@ -101,9 +104,11 @@ export default function PhysicalExamForm({
   const [isRestoring, setIsRestoring] = useState(true);
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast, showSuccess, showError } = useFormToast();
+  const { toast, showSuccess, showError, showWarning } = useFormToast();
 
   const [outOfBoundsFields, setOutOfBoundsFields] = useState<string[]>([]);
+  const [showOutOfBoundsModal, setShowOutOfBoundsModal] = useState(false);
+  const [userConfirmedSubmit, setUserConfirmedSubmit] = useState(false);
 
   const {
     control,
@@ -190,6 +195,18 @@ export default function PhysicalExamForm({
 
   // Stub submit handler — API call wired in TR-65
   const onSubmitForm = async (data: PhysicalExamData) => {
+    if (!canEdit) {
+      showError("Anda tidak memiliki izin untuk menyimpan pemeriksaan fisik.");
+      return;
+    }
+
+    const outOfBounds = getOutOfBoundsFields(data);
+
+    if (outOfBounds.length > 0 && !userConfirmedSubmit) {
+      setShowOutOfBoundsModal(true);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       console.log('PhysicalExam form data:', data);
@@ -205,6 +222,33 @@ export default function PhysicalExamForm({
     }
   };
 
+  const handlePeriksaUlang = () => {
+    setShowOutOfBoundsModal(false);
+    setUserConfirmedSubmit(false);
+  };
+
+  const handleSimpanTetap = () => {
+    setUserConfirmedSubmit(true);
+    setShowOutOfBoundsModal(false);
+    showWarning("Data tanda vital di luar batas normal. Melanjutkan penyimpanan...");
+    
+    // Using a timeout to ensure state update, then re-submit
+    setTimeout(() => {
+      onSubmitForm(formValues as PhysicalExamData);
+    }, 100);
+  };
+
+  if (!canEdit) {
+    return (
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center" style={{ fontFamily: 'var(--font-jakarta)' }}>
+        <AlertCircle className="h-8 w-8 text-gray-400 mx-auto mb-4" />
+        <p className="text-gray-600 font-medium">
+          Hanya perawat dan dokter yang dapat mengedit pemeriksaan fisik.
+        </p>
+      </div>
+    );
+  }
+
   if (isRestoring && !showDraftModal) {
     return (
       <div className="p-8 text-center text-gray-500 animate-pulse">
@@ -218,15 +262,30 @@ export default function PhysicalExamForm({
       {showDraftModal && (
         <DraftRestoreModal onAccept={handleDraftAccept} onDiscard={handleDraftDiscard} />
       )}
+      
+      <OutOfBoundsConfirmModal
+        isOpen={showOutOfBoundsModal}
+        outOfBoundsFields={outOfBoundsFields}
+        onPeriksaUlang={handlePeriksaUlang}
+        onSimpanTetap={handleSimpanTetap}
+      />
 
       {toast && (
         <div className={`fixed top-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl animate-in slide-in-from-top-5 duration-300 ${
-          toast.type === 'success' ? 'bg-[#E6F5F4] border border-[#B2DFDB]' : 'bg-red-50 border border-red-200'
+          toast.type === 'success' ? 'bg-[#E6F5F4] border border-[#B2DFDB]' : 
+          toast.type === 'warning' ? 'bg-yellow-50 border border-yellow-200' : 
+          'bg-red-50 border border-red-200'
         }`}>
           {toast.type === 'success'
             ? <CheckCircle2 size={20} strokeWidth={2} className="text-[#0F766E] flex-shrink-0" />
+            : toast.type === 'warning'
+            ? <AlertCircle size={20} strokeWidth={2} className="text-yellow-600 flex-shrink-0" />
             : <AlertCircle size={20} strokeWidth={2} className="text-red-500 flex-shrink-0" />}
-          <span className={`font-medium text-sm ${toast.type === 'success' ? 'text-[#0F766E]' : 'text-red-600'}`}>
+          <span className={`font-medium text-sm ${
+            toast.type === 'success' ? 'text-[#0F766E]' : 
+            toast.type === 'warning' ? 'text-yellow-700' : 
+            'text-red-600'
+          }`}>
             {toast.text}
           </span>
         </div>

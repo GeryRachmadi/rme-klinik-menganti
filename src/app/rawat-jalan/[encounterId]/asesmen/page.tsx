@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   title: "Asesmen | RME Klinik Pratama Menganti",
 };
 
-const ALLOWED_ROLES = ["ADMIN", "DOKTER", "PERAWAT"];
+const ALLOWED_ROLES = ["ADMIN", "DOKTER", "PERAWAT", "PENDAFTARAN"];
 const ACTIVE_STATUSES = ["MENUNGGU", "DIPERIKSA"];
 
 export default async function AsesmenPage({
@@ -25,6 +25,8 @@ export default async function AsesmenPage({
 
   const userRole = session.user?.role as string;
   if (!ALLOWED_ROLES.includes(userRole)) redirect("/");
+
+  const canEditAssessment = ['DOKTER', 'PERAWAT', 'ADMIN'].includes(userRole);
 
   const { encounterId } = await params;
 
@@ -122,6 +124,7 @@ export default async function AsesmenPage({
               reasonCode: encounter.reasonCode,
             }}
             isEditMode={encounter.status === 'DIPERIKSA'}
+            canEdit={canEditAssessment}
           />
         </div>
       </div>

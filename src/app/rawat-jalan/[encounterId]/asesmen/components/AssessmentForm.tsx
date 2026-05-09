@@ -44,7 +44,7 @@ function FieldErrorMessage({ message }: { message?: string }) {
   return <p className="text-red-500 text-[13px] mt-1.5">{message}</p>;
 }
 
-function FormToast({ toast }: { toast: { type: 'success' | 'error'; text: string } | null }) {
+function FormToast({ toast }: { toast: { type: 'success' | 'error' | 'warning'; text: string } | null }) {
   if (!toast) return null;
   const isSuccess = toast.type === 'success';
   return (
