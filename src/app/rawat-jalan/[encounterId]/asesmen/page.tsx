@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import Breadcrumb from "@/components/shared/Breadcrumb";
 import PatientAssessmentHeader from "./components/PatientAssessmentHeader";
 import AssessmentForm from "./components/AssessmentForm";
+import PhysicalExamForm from "./components/PhysicalExamForm";
 import { calculateAge } from "@/lib/utils/date";
 
 export const metadata: Metadata = {
@@ -57,9 +58,15 @@ export default async function AsesmenPage({
   const age = calculateAge(encounter.patient.tanggalLahir);
 
   const defaultValues = {
-    penyakit: encounter.patient.conditionHistories?.map((c: any) => c.name) || [],
-    alergi: encounter.patient.allergyIntolerances?.map((a: any) => `${a.name} (${a.criticality})`) || [],
-    obat: encounter.patient.medicationStatements?.map((m: any) => `${m.name} (${m.dosage})`) || [],
+    penyakit: encounter.patient.conditionHistories
+      ?.map((c) => c.description)
+      .filter((v): v is string => Boolean(v)) ?? [],
+    alergi: encounter.patient.allergyIntolerances
+      ?.map((a) => `${a.description} (${a.reactionSeverity})`)
+      .filter((v): v is string => Boolean(v)) ?? [],
+    obat: encounter.patient.medicationStatements
+      ?.map((m) => m.dosage ? `${m.description} (${m.dosage})` : m.description)
+      .filter((v): v is string => Boolean(v)) ?? [],
     catatanPenyakit: "",
     catatanAlergi: "",
     catatanObat: "",
@@ -92,11 +99,31 @@ export default async function AsesmenPage({
         age={age}
       />
 
-      {/* Kita hapus max-w-6xl, mx-auto, dan px-4 agar rata dengan Header */}
-      <div className="col-span-12 w-full pt-2 pb-10">
-        <div className="h-px bg-gray-200 mb-6" />
+      <div className="col-span-12 w-full pt-2 pb-10 space-y-10">
+        <div>
+          <div className="h-px bg-gray-200 mb-6" />
+          <AssessmentForm
+            encounterId={encounterId}
+            defaultValues={defaultValues}
+            isEditMode={encounter.status === 'DIPERIKSA'}
+          />
+        </div>
 
-        <AssessmentForm encounterId={encounterId} defaultValues={defaultValues} />
+        <div>
+          <div className="h-px bg-gray-200 mb-6" />
+          <PhysicalExamForm
+            encounterId={encounterId}
+            patient={{
+              namaLengkap: encounter.patient.namaLengkap,
+              noRm: encounter.patient.noRm,
+            }}
+            encounter={{
+              periodStart: encounter.periodStart,
+              reasonCode: encounter.reasonCode,
+            }}
+            isEditMode={encounter.status === 'DIPERIKSA'}
+          />
+        </div>
       </div>
     </div>
   );

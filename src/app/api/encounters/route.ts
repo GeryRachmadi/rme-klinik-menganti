@@ -175,7 +175,7 @@ export async function POST(req: Request) {
         data: {
           queueNumber,
           queueDate,
-          status:     "PLANNED", // Required for future SATUSEHAT compliance
+          status:     "MENUNGGU",
           // class:   "AMB",     // Required for future SATUSEHAT compliance (not yet in Prisma schema)
           priority:   typeof priority    === "string" ? priority    : "STABIL",
           reasonCode: typeof reasonCode  === "string" ? reasonCode  : null,

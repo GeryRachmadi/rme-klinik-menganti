@@ -142,10 +142,10 @@ export default function ChipsInput({
                 {filteredSuggestions.map((suggestion, idx) => (
                   <li
                     key={idx}
-                    // Gunakan onMouseDown bukan onClick agar tidak kalah cepat dengan onBlur milik input
                     onMouseDown={(e) => {
                       e.preventDefault();
-                      handleAdd(suggestion);
+                      setInputValue(suggestion);
+                      setShowSuggestions(false);
                     }}
                     className="px-4 py-2.5 text-sm text-gray-700 hover:bg-[#E6F5F4] hover:text-[#0F766E] cursor-pointer transition-colors"
                   >

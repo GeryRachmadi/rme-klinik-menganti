@@ -1,42 +1,40 @@
 import { z } from 'zod';
+import { ERROR_MESSAGES } from '@/lib/constants/assessment-validation';
 
 export const AssessmentSchema = z.object({
   penyakit: z.array(z.string()),
   tidakAdaPenyakit: z.boolean(),
-  catatanPenyakit: z.string().max(500, "Catatan maksimal 500 karakter"),
+  catatanPenyakit: z.string().max(500, ERROR_MESSAGES.catatanMax),
 
   alergi: z.array(z.string()),
   tidakAdaAlergi: z.boolean(),
-  catatanAlergi: z.string().max(500, "Catatan maksimal 500 karakter"),
+  catatanAlergi: z.string().max(500, ERROR_MESSAGES.catatanMax),
 
   obat: z.array(z.string()),
   tidakAdaObat: z.boolean(),
-  catatanObat: z.string().max(500, "Catatan maksimal 500 karakter"),
+  catatanObat: z.string().max(500, ERROR_MESSAGES.catatanMax),
 }).superRefine((data, ctx) => {
-  // RULE 1: Penyakit Mutual Exclusion
   if (data.penyakit.length === 0 && !data.tidakAdaPenyakit) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Mohon isi riwayat penyakit atau centang opsi 'Pasien menyangkal'",
-      path: ["penyakit"],
-    });
-  }
-  
-  // RULE 2: Alergi Mutual Exclusion
-  if (data.alergi.length === 0 && !data.tidakAdaAlergi) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Mohon isi riwayat alergi atau centang opsi 'No Known Allergies (NKA)'",
-      path: ["alergi"],
+      message: ERROR_MESSAGES.penyakit,
+      path: ['penyakit'],
     });
   }
 
-  // RULE 3: Obat Mutual Exclusion
+  if (data.alergi.length === 0 && !data.tidakAdaAlergi) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: ERROR_MESSAGES.alergi,
+      path: ['alergi'],
+    });
+  }
+
   if (data.obat.length === 0 && !data.tidakAdaObat) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Mohon isi pengobatan rutin atau centang opsi 'Tidak ada pengobatan rutin'",
-      path: ["obat"],
+      message: ERROR_MESSAGES.obat,
+      path: ['obat'],
     });
   }
 });

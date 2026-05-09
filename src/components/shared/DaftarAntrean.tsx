@@ -12,7 +12,6 @@ import {
   UserPlus,
   Loader2,
   Calendar,
-  ClipboardList,
 } from "lucide-react";
 import EncounterRegistrationDrawer from "@/components/shared/EncounterRegistrationDrawer";
 
@@ -307,11 +306,10 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
                       {canAssess && (row.status === "Menunggu" || row.status === "Diperiksa") ? (
                         <button
                           onClick={() => router.push(`/rawat-jalan/${row.id}/asesmen`)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white transition-colors"
+                          className="px-3 py-1.5 rounded-full text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white transition-colors cursor-pointer"
                           style={{ fontFamily: "var(--font-poppins)" }}
                         >
-                          <ClipboardList size={13} strokeWidth={2} />
-                          Mulai Asesmen
+                          {row.status === "Diperiksa" ? "Edit Asesmen" : "Mulai Asesmen"}
                         </button>
                       ) : (
                         <span className="text-xs text-gray-300">—</span>
