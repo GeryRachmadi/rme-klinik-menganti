@@ -193,7 +193,6 @@ export default function PhysicalExamForm({
 
   const catatan = watch('catatan') ?? '';
 
-  // Stub submit handler — API call wired in TR-65
   const onSubmitForm = async (data: PhysicalExamData) => {
     if (!canEdit) {
       showError("Anda tidak memiliki izin untuk menyimpan pemeriksaan fisik.");
@@ -209,14 +208,43 @@ export default function PhysicalExamForm({
 
     setIsSubmitting(true);
     try {
-      console.log('PhysicalExam form data:', data);
-      console.log('Out of bounds fields detected:', outOfBoundsFields);
-      // TODO TR-65: replace with POST /api/encounters/${encounterId}/physical-exam
-      // Simulate success for now
+      const response = await fetch(
+        `/api/encounters/${encounterId}/physical-exam`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...data,
+            userConfirmedOutOfBounds: userConfirmedSubmit
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        if (response.status === 400) {
+          showError("Data tidak valid. Periksa kembali nilai tanda vital.");
+        } else if (response.status === 401) {
+          showError("Sesi Anda telah berakhir. Silakan login ulang.");
+        } else if (response.status === 403) {
+          showError("Hanya perawat dan dokter yang dapat menyimpan pemeriksaan fisik.");
+        } else if (response.status === 404) {
+          showError("Kunjungan tidak ditemukan.");
+        } else {
+          showError(errorData.error || "Gagal menyimpan pemeriksaan fisik.");
+        }
+        return;
+      }
+
+      showSuccess("Pemeriksaan fisik berhasil disimpan");
       localStorage.removeItem(draftKey);
-      showSuccess('Asesmen berhasil disimpan.');
+      
+      setTimeout(() => {
+        router.push(`/rawat-jalan`);
+      }, 1500);
     } catch (error: unknown) {
-      showError(error instanceof Error ? error.message : 'Terjadi kesalahan sistem.');
+      console.error("Submission error:", error);
+      showError("Terjadi kesalahan jaringan. Silakan coba lagi.");
     } finally {
       setIsSubmitting(false);
     }
@@ -454,7 +482,7 @@ export default function PhysicalExamForm({
           </button>
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !canEdit}
             className="px-8 py-2.5 bg-[#0F766E] hover:bg-teal-800 text-white font-semibold rounded-xl transition-colors shadow-sm text-sm min-w-[120px] flex justify-center items-center cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
