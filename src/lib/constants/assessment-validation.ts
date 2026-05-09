@@ -1,17 +1,12 @@
 // Batas logis tanda vital — digunakan oleh TR-58 schema dan TR-63 validasi Pemeriksaan Fisik
 export const VITAL_BOUNDS = {
-  sistol: { min: 60, max: 250 },
-  diastol: { min: 40, max: 150 },
-  nadiMin: 30,
-  nadiMax: 200,
-  suhuMin: 34.0,
-  suhuMax: 42.0,
-  spo2Min: 50,
-  spo2Max: 100,
-  beratMin: 1,
-  beratMax: 300,
-  tinggiMin: 50,
-  tinggiMax: 250,
+  tekananDarah: { min: "60/40", max: "250/150" },
+  suhu: { min: 34.0, max: 42.0 },
+  nadi: { min: 30, max: 200 },
+  napas: { min: 8, max: 60, unit: "x/min" },
+  tinggiBadan: { min: 50, max: 250 },
+  beratBadan: { min: 1, max: 300 },
+  spo2: { min: 50, max: 100 },
 } as const;
 
 export const ERROR_MESSAGES = {
