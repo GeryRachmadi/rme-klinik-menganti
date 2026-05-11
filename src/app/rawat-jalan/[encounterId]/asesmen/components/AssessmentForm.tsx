@@ -8,17 +8,19 @@ import ChipsInput from './ChipsInput';
 import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft';
 import { useFormToast } from '@/hooks/useFormToast';
 import { parseAllergyChip, parseMedicationChip } from '@/lib/utils/assessment-parser';
-import { shouldRestoreDraft, deleteDraft, readDraft } from '@/lib/utils/draft-utils';
+import { deleteDraft } from '@/lib/utils/draft-utils';
 import { handleApiError } from '@/lib/utils/api-error-handler';
 import { ASSESSMENT_CONFIG } from '@/lib/constants/assessment-validation';
 import { getAssessmentDraftKey } from '@/lib/constants/storage-keys';
 import { useRouter } from 'next/navigation';
-import { AlertCircle, CheckCircle2, FileText } from 'lucide-react';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import type { DraftState } from './AsesmenPageClient';
 
 interface AssessmentFormProps {
   encounterId: string;
   defaultValues?: Partial<AssessmentFormValues>;
   isEditMode?: boolean;
+  draftState: DraftState;
 }
 
 interface DraftPayload {
@@ -66,69 +68,16 @@ function FormToast({ toast }: { toast: { type: 'success' | 'error' | 'warning'; 
   );
 }
 
-interface DraftRestoreModalProps {
-  onAccept: () => void;
-  onDiscard: () => void;
-}
-
-function DraftRestoreModal({ onAccept, onDiscard }: DraftRestoreModalProps) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-
-      {/* Modal card */}
-      <div
-        className="relative bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4 animate-in fade-in zoom-in-95 duration-200"
-        style={{ fontFamily: 'var(--font-jakarta)' }}
-      >
-        {/* Icon */}
-        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-[#E6F5F4] mx-auto mb-5">
-          <FileText size={22} strokeWidth={2} className="text-[#0F766E]" />
-        </div>
-
-        {/* Title */}
-        <h2
-          className="text-center text-[17px] font-bold text-gray-800 mb-2 font-poppins"
-        >
-          Draf Ditemukan
-        </h2>
-
-        {/* Body */}
-        <p className="text-center text-sm text-gray-500 leading-relaxed mb-7">
-          Draf pengisian sebelumnya ditemukan (belum tersimpan ke server).
-          <br />
-          Lanjutkan pengisian draf ini?
-        </p>
-
-        {/* Actions */}
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={onDiscard}
-            className="flex-1 px-5 py-2.5 bg-white border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-colors text-sm cursor-pointer"
-          >
-            Buang Draf
-          </button>
-          <button
-            type="button"
-            onClick={onAccept}
-            className="flex-1 px-5 py-2.5 bg-[#0F766E] hover:bg-teal-800 text-white font-semibold rounded-xl transition-colors text-sm cursor-pointer"
-          >
-            Lanjutkan
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default function AssessmentForm({ encounterId, defaultValues, isEditMode = false }: AssessmentFormProps) {
+export default function AssessmentForm({
+  encounterId,
+  defaultValues,
+  isEditMode = false,
+  draftState,
+}: AssessmentFormProps) {
   const router = useRouter();
   const [alergiSeverity, setAlergiSeverity] = useState('Sedang');
   const [obatDosage, setObatDosage] = useState('');
-  const [isRestoring, setIsRestoring] = useState(true);
-  const [showDraftModal, setShowDraftModal] = useState(false);
+  const [draftLoaded, setDraftLoaded] = useState(false);
   const { toast, showSuccess, showError } = useFormToast();
 
   const { control, handleSubmit, register, watch, setValue, reset, formState: { errors } } = useForm<AssessmentFormValues>({
@@ -149,39 +98,39 @@ export default function AssessmentForm({ encounterId, defaultValues, isEditMode 
   const currentFormData = watch();
   useAutoSaveDraft(getAssessmentDraftKey(encounterId), currentFormData);
 
+  // Restore draft from localStorage when parent signals 'use'
   useEffect(() => {
-    if (isEditMode) {
-      // Edit mode: data comes from DB via defaultValues — discard any stale draft
-      deleteDraft(encounterId);
-      setIsRestoring(false);
+    if (draftState !== 'use') return;
+    const raw = localStorage.getItem(getAssessmentDraftKey(encounterId));
+    if (!raw) {
+      console.log('[AssessmentForm] draftState=use but no localStorage data found');
+      setDraftLoaded(true);
       return;
     }
-    if (!shouldRestoreDraft(encounterId)) {
-      setIsRestoring(false);
-      return;
+    try {
+      const payload: DraftPayload = JSON.parse(raw);
+      if (payload.data) {
+        reset({
+          ...payload.data,
+          penyakit: payload.data.penyakit ?? [],
+          alergi: payload.data.alergi ?? [],
+          obat: payload.data.obat ?? [],
+        });
+        console.log('[AssessmentForm] ✓ Draft restored from localStorage');
+      }
+    } catch {
+      localStorage.removeItem(getAssessmentDraftKey(encounterId));
+      console.error('[AssessmentForm] Draft JSON corrupted — discarding');
     }
-    setShowDraftModal(true);
-  }, [encounterId, isEditMode]);
+    setDraftLoaded(true);
+  }, [draftState, encounterId, reset]);
 
-  const handleDraftAccept = () => {
-    const payload = readDraft<DraftPayload>(encounterId);
-    if (payload?.data) {
-      reset({
-        ...payload.data,
-        penyakit: payload.data.penyakit ?? [],
-        alergi: payload.data.alergi ?? [],
-        obat: payload.data.obat ?? [],
-      });
+  // Mark as loaded immediately when no restoration is needed
+  useEffect(() => {
+    if (draftState === 'no_draft') {
+      setDraftLoaded(true);
     }
-    setShowDraftModal(false);
-    setIsRestoring(false);
-  };
-
-  const handleDraftDiscard = () => {
-    deleteDraft(encounterId);
-    setShowDraftModal(false);
-    setIsRestoring(false);
-  };
+  }, [draftState]);
 
   const isPenyakitNull = watch('tidakAdaPenyakit');
   const isAlergiNull = watch('tidakAdaAlergi');
@@ -224,16 +173,12 @@ export default function AssessmentForm({ encounterId, defaultValues, isEditMode 
     }
   };
 
-  if (isRestoring && !showDraftModal) {
+  if (draftState === 'checking' || draftState === 'pending' || !draftLoaded) {
     return <div className="p-8 text-center text-gray-500 animate-pulse">Memuat form asesmen...</div>;
   }
 
   return (
     <div className="relative w-full">
-      {showDraftModal && (
-        <DraftRestoreModal onAccept={handleDraftAccept} onDiscard={handleDraftDiscard} />
-      )}
-
       <FormToast toast={toast} />
 
       <form onSubmit={handleSubmit(onSubmitForm)} className="w-full font-jakarta">

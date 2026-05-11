@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
-import { Loader2, FileText, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 import { PhysicalExamSchema, type PhysicalExamData } from '@/lib/schemas/physical-exam-schema';
 import { getOutOfBoundsFields } from '@/lib/utils/bounds-validator';
@@ -15,25 +15,15 @@ import { calculateBMI, getBMIStatus } from '@/lib/utils/bmi-calculator';
 import VitalSignInput from './VitalSignInput';
 import BMIDisplay from './BMIDisplay';
 import OutOfBoundsConfirmModal from './OutOfBoundsConfirmModal';
+import type { DraftState } from './AsesmenPageClient';
 
 // ─── Prop types ──────────────────────────────────────────────────────────────
 
-interface PatientData {
-  namaLengkap: string;
-  noRm: string;
-}
-
-interface EncounterData {
-  periodStart: Date;
-  reasonCode: string | null;
-}
-
 interface PhysicalExamFormProps {
   encounterId: string;
-  patient: PatientData;
-  encounter: EncounterData;
   isEditMode?: boolean;
   canEdit?: boolean;
+  draftState: DraftState;
 }
 
 // ─── Draft payload ────────────────────────────────────────────────────────────
@@ -43,66 +33,18 @@ interface DraftPayload {
   timestamp: number;
 }
 
-// ─── Draft restore modal ──────────────────────────────────────────────────────
-
-function DraftRestoreModal({
-  onAccept,
-  onDiscard,
-}: {
-  onAccept: () => void;
-  onDiscard: () => void;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-      <div
-        className="relative bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4 animate-in fade-in zoom-in-95 duration-200"
-        style={{ fontFamily: 'var(--font-jakarta)' }}
-      >
-        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-[#E6F5F4] mx-auto mb-5">
-          <FileText size={22} strokeWidth={2} className="text-[#0F766E]" />
-        </div>
-        <h2 className="text-center text-[17px] font-bold text-gray-800 mb-2 font-poppins">
-          Draf Ditemukan
-        </h2>
-        <p className="text-center text-sm text-gray-500 leading-relaxed mb-7">
-          Draf pemeriksaan fisik sebelumnya ditemukan (belum tersimpan ke server).
-          <br />
-          Lanjutkan pengisian draf ini?
-        </p>
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={onDiscard}
-            className="flex-1 px-5 py-2.5 bg-white border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-colors text-sm cursor-pointer"
-          >
-            Buang Draf
-          </button>
-          <button
-            type="button"
-            onClick={onAccept}
-            className="flex-1 px-5 py-2.5 bg-[#0F766E] hover:bg-teal-800 text-white font-semibold rounded-xl transition-colors text-sm cursor-pointer"
-          >
-            Lanjutkan
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function PhysicalExamForm({
   encounterId,
   isEditMode = false,
   canEdit = true,
+  draftState,
 }: PhysicalExamFormProps) {
   const router = useRouter();
   const draftKey = getPhysicalExamDraftKey(encounterId);
 
-  const [isRestoring, setIsRestoring] = useState(true);
-  const [showDraftModal, setShowDraftModal] = useState(false);
+  const [draftLoaded, setDraftLoaded] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast, showSuccess, showError, showWarning } = useFormToast();
 
@@ -115,6 +57,7 @@ export default function PhysicalExamForm({
     register,
     watch,
     setValue,
+    getValues,
     reset,
   } = useForm<PhysicalExamData>({
     resolver: zodResolver(PhysicalExamSchema),
@@ -131,67 +74,72 @@ export default function PhysicalExamForm({
     },
   });
 
-  const formValues = watch();
-  useAutoSaveDraft(draftKey, formValues);
-
-  useEffect(() => {
-    const outOfBounds = getOutOfBoundsFields(formValues);
-    setOutOfBoundsFields(outOfBounds);
-  }, [formValues]);
-
-  // Draft restoration on mount
-  useEffect(() => {
-    if (isEditMode) {
-      localStorage.removeItem(draftKey);
-      setIsRestoring(false);
-      return;
-    }
-    const saved = localStorage.getItem(draftKey);
-    if (!saved) {
-      setIsRestoring(false);
-      return;
-    }
-    setShowDraftModal(true);
-  }, [draftKey, isEditMode]);
-
-  const handleDraftAccept = () => {
-    const saved = localStorage.getItem(draftKey);
-    if (saved) {
-      try {
-        const payload: DraftPayload = JSON.parse(saved);
-        reset(payload.data ?? {});
-      } catch {
-        localStorage.removeItem(draftKey);
-      }
-    }
-    setShowDraftModal(false);
-    setIsRestoring(false);
-  };
-
-  const handleDraftDiscard = () => {
-    localStorage.removeItem(draftKey);
-    setShowDraftModal(false);
-    setIsRestoring(false);
-  };
-
-  // Real-time BMI calculation
+  // Individual field watches — avoids passing watch() (new object each render) as a dependency
+  const tekananDarah = watch('tekananDarah');
+  const suhu = watch('suhu');
+  const nadi = watch('nadi');
+  const napas = watch('napas');
   const tinggiBadan = watch('tinggiBadan');
   const beratBadan = watch('beratBadan');
+  const bmi = watch('bmi');
+  const catatan = watch('catatan') ?? '';
 
+  useAutoSaveDraft(draftKey, { tekananDarah, suhu, nadi, napas, tinggiBadan, beratBadan, bmi, catatan });
+
+  useEffect(() => {
+    const outOfBounds = getOutOfBoundsFields(
+      { tekananDarah, suhu, nadi, napas, tinggiBadan, beratBadan, bmi, catatan } as PhysicalExamData
+    );
+    setOutOfBoundsFields(outOfBounds);
+  }, [tekananDarah, suhu, nadi, napas, tinggiBadan, beratBadan, bmi, catatan]);
+
+  // Restore draft from localStorage when parent signals 'use'
+  useEffect(() => {
+    if (draftState !== 'use') return;
+    if (isEditMode) {
+      localStorage.removeItem(draftKey);
+      setDraftLoaded(true);
+      return;
+    }
+    const raw = localStorage.getItem(draftKey);
+    if (!raw) {
+      console.log('[PhysicalExamForm] draftState=use but no localStorage data found');
+      setDraftLoaded(true);
+      return;
+    }
+    try {
+      const payload: DraftPayload = JSON.parse(raw);
+      if (payload.data) {
+        reset(payload.data);
+        console.log('[PhysicalExamForm] ✓ Draft restored from localStorage');
+      }
+    } catch {
+      localStorage.removeItem(draftKey);
+      console.error('[PhysicalExamForm] Draft JSON corrupted — discarding');
+    }
+    setDraftLoaded(true);
+  }, [draftState, encounterId, draftKey, isEditMode, reset]);
+
+  // Mark as loaded immediately when no restoration is needed
+  useEffect(() => {
+    if (draftState === 'no_draft') {
+      if (isEditMode) localStorage.removeItem(draftKey);
+      setDraftLoaded(true);
+    }
+  }, [draftState, draftKey, isEditMode]);
+
+  // Real-time BMI calculation
   useEffect(() => {
     const h = Number(tinggiBadan);
     const w = Number(beratBadan);
     if (h > 0 && w > 0) {
-      setValue('bmi', calculateBMI(h, w));
+      setValue('bmi', calculateBMI(h, w), { shouldDirty: false, shouldValidate: false });
     } else {
-      setValue('bmi', undefined);
+      setValue('bmi', undefined, { shouldDirty: false, shouldValidate: false });
     }
   }, [tinggiBadan, beratBadan, setValue]);
 
-  const bmi = watch('bmi');
   const bmiStatus = bmi !== undefined ? getBMIStatus(bmi).status : undefined;
-
-  const catatan = watch('catatan') ?? '';
 
   const onSubmitForm = async (data: PhysicalExamData) => {
     if (!canEdit) {
@@ -238,7 +186,7 @@ export default function PhysicalExamForm({
 
       showSuccess("Pemeriksaan fisik berhasil disimpan");
       localStorage.removeItem(draftKey);
-      
+
       setTimeout(() => {
         router.push(`/rawat-jalan`);
       }, 1500);
@@ -259,10 +207,10 @@ export default function PhysicalExamForm({
     setUserConfirmedSubmit(true);
     setShowOutOfBoundsModal(false);
     showWarning("Data tanda vital di luar batas normal. Melanjutkan penyimpanan...");
-    
+
     // Using a timeout to ensure state update, then re-submit
     setTimeout(() => {
-      onSubmitForm(formValues as PhysicalExamData);
+      onSubmitForm(getValues() as PhysicalExamData);
     }, 100);
   };
 
@@ -277,7 +225,7 @@ export default function PhysicalExamForm({
     );
   }
 
-  if (isRestoring && !showDraftModal) {
+  if (draftState === 'checking' || draftState === 'pending' || !draftLoaded) {
     return (
       <div className="p-8 text-center text-gray-500 animate-pulse">
         Memuat form pemeriksaan fisik...
@@ -287,10 +235,6 @@ export default function PhysicalExamForm({
 
   return (
     <div className="relative w-full" style={{ fontFamily: 'var(--font-jakarta)' }}>
-      {showDraftModal && (
-        <DraftRestoreModal onAccept={handleDraftAccept} onDiscard={handleDraftDiscard} />
-      )}
-      
       <OutOfBoundsConfirmModal
         isOpen={showOutOfBoundsModal}
         outOfBoundsFields={outOfBoundsFields}
@@ -300,8 +244,8 @@ export default function PhysicalExamForm({
 
       {toast && (
         <div className={`fixed top-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl animate-in slide-in-from-top-5 duration-300 ${
-          toast.type === 'success' ? 'bg-[#E6F5F4] border border-[#B2DFDB]' : 
-          toast.type === 'warning' ? 'bg-yellow-50 border border-yellow-200' : 
+          toast.type === 'success' ? 'bg-[#E6F5F4] border border-[#B2DFDB]' :
+          toast.type === 'warning' ? 'bg-yellow-50 border border-yellow-200' :
           'bg-red-50 border border-red-200'
         }`}>
           {toast.type === 'success'
@@ -310,8 +254,8 @@ export default function PhysicalExamForm({
             ? <AlertCircle size={20} strokeWidth={2} className="text-yellow-600 flex-shrink-0" />
             : <AlertCircle size={20} strokeWidth={2} className="text-red-500 flex-shrink-0" />}
           <span className={`font-medium text-sm ${
-            toast.type === 'success' ? 'text-[#0F766E]' : 
-            toast.type === 'warning' ? 'text-yellow-700' : 
+            toast.type === 'success' ? 'text-[#0F766E]' :
+            toast.type === 'warning' ? 'text-yellow-700' :
             'text-red-600'
           }`}>
             {toast.text}
@@ -319,13 +263,13 @@ export default function PhysicalExamForm({
         </div>
       )}
 
-      <form 
+      <form
         onSubmit={(e) => {
           e.preventDefault();
           // By passing the current form values directly, we allow submission even if Zod schema has bounds warnings.
           // This fulfills the requirement "Form still allows submission with invalid data (modal blocks, not schema)"
-          onSubmitForm(formValues as PhysicalExamData);
-        }} 
+          onSubmitForm(getValues() as PhysicalExamData);
+        }}
         className="w-full"
       >
         <h2

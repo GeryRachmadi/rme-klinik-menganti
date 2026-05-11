@@ -4,8 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Breadcrumb from "@/components/shared/Breadcrumb";
 import PatientAssessmentHeader from "./components/PatientAssessmentHeader";
-import AssessmentForm from "./components/AssessmentForm";
-import PhysicalExamForm from "./components/PhysicalExamForm";
+import AsesmenPageClient from "./components/AsesmenPageClient";
 import { calculateAge } from "@/lib/utils/date";
 
 export const metadata: Metadata = {
@@ -101,33 +100,12 @@ export default async function AsesmenPage({
         age={age}
       />
 
-      <div className="col-span-12 w-full pt-2 pb-10 space-y-10">
-        <div>
-          <div className="h-px bg-gray-200 mb-6" />
-          <AssessmentForm
-            encounterId={encounterId}
-            defaultValues={defaultValues}
-            isEditMode={encounter.status === 'DIPERIKSA'}
-          />
-        </div>
-
-        <div>
-          <div className="h-px bg-gray-200 mb-6" />
-          <PhysicalExamForm
-            encounterId={encounterId}
-            patient={{
-              namaLengkap: encounter.patient.namaLengkap,
-              noRm: encounter.patient.noRm,
-            }}
-            encounter={{
-              periodStart: encounter.periodStart,
-              reasonCode: encounter.reasonCode,
-            }}
-            isEditMode={encounter.status === 'DIPERIKSA'}
-            canEdit={canEditAssessment}
-          />
-        </div>
-      </div>
+      <AsesmenPageClient
+        encounterId={encounterId}
+        isEditMode={encounter.status === 'DIPERIKSA'}
+        canEdit={canEditAssessment}
+        defaultValues={defaultValues}
+      />
     </div>
   );
 }

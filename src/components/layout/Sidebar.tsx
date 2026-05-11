@@ -82,7 +82,7 @@ export default function Sidebar({ role }: SidebarProps) {
       <div className="p-3 pb-6">
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-3 px-4 py-2.5 w-full rounded-xl text-[#64748B] hover:bg-red-50 hover:text-red-500 transition-colors text-sm font-bold"
+          className="flex items-center gap-3 px-4 py-2.5 w-full rounded-xl text-[#64748B] hover:bg-red-50 hover:text-red-500 transition-colors text-sm font-bold cursor-pointer"
           style={{ fontFamily: "var(--font-jakarta)" }}
         >
           <LogOut size={18} strokeWidth={2.5} className="text-[#64748B]" />

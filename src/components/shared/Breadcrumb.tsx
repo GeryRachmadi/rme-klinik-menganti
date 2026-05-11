@@ -26,7 +26,7 @@ export default function Breadcrumb({ items }: { items: BreadcrumbItem[] }) {
             {!isLast && item.href ? (
               <Link
                 href={item.href}
-                className="text-sm text-[#2BB5A0] font-medium hover:underline"
+                className="text-sm text-[#2BB5A0] font-medium hover:underline cursor-pointer"
                 style={{ fontFamily: "var(--font-jakarta)" }}
               >
                 {item.label}

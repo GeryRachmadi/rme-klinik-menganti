@@ -77,8 +77,13 @@ export async function POST(
         },
       });
 
-      // Do NOT update Encounter status (stays DIPERIKSA)
-      
+      if (encounter.status === 'MENUNGGU') {
+        await tx.encounter.update({
+          where: { id: encounterId },
+          data: { status: 'DIPERIKSA' },
+        });
+      }
+
       return {
         success: true,
         observationCount: 1, // Only 1 Observation record covers all standard fields now

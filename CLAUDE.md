@@ -182,9 +182,9 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 ### TR-10 [UC-09] Catat Pemeriksaan Fisik
 - TR-61 ✅ Form Pemeriksaan Fisik
 - TR-62 ✅ Kalkulasi BMI otomatis
-- TR-63 ⏳ Validasi batas logis tanda vital
-- TR-64 ⏳ Konfirmasi dua opsi Kembali/Lanjut
-- TR-65 ⏳ API endpoint Observation
+- TR-63 ✅ Validasi batas logis tanda vital
+- TR-64 ✅ Konfirmasi dua opsi Kembali/Lanjut
+- TR-65 ✅ API endpoint Observation
 
 ### TR-11 [UC-10] Input Diagnosis
 - TR-66 ⏳ Form Hasil Periksa Medis
