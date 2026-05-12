@@ -4,7 +4,7 @@ import { FileText } from 'lucide-react';
 
 interface DraftFoundModalProps {
   isOpen: boolean;
-  draftTypes: Array<'assessment' | 'physical'>;
+  draftTypes: Array<'assessment' | 'physical' | 'hasil-periksa'>;
   onUseDraft: () => void;
   onRejectDraft: () => void;
 }
@@ -19,14 +19,20 @@ export default function DraftFoundModal({
 
   const hasAssessment = draftTypes.includes('assessment');
   const hasPhysical = draftTypes.includes('physical');
+  const hasHasilPeriksa = draftTypes.includes('hasil-periksa');
 
-  let message: string;
-  if (hasAssessment && hasPhysical) {
+  let message = 'Draf pengisian sebelumnya ditemukan (belum tersimpan ke server).\nLanjutkan pengisian draf ini?';
+  
+  if (hasAssessment && hasPhysical && hasHasilPeriksa) {
+    message = 'Draf pengisian kajian awal, pemeriksaan fisik, dan hasil periksa sebelumnya ditemukan (belum tersimpan ke server).\nLanjutkan pengisian draf ini?';
+  } else if (hasAssessment && hasPhysical) {
     message = 'Draf pengisian kajian awal dan pemeriksaan fisik sebelumnya ditemukan (belum tersimpan ke server).\nLanjutkan pengisian draf ini?';
   } else if (hasAssessment) {
     message = 'Draf pengisian kajian awal sebelumnya ditemukan (belum tersimpan ke server).\nLanjutkan pengisian draf ini?';
-  } else {
+  } else if (hasPhysical) {
     message = 'Draf pemeriksaan fisik sebelumnya ditemukan (belum tersimpan ke server).\nLanjutkan pengisian draf ini?';
+  } else if (hasHasilPeriksa) {
+    message = 'Draf hasil pemeriksaan dokter sebelumnya ditemukan (belum tersimpan ke server).\nLanjutkan pengisian draf ini?';
   }
 
   return (
@@ -65,3 +71,4 @@ export default function DraftFoundModal({
     </div>
   );
 }
+
