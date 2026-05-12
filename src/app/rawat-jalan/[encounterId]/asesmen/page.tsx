@@ -4,7 +4,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Breadcrumb from "@/components/shared/Breadcrumb";
 import PatientAssessmentHeader from "./components/PatientAssessmentHeader";
-import AsesmenPageClient from "./components/AsesmenPageClient";
+import AsesmenPerawat from "./components/AsesmenPerawat";
+import AsesmenDokter from "./components/AsesmenDokter";
 import { calculateAge } from "@/lib/utils/date";
 
 export const metadata: Metadata = {
@@ -24,8 +25,6 @@ export default async function AsesmenPage({
 
   const userRole = session.user?.role as string;
   if (!ALLOWED_ROLES.includes(userRole)) redirect("/");
-
-  const canEditAssessment = ['DOKTER', 'PERAWAT', 'ADMIN'].includes(userRole);
 
   const { encounterId } = await params;
 
@@ -56,6 +55,16 @@ export default async function AsesmenPage({
     redirect("/rawat-jalan");
   }
 
+  // Role check for assessment access
+  if (!["PERAWAT", "DOKTER", "ADMIN"].includes(userRole)) {
+    return (
+      <div className="p-6 max-w-2xl mx-auto mt-10 bg-red-50 border border-red-200 rounded-lg text-red-600">
+        <h2 className="text-lg font-bold mb-2">Unauthorized access</h2>
+        <p>Anda tidak memiliki izin untuk mengakses halaman asesmen.</p>
+      </div>
+    );
+  }
+
   const age = calculateAge(encounter.patient.tanggalLahir);
 
   const defaultValues = {
@@ -72,6 +81,8 @@ export default async function AsesmenPage({
     catatanAlergi: "",
     catatanObat: "",
   };
+
+  const isEditMode = encounter.status === 'DIPERIKSA';
 
   return (
     <div className="grid grid-cols-12 gap-6">
@@ -100,12 +111,26 @@ export default async function AsesmenPage({
         age={age}
       />
 
-      <AsesmenPageClient
-        encounterId={encounterId}
-        isEditMode={encounter.status === 'DIPERIKSA'}
-        canEdit={canEditAssessment}
-        defaultValues={defaultValues}
-      />
+      <div className="col-span-12 w-full pt-2 pb-10">
+        {userRole === 'PERAWAT' ? (
+          <AsesmenPerawat
+            encounterId={encounterId}
+            patient={encounter.patient}
+            encounter={encounter}
+            defaultValues={defaultValues}
+            isEditMode={isEditMode}
+          />
+        ) : (
+          <AsesmenDokter
+            encounterId={encounterId}
+            patient={encounter.patient}
+            encounter={encounter}
+            session={session}
+            defaultValues={defaultValues}
+            isEditMode={isEditMode}
+          />
+        )}
+      </div>
     </div>
   );
 }
