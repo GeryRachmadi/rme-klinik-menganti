@@ -1,9 +1,11 @@
 import React, { useState, useEffect, KeyboardEvent } from 'react';
 import { useDiagnosisSearch } from '@/lib/hooks/useDiagnosisSearch';
-import { X, Search, Loader2 } from 'lucide-react';
+import { X, Search, Loader2, ArrowLeft } from 'lucide-react';
+
+const HTML_TAG_REGEX = /<[^>]*>/g;
 
 export interface DiagnosisAutocompleteProps {
-  onSelectDiagnosis: (code: string, display: string) => void;
+  onSelectDiagnosis: (code: string, display: string, notes?: string) => void;
   encounterId?: string;
 }
 
@@ -11,11 +13,13 @@ export function DiagnosisAutocomplete({ onSelectDiagnosis, encounterId }: Diagno
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
-  
+  const [isManualMode, setIsManualMode] = useState(false);
+  const [manualText, setManualText] = useState('');
+  const [manualNote, setManualNote] = useState('');
+
   const { results, isLoading, error } = useDiagnosisSearch(searchQuery);
 
   const handleBlur = () => {
-    // Small delay to allow click events on dropdown items to fire before hiding
     setTimeout(() => {
       setShowDropdown(false);
     }, 200);
@@ -41,7 +45,7 @@ export function DiagnosisAutocomplete({ onSelectDiagnosis, encounterId }: Diagno
 
   const handleSelect = (code: string, display: string) => {
     onSelectDiagnosis(code, display);
-    setSearchQuery(''); // Clear search after selection
+    setSearchQuery('');
     setShowDropdown(false);
   };
 
@@ -65,10 +69,82 @@ export function DiagnosisAutocomplete({ onSelectDiagnosis, encounterId }: Diagno
     }
   };
 
-  // Reset selected index when search results change
+  const handleAddManual = () => {
+    const sanitized = manualText.replace(HTML_TAG_REGEX, '').trim();
+    if (sanitized.length < 5) return;
+    if (sanitized.length > 500) return;
+    const note = manualNote.trim() || 'Manual diagnosis - kode ICD-10 tidak ditemukan';
+    onSelectDiagnosis('MANUAL', sanitized, note);
+    setManualText('');
+    setManualNote('');
+    setIsManualMode(false);
+  };
+
   useEffect(() => {
     setSelectedIndex(-1);
   }, [results]);
+
+  if (isManualMode) {
+    const sanitizedLength = manualText.replace(HTML_TAG_REGEX, '').trim().length;
+    const isAddDisabled = sanitizedLength < 5 || sanitizedLength > 500;
+
+    return (
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1.5">
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-semibold text-gray-600">
+              Deskripsi diagnosis manual
+            </span>
+            <span className={`text-[12px] font-sans font-medium ${sanitizedLength > 500 ? 'text-red-500' : 'text-gray-400'}`}>
+              {sanitizedLength}/500 karakter
+            </span>
+          </div>
+          <textarea
+            value={manualText}
+            onChange={(e) => setManualText(e.target.value)}
+            placeholder="Masukkan diagnosis secara manual (min. 5 karakter)..."
+            rows={3}
+            className="w-full border border-gray-300 rounded-lg p-3 text-sm bg-white text-gray-900 placeholder-gray-400 resize-y focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] min-h-[80px] transition-colors"
+          />
+          {sanitizedLength > 0 && sanitizedLength < 5 && (
+            <p className="text-red-500 text-[12px]">Minimal 5 karakter</p>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-semibold text-[#0F766E] uppercase tracking-wider">
+            Catatan <span className="text-gray-400 font-normal normal-case tracking-normal ml-1">(Opsional)</span>
+          </label>
+          <textarea
+            value={manualNote}
+            onChange={(e) => setManualNote(e.target.value)}
+            placeholder="Tambahkan catatan untuk diagnosis ini..."
+            rows={2}
+            className="w-full border border-gray-200 rounded-xl p-3 text-sm bg-[#F9FAFB] text-gray-900 placeholder-gray-400 resize-y focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] transition-colors"
+          />
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleAddManual}
+            disabled={isAddDisabled}
+            className="px-4 py-2 bg-[#0F766E] hover:bg-teal-800 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            Tambahkan Diagnosis
+          </button>
+          <button
+            type="button"
+            onClick={() => { setIsManualMode(false); setManualText(''); setManualNote(''); }}
+            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Kembali ke Pencarian
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full">
@@ -114,26 +190,48 @@ export function DiagnosisAutocomplete({ onSelectDiagnosis, encounterId }: Diagno
               Terjadi kesalahan: {error}
             </div>
           ) : results.length > 0 ? (
-            <ul className="m-0 p-0 list-none">
-              {results.map((item, index) => (
-                <li
-                  key={item.code}
-                  className={`cursor-pointer select-none relative py-2 px-4 ${
-                    index === selectedIndex
-                      ? 'bg-[#E6F5F4] text-[#0F766E]'
-                      : 'text-gray-900 hover:bg-gray-50'
-                  }`}
-                  onClick={() => handleSelect(item.code, item.display)}
-                  onMouseEnter={() => setSelectedIndex(index)}
+            <>
+              <ul className="m-0 p-0 list-none">
+                {results.map((item, index) => (
+                  <li
+                    key={item.code}
+                    className={`cursor-pointer select-none relative py-2 px-4 ${
+                      index === selectedIndex
+                        ? 'bg-[#E6F5F4] text-[#0F766E]'
+                        : 'text-gray-900 hover:bg-gray-50'
+                    }`}
+                    onClick={() => handleSelect(item.code, item.display)}
+                    onMouseEnter={() => setSelectedIndex(index)}
+                  >
+                    <span className="font-semibold">[{item.code}]</span> - {item.display}
+                  </li>
+                ))}
+              </ul>
+              <div className="px-4 py-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); setIsManualMode(true); setSearchQuery(''); setShowDropdown(false); }}
+                  className="text-xs text-[#0F766E] hover:underline cursor-pointer"
                 >
-                  <span className="font-semibold">[{item.code}]</span> - {item.display}
-                </li>
-              ))}
-            </ul>
+                  Kode tidak ditemukan? Input manual
+                </button>
+              </div>
+            </>
           ) : (
-            <div className="px-4 py-3 text-sm text-gray-500">
-              Tidak ada hasil
-            </div>
+            <>
+              <div className="px-4 py-3 text-sm text-gray-500">
+                Tidak ada hasil
+              </div>
+              <div className="px-4 py-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); setIsManualMode(true); setSearchQuery(''); setShowDropdown(false); }}
+                  className="text-xs text-[#0F766E] hover:underline cursor-pointer"
+                >
+                  Kode tidak ditemukan? Input manual
+                </button>
+              </div>
+            </>
           )}
         </div>
       )}

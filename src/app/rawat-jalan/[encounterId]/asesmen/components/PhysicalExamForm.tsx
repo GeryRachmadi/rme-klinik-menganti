@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
@@ -69,7 +69,7 @@ const PhysicalExamForm = forwardRef<PhysicalExamFormRef, PhysicalExamFormProps>(
     trigger,
     formState,
   } = useForm<PhysicalExamData>({
-    resolver: zodResolver(PhysicalExamSchema),
+    resolver: zodResolver(PhysicalExamSchema) as Resolver<PhysicalExamData>,
     mode: 'onChange',
     defaultValues: {
       tekananDarah: defaultValues?.tekananDarah ?? '',
@@ -307,8 +307,9 @@ const PhysicalExamForm = forwardRef<PhysicalExamFormRef, PhysicalExamFormProps>(
                 placeholder="Catatan tambahan pemeriksaan fisik..."
                 rows={4}
                 className="w-full border border-gray-200 rounded-xl p-4 text-sm bg-gray-50 text-gray-800 placeholder-gray-400 resize-y focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] min-h-[100px] transition-colors"
+                style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
               />
-              <p className="text-[12px] text-gray-400 text-right">
+              <p className="text-[12px] text-gray-400 text-right" style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
                 {catatan.length}/500 karakter
               </p>
             </div>

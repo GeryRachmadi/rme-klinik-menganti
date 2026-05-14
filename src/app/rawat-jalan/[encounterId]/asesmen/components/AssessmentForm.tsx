@@ -66,7 +66,7 @@ function FormToast({ toast }: { toast: { type: 'success' | 'error' | 'warning'; 
       )}
       <span
         className={`font-medium text-sm ${isSuccess ? 'text-[#0F766E]' : 'text-red-600'}`}
-        style={{ fontFamily: 'var(--font-jakarta)' }}
+        style={{ fontFamily: 'var(--font-sans)' }}
       >
         {toast.text}
       </span>
@@ -136,7 +136,7 @@ const AssessmentForm = forwardRef<AssessmentFormRef, AssessmentFormProps>(({
     <div className="relative w-full">
       <FormToast toast={toast} />
 
-      <form id="form-assessment" className="w-full font-jakarta">
+      <form id="form-assessment" className="w-full font-sans">
         <h2
           className="mb-5 text-[22px] font-bold text-[#0F766E] uppercase tracking-wide font-poppins"
           style={{ WebkitTextStroke: '0.4px #0F766E' }}
@@ -184,10 +184,11 @@ const AssessmentForm = forwardRef<AssessmentFormRef, AssessmentFormProps>(({
               <textarea
                 {...register('catatanPenyakit')}
                 disabled={isPenyakitNull}
-                placeholder={isPenyakitNull ? 'Tidak ada catatan' : 'Tambahkan catatan disini...'}
-                className={`w-full mt-2 border rounded-xl p-4 text-sm resize-y focus:outline-none focus:ring-1 min-h-[90px] transition-colors
+                placeholder={isPenyakitNull ? 'Tidak ada catatan' : 'Tambahkan Catatan Disini (Opsional)'}
+                className={`w-full mt-2 border rounded-xl p-4 text-sm font-sans resize-y focus:outline-none focus:ring-1 min-h-[100px] transition-colors
                   ${errors.penyakit ? 'border-red-500 focus:ring-red-500' : 'focus:ring-[#0F766E] focus:border-[#0F766E] border-gray-200'}
-                  ${isPenyakitNull ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-[#F9FAFB] text-gray-900 placeholder-gray-400'}`}
+                  ${isPenyakitNull ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800 placeholder-gray-400'}`}
+                style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
               />
               <FieldErrorMessage message={errors.penyakit?.message} />
             </div>
@@ -248,10 +249,11 @@ const AssessmentForm = forwardRef<AssessmentFormRef, AssessmentFormProps>(({
               <textarea
                 {...register('catatanAlergi')}
                 disabled={isAlergiNull}
-                placeholder={isAlergiNull ? 'Tidak ada catatan' : 'Tambahkan catatan disini...'}
-                className={`w-full mt-2 border rounded-xl p-4 text-sm resize-y focus:outline-none focus:ring-1 min-h-[90px] transition-colors
+                placeholder={isAlergiNull ? 'Tidak ada catatan' : 'Tambahkan Catatan Disini (Opsional)'}
+                className={`w-full mt-2 border rounded-xl p-4 text-sm font-sans resize-y focus:outline-none focus:ring-1 min-h-[100px] transition-colors
                   ${errors.alergi ? 'border-red-500 focus:ring-red-500' : 'focus:ring-[#0F766E] focus:border-[#0F766E] border-gray-200'}
-                  ${isAlergiNull ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-[#F9FAFB] text-gray-900 placeholder-gray-400'}`}
+                  ${isAlergiNull ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800 placeholder-gray-400'}`}
+                style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
               />
               <FieldErrorMessage message={errors.alergi?.message} />
             </div>
@@ -304,10 +306,11 @@ const AssessmentForm = forwardRef<AssessmentFormRef, AssessmentFormProps>(({
               <textarea
                 {...register('catatanObat')}
                 disabled={isObatNull}
-                placeholder={isObatNull ? 'Tidak ada catatan' : 'Tambahkan catatan disini...'}
-                className={`w-full mt-2 border rounded-xl p-4 text-sm resize-y focus:outline-none focus:ring-1 min-h-[90px] transition-colors
+                placeholder={isObatNull ? 'Tidak ada catatan' : 'Tambahkan Catatan Disini (Opsional)'}
+                className={`w-full mt-2 border rounded-xl p-4 text-sm font-sans resize-y focus:outline-none focus:ring-1 min-h-[100px] transition-colors
                   ${errors.obat ? 'border-red-500 focus:ring-red-500' : 'focus:ring-[#0F766E] focus:border-[#0F766E] border-gray-200'}
-                  ${isObatNull ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-[#F9FAFB] text-gray-900 placeholder-gray-400'}`}
+                  ${isObatNull ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800 placeholder-gray-400'}`}
+                style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
               />
               <FieldErrorMessage message={errors.obat?.message} />
             </div>

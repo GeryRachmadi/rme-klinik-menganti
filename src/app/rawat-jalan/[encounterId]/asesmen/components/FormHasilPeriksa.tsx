@@ -68,25 +68,24 @@ const FormHasilPeriksa = forwardRef<FormHasilPeriksaRef, FormHasilPeriksaProps>(
     <>
       {/* Keluhan Utama */}
       <div className="flex flex-col">
-        <div className="flex justify-between items-center mb-3">
-          <h3
-            className="text-sm font-bold text-[#0F766E] uppercase tracking-wider font-poppins"
-            style={{ WebkitTextStroke: '0.2px #0F766E' }}
-          >
-            Keluhan Utama
-          </h3>
-          <span className={`text-[12px] font-sans font-medium ${keluhanUtamaLength > 500 ? 'text-red-500' : 'text-gray-400'}`}>
-            {keluhanUtamaLength}/500 karakter
-          </span>
-        </div>
+        <h3
+          className="text-sm font-bold text-[#0F766E] uppercase tracking-wider font-poppins mb-3"
+          style={{ WebkitTextStroke: '0.2px #0F766E' }}
+        >
+          Keluhan Utama
+        </h3>
         <textarea
           id="keluhanUtama"
           rows={4}
           placeholder="Masukkan keluhan utama pasien..."
-          className={`w-full border rounded-xl p-4 text-sm resize-y focus:outline-none focus:ring-1 min-h-[90px] transition-colors bg-[#F9FAFB] text-gray-900 placeholder-gray-400
+          className={`w-full border rounded-xl p-4 text-sm font-sans resize-y focus:outline-none focus:ring-1 min-h-[100px] transition-colors bg-gray-50 text-gray-800 placeholder-gray-400
             ${errors.keluhanUtama ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#0F766E] focus:border-[#0F766E]'}`}
+          style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
           {...register('keluhanUtama')}
         />
+        <p className={`text-[12px] text-right mt-1 ${keluhanUtamaLength > 500 ? 'text-red-500' : 'text-gray-400'}`} style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
+          {keluhanUtamaLength}/500 karakter
+        </p>
         {errors.keluhanUtama && (
           <p className="text-red-500 text-[13px] mt-1.5">{errors.keluhanUtama.message}</p>
         )}
@@ -94,26 +93,25 @@ const FormHasilPeriksa = forwardRef<FormHasilPeriksaRef, FormHasilPeriksaProps>(
 
       {/* Pemeriksaan Fisik Tambahan */}
       <div className="flex flex-col">
-        <div className="flex justify-between items-center mb-3">
-          <h3
-            className="text-sm font-bold text-[#0F766E] uppercase tracking-wider font-poppins"
-            style={{ WebkitTextStroke: '0.2px #0F766E' }}
-          >
-            Pemeriksaan Fisik Tambahan
-            <span className="text-gray-400 font-normal normal-case tracking-normal ml-1">(Opsional)</span>
-          </h3>
-          <span className={`text-[12px] font-medium ${pemeriksaanFisikTambahanLength > 500 ? 'text-red-500' : 'text-gray-400'}`}>
-            {pemeriksaanFisikTambahanLength}/500 karakter
-          </span>
-        </div>
+        <h3
+          className="text-sm font-bold text-[#0F766E] uppercase tracking-wider font-poppins mb-3"
+          style={{ WebkitTextStroke: '0.2px #0F766E' }}
+        >
+          Pemeriksaan Fisik Tambahan
+          <span className="text-gray-400 font-normal normal-case tracking-normal ml-1">(Opsional)</span>
+        </h3>
         <textarea
           id="pemeriksaanFisikTambahan"
           rows={4}
           placeholder="Masukkan hasil pemeriksaan fisik tambahan..."
-          className={`w-full border rounded-xl p-4 text-sm resize-y focus:outline-none focus:ring-1 min-h-[90px] transition-colors bg-[#F9FAFB] text-gray-900 placeholder-gray-400
+          className={`w-full border rounded-xl p-4 text-sm font-sans resize-y focus:outline-none focus:ring-1 min-h-[100px] transition-colors bg-gray-50 text-gray-800 placeholder-gray-400
             ${errors.pemeriksaanFisikTambahan ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#0F766E] focus:border-[#0F766E]'}`}
+          style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
           {...register('pemeriksaanFisikTambahan')}
         />
+        <p className={`text-[12px] text-right mt-1 ${pemeriksaanFisikTambahanLength > 500 ? 'text-red-500' : 'text-gray-400'}`} style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
+          {pemeriksaanFisikTambahanLength}/500 karakter
+        </p>
         {errors.pemeriksaanFisikTambahan && (
           <p className="text-red-500 text-[13px] mt-1.5">{errors.pemeriksaanFisikTambahan.message}</p>
         )}
@@ -130,7 +128,7 @@ const FormHasilPeriksa = forwardRef<FormHasilPeriksaRef, FormHasilPeriksaProps>(
   }
 
   return (
-    <div className="relative w-full font-jakarta">
+    <div className="relative w-full font-sans">
       <h2
         className="mb-5 text-[22px] font-bold text-[#0F766E] uppercase tracking-wide font-poppins"
         style={{ WebkitTextStroke: '0.4px #0F766E' }}
