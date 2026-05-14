@@ -26,27 +26,27 @@ export const PhysicalExamSchema = z.object({
     ),
   
   suhu: z
-    .number()
+    .coerce.number()
     .min(VITAL_BOUNDS.suhu.min, `Suhu minimal ${VITAL_BOUNDS.suhu.min}°C`)
     .max(VITAL_BOUNDS.suhu.max, `Suhu maksimal ${VITAL_BOUNDS.suhu.max}°C`),
-  
+
   nadi: z
-    .number()
+    .coerce.number()
     .min(VITAL_BOUNDS.nadi.min, `Nadi minimal ${VITAL_BOUNDS.nadi.min} bpm`)
     .max(VITAL_BOUNDS.nadi.max, `Nadi maksimal ${VITAL_BOUNDS.nadi.max} bpm`),
-  
+
   napas: z
-    .number()
+    .coerce.number()
     .min(VITAL_BOUNDS.napas.min, `Napas minimal ${VITAL_BOUNDS.napas.min} x/min`)
     .max(VITAL_BOUNDS.napas.max, `Napas maksimal ${VITAL_BOUNDS.napas.max} x/min`),
-  
+
   tinggiBadan: z
-    .number()
+    .coerce.number()
     .min(VITAL_BOUNDS.tinggiBadan.min, `Tinggi badan minimal ${VITAL_BOUNDS.tinggiBadan.min} cm`)
     .max(VITAL_BOUNDS.tinggiBadan.max, `Tinggi badan maksimal ${VITAL_BOUNDS.tinggiBadan.max} cm`),
-  
+
   beratBadan: z
-    .number()
+    .coerce.number()
     .min(VITAL_BOUNDS.beratBadan.min, `Berat badan minimal ${VITAL_BOUNDS.beratBadan.min} kg`)
     .max(VITAL_BOUNDS.beratBadan.max, `Berat badan maksimal ${VITAL_BOUNDS.beratBadan.max} kg`),
   

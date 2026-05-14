@@ -46,6 +46,7 @@ export default async function AsesmenPage({
       practitioner: {
         select: { name: true },
       },
+      observations: true,
     },
   });
 
@@ -67,7 +68,7 @@ export default async function AsesmenPage({
 
   const age = calculateAge(encounter.patient.tanggalLahir);
 
-  const defaultValues = {
+  const defaultValues: Record<string, any> = {
     penyakit: encounter.patient.conditionHistories
       ?.map((c) => c.description)
       .filter((v): v is string => Boolean(v)) ?? [],
@@ -81,6 +82,19 @@ export default async function AsesmenPage({
     catatanAlergi: "",
     catatanObat: "",
   };
+
+  if (encounter.observations?.length > 0) {
+    const obs = encounter.observations[0];
+    if (obs.systolic !== null && obs.diastolic !== null) {
+      defaultValues.tekananDarah = `${obs.systolic}/${obs.diastolic}`;
+    }
+    if (obs.temperature !== null) defaultValues.suhu = obs.temperature.toString();
+    if (obs.heartRate !== null) defaultValues.nadi = obs.heartRate.toString();
+    if (obs.respiratoryRate !== null) defaultValues.napas = obs.respiratoryRate.toString();
+    if (obs.height !== null) defaultValues.tinggiBadan = obs.height.toString();
+    if (obs.weight !== null) defaultValues.beratBadan = obs.weight.toString();
+    if (obs.bmi !== null) defaultValues.bmi = obs.bmi;
+  }
 
   const isEditMode = encounter.status === 'DIPERIKSA';
 

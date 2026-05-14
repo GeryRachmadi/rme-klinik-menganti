@@ -1,38 +1,25 @@
 'use client';
 
-import React from 'react';
-import AssessmentForm from './AssessmentForm';
-import PhysicalExamForm from './PhysicalExamForm';
-import type { DraftState } from './AsesmenPageClient';
+import React, { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import AssessmentForm, { AssessmentFormRef } from './AssessmentForm';
+import PhysicalExamForm, { PhysicalExamFormRef } from './PhysicalExamForm';
+import FormHasilPeriksa, { FormHasilPeriksaRef } from './FormHasilPeriksa';
+import { DiagnosisAutocomplete } from './DiagnosisAutocomplete';
+import DraftFoundModal from './DraftFoundModal';
+import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useFormToast } from '@/hooks/useFormToast';
+import { getAssessmentDraftKey, getPhysicalExamDraftKey, getHasilPeriksaDraftKey } from '@/lib/constants/storage-keys';
 
-/**
- * Props for the AsesmenDokter wrapper component.
- */
 export interface AsesmenDokterProps {
-  /** The ID of the current encounter */
   encounterId: string;
-  /** Patient data object */
   patient: Record<string, any>;
-  /** Encounter data object */
   encounter: Record<string, any>;
-  /** User session object */
   session?: any;
-  /** Assessment form default values */
   defaultValues?: Record<string, any>;
-  /** Whether the forms are in edit mode */
   isEditMode?: boolean;
-  /** Draft state for the assessment form */
-  assessmentDraftState?: DraftState;
-  /** Draft state for the physical exam form */
-  physicalDraftState?: DraftState;
 }
 
-/**
- * Wrapper component for the Doctor (DOKTER) assessment view.
- * Renders the initial assessment (subjective) and physical exam (objective) forms in sequence,
- * making them editable so doctors can review and modify the nurse's S/O data.
- * Also includes a placeholder for Diagnosis & Plan components.
- */
 export default function AsesmenDokter({
   encounterId,
   patient,
@@ -40,19 +27,182 @@ export default function AsesmenDokter({
   session,
   defaultValues,
   isEditMode = false,
-  assessmentDraftState = 'no_draft',
-  physicalDraftState = 'no_draft',
 }: AsesmenDokterProps) {
+  const router = useRouter();
+  const { toast, showSuccess, showError } = useFormToast();
+  
+  const assessmentRef = useRef<AssessmentFormRef>(null);
+  const physicalRef = useRef<PhysicalExamFormRef>(null);
+  const hasilPeriksaRef = useRef<FormHasilPeriksaRef>(null);
+
+  const [isSubmittingCentral, setIsSubmittingCentral] = useState(false);
+  const [selectedDiagnoses, setSelectedDiagnoses] = useState<Array<{code: string, display: string}>>([]);
+  const [showDraftModal, setShowDraftModal] = useState(false);
+  const [availableDrafts, setAvailableDrafts] = useState<{
+    assessment?: any;
+    physical?: any;
+    hasilPeriksa?: any;
+  }>({});
+  const [draftTypes, setDraftTypes] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (isEditMode) return;
+
+    const draftA = localStorage.getItem(getAssessmentDraftKey(encounterId));
+    const draftP = localStorage.getItem(getPhysicalExamDraftKey(encounterId));
+    const draftH = localStorage.getItem(getHasilPeriksaDraftKey(encounterId));
+
+    const parsedDrafts: any = {};
+    const types: string[] = [];
+
+    if (draftA) {
+      try {
+        const payload = JSON.parse(draftA);
+        if (payload.data) {
+          parsedDrafts.assessment = payload.data;
+          types.push('assessment');
+        }
+      } catch (e) {
+        localStorage.removeItem(getAssessmentDraftKey(encounterId));
+      }
+    }
+
+    if (draftP) {
+      try {
+        const payload = JSON.parse(draftP);
+        if (payload.data) {
+          parsedDrafts.physical = payload.data;
+          types.push('physical');
+        }
+      } catch (e) {
+        localStorage.removeItem(getPhysicalExamDraftKey(encounterId));
+      }
+    }
+
+    if (draftH) {
+      try {
+        const payload = JSON.parse(draftH);
+        if (payload.data) {
+          parsedDrafts.hasilPeriksa = payload.data;
+          types.push('hasil-periksa');
+        }
+      } catch (e) {
+        localStorage.removeItem(getHasilPeriksaDraftKey(encounterId));
+      }
+    }
+
+    if (types.length > 0) {
+      setAvailableDrafts(parsedDrafts);
+      setDraftTypes(types);
+      setShowDraftModal(true);
+    }
+  }, [encounterId, isEditMode]);
+
+  const handleUseDraft = () => {
+    if (availableDrafts.assessment && assessmentRef.current) {
+      assessmentRef.current.restoreDraft(availableDrafts.assessment);
+    }
+    if (availableDrafts.physical && physicalRef.current) {
+      physicalRef.current.restoreDraft(availableDrafts.physical);
+    }
+    if (availableDrafts.hasilPeriksa && hasilPeriksaRef.current) {
+      hasilPeriksaRef.current.restoreDraft(availableDrafts.hasilPeriksa);
+    }
+    setShowDraftModal(false);
+    showSuccess('Draf berhasil dipulihkan.');
+  };
+
+  const handleRejectDraft = () => {
+    localStorage.removeItem(getAssessmentDraftKey(encounterId));
+    localStorage.removeItem(getPhysicalExamDraftKey(encounterId));
+    localStorage.removeItem(getHasilPeriksaDraftKey(encounterId));
+    setShowDraftModal(false);
+  };
+
+  const handleSelectDiagnosis = (code: string, display: string) => {
+    if (!selectedDiagnoses.find(d => d.code === code)) {
+      setSelectedDiagnoses([...selectedDiagnoses, { code, display }]);
+    }
+  };
+
+  const handleRemoveDiagnosis = (code: string) => {
+    setSelectedDiagnoses(selectedDiagnoses.filter(d => d.code !== code));
+  };
+
+  const handleCentralSubmit = async () => {
+    setIsSubmittingCentral(true);
+    try {
+      // Individually catch each submitForm so that FormHasilPeriksa's throw is
+      // normalised to null (same as the null-returning forms) instead of
+      // bubbling up as an unhandled rejection.
+      let assessmentData: unknown = null;
+      let physicalData: unknown = null;
+      let hasilPeriksaData: unknown = null;
+
+      try { assessmentData = await assessmentRef.current?.submitForm() ?? null; } catch { assessmentData = null; }
+      try { physicalData = await physicalRef.current?.submitForm() ?? null; } catch { physicalData = null; }
+      try { hasilPeriksaData = await hasilPeriksaRef.current?.submitForm() ?? null; } catch { hasilPeriksaData = null; }
+
+      console.log('[AsesmenDokter] Validation results:', { assessmentData, physicalData, hasilPeriksaData });
+
+      if (!assessmentData) {
+        showError('Periksa kembali bagian Kajian Awal Keperawatan.');
+        return;
+      }
+      if (!physicalData) {
+        showError('Periksa kembali bagian Pemeriksaan Fisik.');
+        return;
+      }
+      if (!hasilPeriksaData) {
+        showError('Periksa kembali bagian Hasil Periksa Medis.');
+        return;
+      }
+
+      // Temporary success feedback for testing orchestration
+      showSuccess('Data berhasil divalidasi dan siap disimpan!');
+      console.log('READY TO SAVE:', { assessmentData, physicalData, hasilPeriksaData });
+      // TODO: TR-70 API POST will go here
+
+    } catch (error: any) {
+      console.error(error);
+      showError(error.message || 'Terjadi kesalahan saat menyimpan data.');
+    } finally {
+      setIsSubmittingCentral(false);
+    }
+  };
+
   return (
-    <div className="w-full space-y-10">
+    <div className="w-full space-y-10 font-jakarta">
+      {toast && (
+        <div className={`fixed top-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl animate-in slide-in-from-top-5 duration-300 ${
+          toast.type === 'success' ? 'bg-[#E6F5F4] border border-[#B2DFDB]' : 'bg-red-50 border border-red-200'
+        }`}>
+          {toast.type === 'success' ? (
+            <CheckCircle2 size={20} strokeWidth={2} className="text-[#0F766E] flex-shrink-0" />
+          ) : (
+            <AlertCircle size={20} strokeWidth={2} className="text-red-500 flex-shrink-0" />
+          )}
+          <span className={`font-medium text-sm font-jakarta ${toast.type === 'success' ? 'text-[#0F766E]' : 'text-red-600'}`}>
+            {toast.text}
+          </span>
+        </div>
+      )}
+      <DraftFoundModal
+        isOpen={showDraftModal}
+        draftTypes={draftTypes as any}
+        onUseDraft={handleUseDraft}
+        onRejectDraft={handleRejectDraft}
+      />
+
       {/* Kajian Awal / Subjective (Editable by Doctor) */}
       <div>
         <div className="h-px bg-gray-200 mb-6" />
         <AssessmentForm
+          ref={assessmentRef}
           encounterId={encounterId}
           defaultValues={defaultValues}
           isEditMode={isEditMode}
-          draftState={assessmentDraftState}
+          hideSubmitButton={true}
         />
       </div>
 
@@ -60,20 +210,101 @@ export default function AsesmenDokter({
       <div>
         <div className="h-px bg-gray-200 mb-6" />
         <PhysicalExamForm
+          ref={physicalRef}
           encounterId={encounterId}
           isEditMode={isEditMode}
           canEdit={true}
-          draftState={physicalDraftState}
+          defaultValues={defaultValues}
+          hideSubmitButton={true}
         />
       </div>
 
-      {/* Diagnosis & Plan Section Placeholder */}
+      {/* Hasil Periksa Medis + Diagnosis — single combined card */}
       <div>
         <div className="h-px bg-gray-200 mb-6" />
-        {/* Diagnosis & Plan section will be added here in TR-66-70 */}
-        <div className="mt-6 p-4 bg-gray-50 border border-dashed border-gray-300 rounded">
-          <p className="text-gray-500 text-sm">Placeholder for Diagnosis &amp; Plan components</p>
+
+        <h2
+          className="mb-5 text-[22px] font-bold text-[#0F766E] uppercase tracking-wide font-poppins"
+          style={{ WebkitTextStroke: '0.4px #0F766E' }}
+        >
+          Hasil Periksa Medis
+        </h2>
+
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 flex flex-col gap-6">
+          {/* S/O Lanjutan fields — no outer card since we are already inside one */}
+          <FormHasilPeriksa
+            ref={hasilPeriksaRef}
+            encounterId={encounterId}
+            hideSubmitButton={true}
+            hideWrapper={true}
+          />
+
+          {/* Diagnosis Utama subsection */}
+          <div className="flex flex-col gap-4">
+            <h3
+              className="text-sm font-bold text-[#0F766E] uppercase tracking-wider font-poppins"
+              style={{ WebkitTextStroke: '0.2px #0F766E' }}
+            >
+              Diagnosis Utama
+            </h3>
+
+            {/* Selected tags render ABOVE the search field — mirrors ChipsInput pattern */}
+            {selectedDiagnoses.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {selectedDiagnoses.map((diag) => (
+                  <span
+                    key={diag.code}
+                    className="inline-flex items-center gap-2 bg-teal-50 text-teal-700 border border-teal-200 rounded-full px-3.5 py-1 text-sm font-medium"
+                  >
+                    <span className="font-semibold">[{diag.code}]</span>
+                    <span>–</span>
+                    <span>{diag.display}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveDiagnosis(diag.code)}
+                      aria-label={`Hapus ${diag.code}`}
+                      className="hover:bg-black/10 rounded-full p-0.5 ml-0.5 leading-none cursor-pointer"
+                    >
+                      <span className="text-base leading-none">×</span>
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <DiagnosisAutocomplete
+              encounterId={encounterId}
+              onSelectDiagnosis={handleSelectDiagnosis}
+            />
+          </div>
         </div>
+      </div>
+
+      {/* Final Orchestration Action Buttons */}
+      <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200 pb-10">
+        <button
+          type="button"
+          disabled={isSubmittingCentral}
+          onClick={() => router.push('/rawat-jalan')}
+          className="px-8 py-2.5 bg-white border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-colors shadow-sm text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Batal
+        </button>
+        <button
+          type="button"
+          onClick={handleCentralSubmit}
+          disabled={isSubmittingCentral}
+          className="px-8 py-2.5 bg-[#0F766E] hover:bg-teal-800 text-white font-semibold rounded-xl transition-colors shadow-sm text-sm min-w-[120px] flex justify-center items-center cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+        >
+          {isSubmittingCentral ? (
+            <>
+              <Loader2 className="animate-spin mr-2 h-4 w-4" />
+              Menyimpan...
+            </>
+          ) : (
+            'Simpan Asesmen'
+          )}
+        </button>
       </div>
     </div>
   );

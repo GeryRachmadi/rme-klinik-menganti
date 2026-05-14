@@ -187,7 +187,7 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 - TR-65 ✅ API endpoint Observation
 
 ### TR-11 [UC-10] Input Diagnosis
-- TR-66 ⏳ Form Hasil Periksa Medis
+- TR-66 ✅ Form Hasil Periksa Medis
 - TR-67 ⏳ Search ICD-10 autocomplete
 - TR-68 ⏳ Fallback input manual diagnosis
 - TR-69 ⏳ Read-only view Kajian Awal & Pemeriksaan Fisik

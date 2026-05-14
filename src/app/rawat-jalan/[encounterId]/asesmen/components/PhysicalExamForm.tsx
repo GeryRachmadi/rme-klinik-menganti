@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -14,16 +14,22 @@ import { getPhysicalExamDraftKey } from '@/lib/constants/storage-keys';
 import { calculateBMI, getBMIStatus } from '@/lib/utils/bmi-calculator';
 import VitalSignInput from './VitalSignInput';
 import BMIDisplay from './BMIDisplay';
-import OutOfBoundsConfirmModal from './OutOfBoundsConfirmModal';
 import type { DraftState } from './AsesmenPageClient';
 
 // ─── Prop types ──────────────────────────────────────────────────────────────
+
+export interface PhysicalExamFormRef {
+  submitForm: () => Promise<PhysicalExamData | null>;
+  restoreDraft: (data: PhysicalExamData) => void;
+}
 
 interface PhysicalExamFormProps {
   encounterId: string;
   isEditMode?: boolean;
   canEdit?: boolean;
-  draftState: DraftState;
+  defaultValues?: Record<string, any>;
+  hideSubmitButton?: boolean;
+  draftState?: DraftState;
 }
 
 // ─── Draft payload ────────────────────────────────────────────────────────────
@@ -35,22 +41,23 @@ interface DraftPayload {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function PhysicalExamForm({
+const PhysicalExamForm = forwardRef<PhysicalExamFormRef, PhysicalExamFormProps>(({
   encounterId,
   isEditMode = false,
   canEdit = true,
   draftState,
-}: PhysicalExamFormProps) {
+  defaultValues,
+  hideSubmitButton = false,
+}, ref) => {
   const router = useRouter();
   const draftKey = getPhysicalExamDraftKey(encounterId);
 
   const [draftLoaded, setDraftLoaded] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDraftModal, setShowDraftModal] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   const { toast, showSuccess, showError, showWarning } = useFormToast();
 
   const [outOfBoundsFields, setOutOfBoundsFields] = useState<string[]>([]);
-  const [showOutOfBoundsModal, setShowOutOfBoundsModal] = useState(false);
-  const [userConfirmedSubmit, setUserConfirmedSubmit] = useState(false);
 
   const {
     control,
@@ -59,20 +66,36 @@ export default function PhysicalExamForm({
     setValue,
     getValues,
     reset,
+    trigger,
+    formState,
   } = useForm<PhysicalExamData>({
     resolver: zodResolver(PhysicalExamSchema),
     mode: 'onChange',
     defaultValues: {
-      tekananDarah: '',
-      suhu: '' as any,
-      nadi: '' as any,
-      napas: '' as any,
-      tinggiBadan: '' as any,
-      beratBadan: '' as any,
-      bmi: undefined,
-      catatan: '',
+      tekananDarah: defaultValues?.tekananDarah ?? '',
+      suhu: defaultValues?.suhu ?? ('' as any),
+      nadi: defaultValues?.nadi ?? ('' as any),
+      napas: defaultValues?.napas ?? ('' as any),
+      tinggiBadan: defaultValues?.tinggiBadan ?? ('' as any),
+      beratBadan: defaultValues?.beratBadan ?? ('' as any),
+      bmi: defaultValues?.bmi,
+      catatan: defaultValues?.catatan ?? '',
     },
   });
+
+  useImperativeHandle(ref, () => ({
+    submitForm: async () => {
+      const isValid = await trigger();
+      console.log('[PhysicalExamForm] Validation result:', { isValid, data: getValues(), errors: formState.errors });
+      if (!isValid) return null;
+      // Re-parse through schema so coerced numbers are returned, not raw strings
+      const parsed = PhysicalExamSchema.safeParse(getValues());
+      return parsed.success ? parsed.data : null;
+    },
+    restoreDraft: (data: PhysicalExamData) => {
+      reset(data);
+    }
+  }), [formState, trigger, getValues, reset]);
 
   // Individual field watches — avoids passing watch() (new object each render) as a dependency
   const tekananDarah = watch('tekananDarah');
@@ -93,41 +116,6 @@ export default function PhysicalExamForm({
     setOutOfBoundsFields(outOfBounds);
   }, [tekananDarah, suhu, nadi, napas, tinggiBadan, beratBadan, bmi, catatan]);
 
-  // Restore draft from localStorage when parent signals 'use'
-  useEffect(() => {
-    if (draftState !== 'use') return;
-    if (isEditMode) {
-      localStorage.removeItem(draftKey);
-      setDraftLoaded(true);
-      return;
-    }
-    const raw = localStorage.getItem(draftKey);
-    if (!raw) {
-      console.log('[PhysicalExamForm] draftState=use but no localStorage data found');
-      setDraftLoaded(true);
-      return;
-    }
-    try {
-      const payload: DraftPayload = JSON.parse(raw);
-      if (payload.data) {
-        reset(payload.data);
-        console.log('[PhysicalExamForm] ✓ Draft restored from localStorage');
-      }
-    } catch {
-      localStorage.removeItem(draftKey);
-      console.error('[PhysicalExamForm] Draft JSON corrupted — discarding');
-    }
-    setDraftLoaded(true);
-  }, [draftState, encounterId, draftKey, isEditMode, reset]);
-
-  // Mark as loaded immediately when no restoration is needed
-  useEffect(() => {
-    if (draftState === 'no_draft') {
-      if (isEditMode) localStorage.removeItem(draftKey);
-      setDraftLoaded(true);
-    }
-  }, [draftState, draftKey, isEditMode]);
-
   // Real-time BMI calculation
   useEffect(() => {
     const h = Number(tinggiBadan);
@@ -141,79 +129,6 @@ export default function PhysicalExamForm({
 
   const bmiStatus = bmi !== undefined ? getBMIStatus(bmi).status : undefined;
 
-  const onSubmitForm = async (data: PhysicalExamData) => {
-    if (!canEdit) {
-      showError("Anda tidak memiliki izin untuk menyimpan pemeriksaan fisik.");
-      return;
-    }
-
-    const outOfBounds = getOutOfBoundsFields(data);
-
-    if (outOfBounds.length > 0 && !userConfirmedSubmit) {
-      setShowOutOfBoundsModal(true);
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const response = await fetch(
-        `/api/encounters/${encounterId}/physical-exam`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...data,
-            userConfirmedOutOfBounds: userConfirmedSubmit
-          })
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        if (response.status === 400) {
-          showError("Data tidak valid. Periksa kembali nilai tanda vital.");
-        } else if (response.status === 401) {
-          showError("Sesi Anda telah berakhir. Silakan login ulang.");
-        } else if (response.status === 403) {
-          showError("Hanya perawat dan dokter yang dapat menyimpan pemeriksaan fisik.");
-        } else if (response.status === 404) {
-          showError("Kunjungan tidak ditemukan.");
-        } else {
-          showError(errorData.error || "Gagal menyimpan pemeriksaan fisik.");
-        }
-        return;
-      }
-
-      showSuccess("Pemeriksaan fisik berhasil disimpan");
-      localStorage.removeItem(draftKey);
-
-      setTimeout(() => {
-        router.push(`/rawat-jalan`);
-      }, 1500);
-    } catch (error: unknown) {
-      console.error("Submission error:", error);
-      showError("Terjadi kesalahan jaringan. Silakan coba lagi.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handlePeriksaUlang = () => {
-    setShowOutOfBoundsModal(false);
-    setUserConfirmedSubmit(false);
-  };
-
-  const handleSimpanTetap = () => {
-    setUserConfirmedSubmit(true);
-    setShowOutOfBoundsModal(false);
-    showWarning("Data tanda vital di luar batas normal. Melanjutkan penyimpanan...");
-
-    // Using a timeout to ensure state update, then re-submit
-    setTimeout(() => {
-      onSubmitForm(getValues() as PhysicalExamData);
-    }, 100);
-  };
-
   if (!canEdit) {
     return (
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center" style={{ fontFamily: 'var(--font-jakarta)' }}>
@@ -225,23 +140,8 @@ export default function PhysicalExamForm({
     );
   }
 
-  if (draftState === 'checking' || draftState === 'pending' || !draftLoaded) {
-    return (
-      <div className="p-8 text-center text-gray-500 animate-pulse">
-        Memuat form pemeriksaan fisik...
-      </div>
-    );
-  }
-
   return (
     <div className="relative w-full" style={{ fontFamily: 'var(--font-jakarta)' }}>
-      <OutOfBoundsConfirmModal
-        isOpen={showOutOfBoundsModal}
-        outOfBoundsFields={outOfBoundsFields}
-        onPeriksaUlang={handlePeriksaUlang}
-        onSimpanTetap={handleSimpanTetap}
-      />
-
       {toast && (
         <div className={`fixed top-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl animate-in slide-in-from-top-5 duration-300 ${
           toast.type === 'success' ? 'bg-[#E6F5F4] border border-[#B2DFDB]' :
@@ -264,12 +164,7 @@ export default function PhysicalExamForm({
       )}
 
       <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          // By passing the current form values directly, we allow submission even if Zod schema has bounds warnings.
-          // This fulfills the requirement "Form still allows submission with invalid data (modal blocks, not schema)"
-          onSubmitForm(getValues() as PhysicalExamData);
-        }}
+        id="form-physical-exam"
         className="w-full"
       >
         <h2
@@ -287,7 +182,7 @@ export default function PhysicalExamForm({
               <Controller
                 name="tekananDarah"
                 control={control}
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <VitalSignInput
                     label="Tekanan Darah"
                     unit="mmHg"
@@ -296,13 +191,14 @@ export default function PhysicalExamForm({
                     onChange={field.onChange}
                     placeholder="130/85"
                     warning={outOfBoundsFields.includes('tekananDarah')}
+                    error={fieldState.error?.message}
                   />
                 )}
               />
               <Controller
                 name="suhu"
                 control={control}
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <VitalSignInput
                     label="Suhu"
                     unit="°C"
@@ -312,13 +208,14 @@ export default function PhysicalExamForm({
                     onChange={field.onChange}
                     placeholder="36.5"
                     warning={outOfBoundsFields.includes('suhu')}
+                    error={fieldState.error?.message}
                   />
                 )}
               />
               <Controller
                 name="nadi"
                 control={control}
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <VitalSignInput
                     label="Nadi"
                     unit="bpm"
@@ -327,13 +224,14 @@ export default function PhysicalExamForm({
                     onChange={field.onChange}
                     placeholder="80"
                     warning={outOfBoundsFields.includes('nadi')}
+                    error={fieldState.error?.message}
                   />
                 )}
               />
               <Controller
                 name="napas"
                 control={control}
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <VitalSignInput
                     label="Napas"
                     unit="x/mnt"
@@ -342,6 +240,7 @@ export default function PhysicalExamForm({
                     onChange={field.onChange}
                     placeholder="20"
                     warning={outOfBoundsFields.includes('napas')}
+                    error={fieldState.error?.message}
                   />
                 )}
               />
@@ -352,7 +251,7 @@ export default function PhysicalExamForm({
               <Controller
                 name="tinggiBadan"
                 control={control}
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <VitalSignInput
                     label="Tinggi Badan"
                     unit="cm"
@@ -362,13 +261,14 @@ export default function PhysicalExamForm({
                     onChange={field.onChange}
                     placeholder="170"
                     warning={outOfBoundsFields.includes('tinggiBadan')}
+                    error={fieldState.error?.message}
                   />
                 )}
               />
               <Controller
                 name="beratBadan"
                 control={control}
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <VitalSignInput
                     label="Berat Badan"
                     unit="kg"
@@ -378,6 +278,7 @@ export default function PhysicalExamForm({
                     onChange={field.onChange}
                     placeholder="65"
                     warning={outOfBoundsFields.includes('beratBadan')}
+                    error={fieldState.error?.message}
                   />
                 )}
               />
@@ -399,10 +300,11 @@ export default function PhysicalExamForm({
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-semibold text-[#0F766E] uppercase tracking-wider">
                 Catatan
+                <span className="text-gray-400 font-normal normal-case tracking-normal ml-1">(Opsional)</span>
               </label>
               <textarea
                 {...register('catatan')}
-                placeholder="Catatan tambahan pemeriksaan fisik (opsional)"
+                placeholder="Catatan tambahan pemeriksaan fisik..."
                 rows={4}
                 className="w-full border border-gray-200 rounded-xl p-4 text-sm bg-gray-50 text-gray-800 placeholder-gray-400 resize-y focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] min-h-[100px] transition-colors"
               />
@@ -413,33 +315,11 @@ export default function PhysicalExamForm({
 
           </div>
         </div>
-
-        {/* Actions */}
-        <div className="flex justify-end gap-4 mt-8 mb-10">
-          <button
-            type="button"
-            disabled={isSubmitting}
-            onClick={() => router.push('/rawat-jalan')}
-            className="px-8 py-2.5 bg-white border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-colors shadow-sm text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Batal
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting || !canEdit}
-            className="px-8 py-2.5 bg-[#0F766E] hover:bg-teal-800 text-white font-semibold rounded-xl transition-colors shadow-sm text-sm min-w-[120px] flex justify-center items-center cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="animate-spin mr-2 h-4 w-4" />
-                Menyimpan...
-              </>
-            ) : (
-              'Simpan'
-            )}
-          </button>
-        </div>
       </form>
     </div>
   );
-}
+});
+
+PhysicalExamForm.displayName = 'PhysicalExamForm';
+
+export default PhysicalExamForm;

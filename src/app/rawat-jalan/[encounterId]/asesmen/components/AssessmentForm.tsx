@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AssessmentSchema, type AssessmentFormValues } from '@/lib/schemas/assessment-schema';
@@ -16,11 +16,17 @@ import { useRouter } from 'next/navigation';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import type { DraftState } from './AsesmenPageClient';
 
+export interface AssessmentFormRef {
+  submitForm: () => Promise<AssessmentFormValues | null>; 
+  restoreDraft: (data: AssessmentFormValues) => void;
+}
+
 interface AssessmentFormProps {
   encounterId: string;
   defaultValues?: Partial<AssessmentFormValues>;
   isEditMode?: boolean;
-  draftState: DraftState;
+  hideSubmitButton?: boolean;
+  draftState?: DraftState;
 }
 
 interface DraftPayload {
@@ -68,24 +74,26 @@ function FormToast({ toast }: { toast: { type: 'success' | 'error' | 'warning'; 
   );
 }
 
-export default function AssessmentForm({
+const AssessmentForm = forwardRef<AssessmentFormRef, AssessmentFormProps>(({
   encounterId,
   defaultValues,
   isEditMode = false,
-  draftState,
-}: AssessmentFormProps) {
+  hideSubmitButton = false,
+}, ref) => {
   const router = useRouter();
   const [alergiSeverity, setAlergiSeverity] = useState('Sedang');
   const [obatDosage, setObatDosage] = useState('');
   const [draftLoaded, setDraftLoaded] = useState(false);
+  const [showDraftModal, setShowDraftModal] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   const { toast, showSuccess, showError } = useFormToast();
 
-  const { control, handleSubmit, register, watch, setValue, reset, formState: { errors } } = useForm<AssessmentFormValues>({
+  const { control, handleSubmit, register, watch, setValue, reset, trigger, getValues, formState: { errors } } = useForm<AssessmentFormValues>({
     resolver: zodResolver(AssessmentSchema),
     defaultValues: {
-      penyakit: defaultValues?.penyakit ?? [],
-      alergi: defaultValues?.alergi ?? [],
-      obat: defaultValues?.obat ?? [],
+      penyakit: Array.from(new Set(defaultValues?.penyakit ?? [])),
+      alergi: Array.from(new Set(defaultValues?.alergi ?? [])),
+      obat: Array.from(new Set(defaultValues?.obat ?? [])),
       catatanPenyakit: defaultValues?.catatanPenyakit ?? '',
       catatanAlergi: defaultValues?.catatanAlergi ?? '',
       catatanObat: defaultValues?.catatanObat ?? '',
@@ -95,93 +103,40 @@ export default function AssessmentForm({
     },
   });
 
+  useImperativeHandle(ref, () => ({
+    submitForm: async () => {
+      const isValid = await trigger();
+      console.log('[AssessmentForm] Validation result:', { isValid, data: getValues() });
+      if (!isValid) return null;
+      return getValues();
+    },
+    restoreDraft: (data: AssessmentFormValues) => {
+      reset({
+        penyakit: Array.from(new Set(data.penyakit ?? [])),
+        alergi: Array.from(new Set(data.alergi ?? [])),
+        obat: Array.from(new Set(data.obat ?? [])),
+        catatanPenyakit: data.catatanPenyakit ?? '',
+        catatanAlergi: data.catatanAlergi ?? '',
+        catatanObat: data.catatanObat ?? '',
+        tidakAdaPenyakit: data.tidakAdaPenyakit ?? false,
+        tidakAdaAlergi: data.tidakAdaAlergi ?? false,
+        tidakAdaObat: data.tidakAdaObat ?? false,
+      });
+    }
+  }));
+
   const currentFormData = watch();
   useAutoSaveDraft(getAssessmentDraftKey(encounterId), currentFormData);
-
-  // Restore draft from localStorage when parent signals 'use'
-  useEffect(() => {
-    if (draftState !== 'use') return;
-    const raw = localStorage.getItem(getAssessmentDraftKey(encounterId));
-    if (!raw) {
-      console.log('[AssessmentForm] draftState=use but no localStorage data found');
-      setDraftLoaded(true);
-      return;
-    }
-    try {
-      const payload: DraftPayload = JSON.parse(raw);
-      if (payload.data) {
-        reset({
-          ...payload.data,
-          penyakit: payload.data.penyakit ?? [],
-          alergi: payload.data.alergi ?? [],
-          obat: payload.data.obat ?? [],
-        });
-        console.log('[AssessmentForm] ✓ Draft restored from localStorage');
-      }
-    } catch {
-      localStorage.removeItem(getAssessmentDraftKey(encounterId));
-      console.error('[AssessmentForm] Draft JSON corrupted — discarding');
-    }
-    setDraftLoaded(true);
-  }, [draftState, encounterId, reset]);
-
-  // Mark as loaded immediately when no restoration is needed
-  useEffect(() => {
-    if (draftState === 'no_draft') {
-      setDraftLoaded(true);
-    }
-  }, [draftState]);
 
   const isPenyakitNull = watch('tidakAdaPenyakit');
   const isAlergiNull = watch('tidakAdaAlergi');
   const isObatNull = watch('tidakAdaObat');
 
-  const onSubmitForm = async (formData: AssessmentFormValues) => {
-    try {
-      const parsedData = {
-        penyakit: formData.penyakit ?? [],
-        alergi: (formData.alergi ?? []).map(parseAllergyChip),
-        obat: (formData.obat ?? []).map(parseMedicationChip),
-        tidakAdaPenyakit: formData.tidakAdaPenyakit,
-        tidakAdaAlergi: formData.tidakAdaAlergi,
-        tidakAdaObat: formData.tidakAdaObat,
-        catatanPenyakit: formData.catatanPenyakit,
-        catatanAlergi: formData.catatanAlergi,
-        catatanObat: formData.catatanObat,
-      };
-
-      const response = await fetch(`/api/encounters/${encounterId}/assessment`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(parsedData),
-      });
-
-      if (!response.ok) {
-        const { message } = await handleApiError(response);
-        throw new Error(message);
-      }
-
-      deleteDraft(encounterId);
-      showSuccess('Asesmen keperawatan berhasil disimpan.');
-
-      setTimeout(() => {
-        router.push('/rawat-jalan');
-      }, ASSESSMENT_CONFIG.redirectDelayMs);
-
-    } catch (error: unknown) {
-      showError(error instanceof Error ? error.message : 'Terjadi kesalahan sistem.');
-    }
-  };
-
-  if (draftState === 'checking' || draftState === 'pending' || !draftLoaded) {
-    return <div className="p-8 text-center text-gray-500 animate-pulse">Memuat form asesmen...</div>;
-  }
-
   return (
     <div className="relative w-full">
       <FormToast toast={toast} />
 
-      <form onSubmit={handleSubmit(onSubmitForm)} className="w-full font-jakarta">
+      <form id="form-assessment" className="w-full font-jakarta">
         <h2
           className="mb-5 text-[22px] font-bold text-[#0F766E] uppercase tracking-wide font-poppins"
           style={{ WebkitTextStroke: '0.4px #0F766E' }}
@@ -359,8 +314,12 @@ export default function AssessmentForm({
 
           </div>
         </div>
-
       </form>
     </div>
   );
-}
+});
+
+AssessmentForm.displayName = 'AssessmentForm';
+
+export default AssessmentForm;
+
