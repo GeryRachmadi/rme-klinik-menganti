@@ -10,6 +10,7 @@ import DraftFoundModal from './DraftFoundModal';
 import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useFormToast } from '@/hooks/useFormToast';
 import { getAssessmentDraftKey, getPhysicalExamDraftKey, getHasilPeriksaDraftKey } from '@/lib/constants/storage-keys';
+import MissingDataWarning from './MissingDataWarning';
 
 export interface AsesmenDokterProps {
   encounterId: string;
@@ -18,6 +19,13 @@ export interface AsesmenDokterProps {
   session?: any;
   defaultValues?: Record<string, any>;
   isEditMode?: boolean;
+  initialAssessment: { penyakit: string[]; alergi: string[]; obat: string[] } | null;
+  initialPhysical: {
+    systolic: number | null;
+    temperature: number | null;
+    heartRate: number | null;
+    respiratoryRate: number | null;
+  } | null;
 }
 
 export default function AsesmenDokter({
@@ -27,16 +35,34 @@ export default function AsesmenDokter({
   session,
   defaultValues,
   isEditMode = false,
+  initialAssessment,
+  initialPhysical,
 }: AsesmenDokterProps) {
   const router = useRouter();
   const { toast, showSuccess, showError } = useFormToast();
+
+  const missingAssessment =
+    initialAssessment === null ||
+    (initialAssessment.penyakit.length === 0 &&
+      initialAssessment.alergi.length === 0 &&
+      initialAssessment.obat.length === 0);
+
+  const missingVitals =
+    initialPhysical === null ||
+    (!initialPhysical.systolic &&
+      !initialPhysical.temperature &&
+      !initialPhysical.heartRate &&
+      !initialPhysical.respiratoryRate);
+
+  console.log('[AsesmenDokter] Assessment missing:', missingAssessment);
+  console.log('[AsesmenDokter] Vitals missing:', missingVitals);
   
   const assessmentRef = useRef<AssessmentFormRef>(null);
   const physicalRef = useRef<PhysicalExamFormRef>(null);
   const hasilPeriksaRef = useRef<FormHasilPeriksaRef>(null);
 
   const [isSubmittingCentral, setIsSubmittingCentral] = useState(false);
-  const [selectedDiagnoses, setSelectedDiagnoses] = useState<Array<{code: string, display: string}>>([]);
+  const [selectedDiagnoses, setSelectedDiagnoses] = useState<Array<{code: string, display: string, notes?: string}>>([]);
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [availableDrafts, setAvailableDrafts] = useState<{
     assessment?: any;
@@ -119,18 +145,19 @@ export default function AsesmenDokter({
     setShowDraftModal(false);
   };
 
-  const handleSelectDiagnosis = (code: string, display: string) => {
-    if (!selectedDiagnoses.find(d => d.code === code)) {
-      setSelectedDiagnoses([...selectedDiagnoses, { code, display }]);
+  const handleSelectDiagnosis = (code: string, display: string, notes?: string) => {
+    if (code === 'MANUAL' || !selectedDiagnoses.find(d => d.code === code)) {
+      setSelectedDiagnoses([...selectedDiagnoses, { code, display, notes }]);
     }
   };
 
-  const handleRemoveDiagnosis = (code: string) => {
-    setSelectedDiagnoses(selectedDiagnoses.filter(d => d.code !== code));
+  const handleRemoveDiagnosis = (code: string, idx: number) => {
+    setSelectedDiagnoses(selectedDiagnoses.filter((_, i) => i !== idx));
   };
 
   const handleCentralSubmit = async () => {
     setIsSubmittingCentral(true);
+    let saved = false;
     try {
       // Individually catch each submitForm so that FormHasilPeriksa's throw is
       // normalised to null (same as the null-returning forms) instead of
@@ -143,6 +170,8 @@ export default function AsesmenDokter({
       try { physicalData = await physicalRef.current?.submitForm() ?? null; } catch { physicalData = null; }
       try { hasilPeriksaData = await hasilPeriksaRef.current?.submitForm() ?? null; } catch { hasilPeriksaData = null; }
 
+      if (missingAssessment) console.log('[AsesmenDokter] Doctor is completing missing Assessment data');
+      if (missingVitals) console.log('[AsesmenDokter] Doctor is completing missing Vitals data');
       console.log('[AsesmenDokter] Validation results:', { assessmentData, physicalData, hasilPeriksaData });
 
       if (!assessmentData) {
@@ -158,16 +187,30 @@ export default function AsesmenDokter({
         return;
       }
 
-      // Temporary success feedback for testing orchestration
-      showSuccess('Data berhasil divalidasi dan siap disimpan!');
-      console.log('READY TO SAVE:', { assessmentData, physicalData, hasilPeriksaData });
-      // TODO: TR-70 API POST will go here
+      const response = await fetch(`/api/rawat-jalan/${encounterId}/asesmen`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assessmentData, physicalData, hasilPeriksaData, selectedDiagnoses }),
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        showError(result.error || 'Gagal menyimpan data ke server.');
+        return;
+      }
+
+      saved = true;
+      localStorage.removeItem(getAssessmentDraftKey(encounterId));
+      localStorage.removeItem(getPhysicalExamDraftKey(encounterId));
+      localStorage.removeItem(getHasilPeriksaDraftKey(encounterId));
+      showSuccess('Asesmen berhasil disimpan. Status kunjungan: SELESAI');
+      setTimeout(() => router.push('/rawat-jalan'), 2000);
 
     } catch (error: any) {
       console.error(error);
       showError(error.message || 'Terjadi kesalahan saat menyimpan data.');
     } finally {
-      setIsSubmittingCentral(false);
+      if (!saved) setIsSubmittingCentral(false);
     }
   };
 
@@ -175,14 +218,20 @@ export default function AsesmenDokter({
     <div className="w-full space-y-10 font-jakarta">
       {toast && (
         <div className={`fixed top-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl animate-in slide-in-from-top-5 duration-300 ${
-          toast.type === 'success' ? 'bg-[#E6F5F4] border border-[#B2DFDB]' : 'bg-red-50 border border-red-200'
+          toast.type === 'success' ? 'bg-[#E6F5F4] border border-[#B2DFDB]' :
+          toast.type === 'warning' ? 'bg-yellow-50 border border-yellow-200' :
+          'bg-red-50 border border-red-200'
         }`}>
           {toast.type === 'success' ? (
             <CheckCircle2 size={20} strokeWidth={2} className="text-[#0F766E] flex-shrink-0" />
           ) : (
-            <AlertCircle size={20} strokeWidth={2} className="text-red-500 flex-shrink-0" />
+            <AlertCircle size={20} strokeWidth={2} className={toast.type === 'warning' ? 'text-yellow-600 flex-shrink-0' : 'text-red-500 flex-shrink-0'} />
           )}
-          <span className={`font-medium text-sm font-jakarta ${toast.type === 'success' ? 'text-[#0F766E]' : 'text-red-600'}`}>
+          <span className={`font-medium text-sm font-jakarta ${
+            toast.type === 'success' ? 'text-[#0F766E]' :
+            toast.type === 'warning' ? 'text-yellow-700' :
+            'text-red-600'
+          }`}>
             {toast.text}
           </span>
         </div>
@@ -193,6 +242,8 @@ export default function AsesmenDokter({
         onUseDraft={handleUseDraft}
         onRejectDraft={handleRejectDraft}
       />
+
+      <MissingDataWarning missingAssessment={missingAssessment} missingVitals={missingVitals} />
 
       {/* Kajian Awal / Subjective (Editable by Doctor) */}
       <div>
@@ -251,18 +302,22 @@ export default function AsesmenDokter({
             {/* Selected tags render ABOVE the search field — mirrors ChipsInput pattern */}
             {selectedDiagnoses.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {selectedDiagnoses.map((diag) => (
+                {selectedDiagnoses.map((diag, idx) => (
                   <span
-                    key={diag.code}
-                    className="inline-flex items-center gap-2 bg-teal-50 text-teal-700 border border-teal-200 rounded-full px-3.5 py-1 text-sm font-medium"
+                    key={`${diag.code}-${idx}`}
+                    className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1 text-sm font-medium border ${
+                      diag.code === 'MANUAL'
+                        ? 'bg-yellow-50 text-yellow-800 border-yellow-200'
+                        : 'bg-teal-50 text-teal-700 border-teal-200'
+                    }`}
                   >
                     <span className="font-semibold">[{diag.code}]</span>
                     <span>–</span>
                     <span>{diag.display}</span>
                     <button
                       type="button"
-                      onClick={() => handleRemoveDiagnosis(diag.code)}
-                      aria-label={`Hapus ${diag.code}`}
+                      onClick={() => handleRemoveDiagnosis(diag.code, idx)}
+                      aria-label={`Hapus diagnosis`}
                       className="hover:bg-black/10 rounded-full p-0.5 ml-0.5 leading-none cursor-pointer"
                     >
                       <span className="text-base leading-none">×</span>

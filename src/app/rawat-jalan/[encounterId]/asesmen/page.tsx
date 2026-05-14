@@ -98,6 +98,16 @@ export default async function AsesmenPage({
 
   const isEditMode = encounter.status === 'DIPERIKSA';
 
+  const initialAssessment = {
+    penyakit: defaultValues.penyakit ?? [],
+    alergi: defaultValues.alergi ?? [],
+    obat: defaultValues.obat ?? [],
+  };
+
+  const initialPhysical = encounter.observations?.length > 0
+    ? encounter.observations[0]
+    : null;
+
   return (
     <div className="grid grid-cols-12 gap-6">
       <Breadcrumb
@@ -142,6 +152,8 @@ export default async function AsesmenPage({
             session={session}
             defaultValues={defaultValues}
             isEditMode={isEditMode}
+            initialAssessment={initialAssessment}
+            initialPhysical={initialPhysical}
           />
         )}
       </div>
