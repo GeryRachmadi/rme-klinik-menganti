@@ -50,7 +50,7 @@ export default function BMIDisplay({ bmi, status }: BMIDisplayProps) {
   if (bmi === undefined || bmi === null || isNaN(bmi)) {
     return (
       <div
-        className="flex items-center justify-center w-full h-[52px] rounded-xl bg-gray-50 border border-gray-200 px-3"
+        className="flex items-center justify-center w-full h-[38px] rounded-xl bg-gray-50 border border-gray-200 px-3"
         style={{ fontFamily: 'var(--font-jakarta)' }}
       >
         <p className="text-[11px] text-center text-gray-400 leading-snug">
@@ -65,11 +65,11 @@ export default function BMIDisplay({ bmi, status }: BMIDisplayProps) {
 
   return (
     <div
-      className="flex items-center justify-between w-full h-[52px] rounded-xl bg-gray-50 border border-gray-200 px-4"
+      className="flex items-center justify-between w-full h-[38px] rounded-xl bg-gray-50 border border-gray-200 px-4"
       style={{ fontFamily: 'var(--font-jakarta)' }}
     >
       <div className="flex items-baseline gap-1">
-        <span className={`text-[22px] font-bold leading-none ${category.valueClass}`}>
+        <span className={`text-base font-bold leading-none ${category.valueClass}`}>
           {bmi.toFixed(1)}
         </span>
         <span className="text-[11px] font-medium text-gray-400 leading-none">
@@ -78,7 +78,7 @@ export default function BMIDisplay({ bmi, status }: BMIDisplayProps) {
       </div>
 
       <span
-        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-semibold ${category.badgeClass}`}
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-semibold ${category.badgeClass}`}
       >
         {category.icon}
         {displayLabel}
