@@ -98,8 +98,8 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 ## Jira Project
 - Project: Tugas Akhir - RME Klinik Pratama Menganti Gresik
 - Key: TR
-- Current progress: TR-35 Subtask 3 Done (UC-04 Patient Registration UI & Backend logic complete)
-- Next: TR-35 Subtask 4 (Migrate Daftar Pasien table to live Prisma data)
+- Current progress: TR-70 Done (UC-10 Input Diagnosis) complete
+- Next: TR-12 [UC-11] Catat Tindak Lanjut
 
 ## LATEST REFACTORING (P2 Quality Polish)
 
@@ -188,10 +188,10 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 
 ### TR-11 [UC-10] Input Diagnosis
 - TR-66 ✅ Form Hasil Periksa Medis
-- TR-67 ⏳ Search ICD-10 autocomplete
-- TR-68 ⏳ Fallback input manual diagnosis
-- TR-69 ⏳ Read-only view Kajian Awal & Pemeriksaan Fisik
-- TR-70 ⏳ API endpoint ConditionDiagnosis
+- TR-67 ✅ Search ICD-10 autocomplete
+- TR-68 ✅ Fallback input manual diagnosis
+- TR-69 ✅ Read-only view Kajian Awal & Pemeriksaan Fisik
+- TR-70 ✅ API endpoint ConditionDiagnosis
 
 ### TR-12 [UC-11] Catat Tindak Lanjut
 - TR-71 ⏳ Search ICD-9 CM autocomplete
