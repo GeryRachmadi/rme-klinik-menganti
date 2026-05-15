@@ -8,19 +8,19 @@ import { getHasilPeriksaDraftKey } from '@/lib/constants/storage-keys';
 import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft';
 import { useFormToast } from '@/hooks/useFormToast';
 
-export interface FormHasilPeriksaRef {
+export interface SubjectiveObjectiveExtendedFormRef {
   submitForm: () => Promise<HasilPeriksaData>;
   restoreDraft: (data: HasilPeriksaData) => void;
 }
 
-export interface FormHasilPeriksaProps {
+export interface SubjectiveObjectiveExtendedFormProps {
   encounterId: string;
   hideSubmitButton?: boolean;
   /** When true, renders only the <form> fields without the outer h2 + white card wrapper */
   hideWrapper?: boolean;
 }
 
-const FormHasilPeriksa = forwardRef<FormHasilPeriksaRef, FormHasilPeriksaProps>(({
+const SubjectiveObjectiveExtendedForm = forwardRef<SubjectiveObjectiveExtendedFormRef, SubjectiveObjectiveExtendedFormProps>(({
   encounterId,
   hideSubmitButton = false,
   hideWrapper = false,
@@ -47,7 +47,7 @@ const FormHasilPeriksa = forwardRef<FormHasilPeriksaRef, FormHasilPeriksaProps>(
   useImperativeHandle(ref, () => ({
     submitForm: async () => {
       const isFormValid = await trigger();
-      console.log('[FormHasilPeriksa] Validation result:', { isFormValid, data: getValues() });
+      console.log('[SubjectiveObjectiveExtendedForm] Validation result:', { isFormValid, data: getValues() });
       if (!isFormValid) {
         throw new Error('Validasi form hasil periksa medis gagal. Mohon lengkapi data wajib.');
       }
@@ -145,6 +145,6 @@ const FormHasilPeriksa = forwardRef<FormHasilPeriksaRef, FormHasilPeriksaProps>(
   );
 });
 
-FormHasilPeriksa.displayName = 'FormHasilPeriksa';
+SubjectiveObjectiveExtendedForm.displayName = 'SubjectiveObjectiveExtendedForm';
 
-export default FormHasilPeriksa;
+export default SubjectiveObjectiveExtendedForm;

@@ -16,12 +16,12 @@ import { useRouter } from 'next/navigation';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import type { DraftState } from './AsesmenPageClient';
 
-export interface AssessmentFormRef {
-  submitForm: () => Promise<AssessmentFormValues | null>; 
+export interface SubjectiveInitialFormRef {
+  submitForm: () => Promise<AssessmentFormValues | null>;
   restoreDraft: (data: AssessmentFormValues) => void;
 }
 
-interface AssessmentFormProps {
+interface SubjectiveInitialFormProps {
   encounterId: string;
   defaultValues?: Partial<AssessmentFormValues>;
   isEditMode?: boolean;
@@ -74,7 +74,7 @@ function FormToast({ toast }: { toast: { type: 'success' | 'error' | 'warning'; 
   );
 }
 
-const AssessmentForm = forwardRef<AssessmentFormRef, AssessmentFormProps>(({
+const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveInitialFormProps>(({
   encounterId,
   defaultValues,
   isEditMode = false,
@@ -106,7 +106,7 @@ const AssessmentForm = forwardRef<AssessmentFormRef, AssessmentFormProps>(({
   useImperativeHandle(ref, () => ({
     submitForm: async () => {
       const isValid = await trigger();
-      console.log('[AssessmentForm] Validation result:', { isValid, data: getValues() });
+      console.log('[SubjectiveInitialForm] Validation result:', { isValid, data: getValues() });
       if (!isValid) return null;
       return getValues();
     },
@@ -322,7 +322,6 @@ const AssessmentForm = forwardRef<AssessmentFormRef, AssessmentFormProps>(({
   );
 });
 
-AssessmentForm.displayName = 'AssessmentForm';
+SubjectiveInitialForm.displayName = 'SubjectiveInitialForm';
 
-export default AssessmentForm;
-
+export default SubjectiveInitialForm;

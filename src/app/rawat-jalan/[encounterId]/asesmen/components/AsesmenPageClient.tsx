@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import AssessmentForm from './AssessmentForm';
-import PhysicalExamForm from './PhysicalExamForm';
+import SubjectiveInitialForm from './SubjectiveInitialForm';
+import ObjectivePhysicalForm from './ObjectivePhysicalForm';
 import DraftFoundModal from './DraftFoundModal';
 import { getAssessmentDraftKey, getPhysicalExamDraftKey } from '@/lib/constants/storage-keys';
 
@@ -161,7 +161,7 @@ export default function AsesmenPageClient({
 
       <div>
         <div className="h-px bg-gray-200 mb-6" />
-        <AssessmentForm
+        <SubjectiveInitialForm
           encounterId={encounterId}
           defaultValues={defaultValues}
           isEditMode={isEditMode}
@@ -171,7 +171,7 @@ export default function AsesmenPageClient({
 
       <div>
         <div className="h-px bg-gray-200 mb-6" />
-        <PhysicalExamForm
+        <ObjectivePhysicalForm
           encounterId={encounterId}
           isEditMode={isEditMode}
           canEdit={canEdit}

@@ -3,8 +3,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
-import AssessmentForm, { AssessmentFormRef } from './AssessmentForm';
-import PhysicalExamForm, { PhysicalExamFormRef } from './PhysicalExamForm';
+import SubjectiveInitialForm, { SubjectiveInitialFormRef } from './SubjectiveInitialForm';
+import ObjectivePhysicalForm, { ObjectivePhysicalFormRef } from './ObjectivePhysicalForm';
 import { useFormToast } from '@/hooks/useFormToast';
 import DraftFoundModal from './DraftFoundModal';
 import { getAssessmentDraftKey, getPhysicalExamDraftKey } from '@/lib/constants/storage-keys';
@@ -30,8 +30,8 @@ export default function AsesmenPerawat({
   const router = useRouter();
   const { toast, showSuccess, showError } = useFormToast();
   
-  const assessmentRef = useRef<AssessmentFormRef>(null);
-  const physicalRef = useRef<PhysicalExamFormRef>(null);
+  const assessmentRef = useRef<SubjectiveInitialFormRef>(null);
+  const physicalRef = useRef<ObjectivePhysicalFormRef>(null);
 
   const [isSubmittingCentral, setIsSubmittingCentral] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
@@ -191,7 +191,7 @@ export default function AsesmenPerawat({
       {/* Kajian Awal / Subjective */}
       <div>
         <div className="h-px bg-gray-200 mb-6" />
-        <AssessmentForm
+        <SubjectiveInitialForm
           ref={assessmentRef}
           encounterId={encounterId}
           defaultValues={defaultValues}
@@ -203,7 +203,7 @@ export default function AsesmenPerawat({
       {/* Pemeriksaan Fisik / Objective */}
       <div>
         <div className="h-px bg-gray-200 mb-6" />
-        <PhysicalExamForm
+        <ObjectivePhysicalForm
           ref={physicalRef}
           encounterId={encounterId}
           isEditMode={isEditMode}

@@ -4,12 +4,12 @@ import { X, Search, Loader2, ArrowLeft } from 'lucide-react';
 
 const HTML_TAG_REGEX = /<[^>]*>/g;
 
-export interface DiagnosisAutocompleteProps {
+export interface AssessmentDiagnosisFormProps {
   onSelectDiagnosis: (code: string, display: string, notes?: string) => void;
   encounterId?: string;
 }
 
-export function DiagnosisAutocomplete({ onSelectDiagnosis, encounterId }: DiagnosisAutocompleteProps) {
+export function AssessmentDiagnosisForm({ onSelectDiagnosis, encounterId }: AssessmentDiagnosisFormProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);

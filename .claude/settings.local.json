@@ -23,7 +23,10 @@
       "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\('next-auth:', p.dependencies['next-auth']\\); console.log\\('next:', p.dependencies['next']\\);\")",
       "Bash(dir \"C:\\\\Users\\\\Gery Rachmadi\\\\Documents\\\\akademik\\\\kuliah\\\\MataKuliah\\\\Semester8\\\\TA\\\\rme-klinik-menganti\" /a:h /b)",
       "Bash(findstr env *)",
-      "Bash(git merge *)"
+      "Bash(git merge *)",
+      "Bash(Get-ChildItem -Recurse \"C:\\\\Users\\\\Gery Rachmadi\\\\Documents\\\\akademik\\\\kuliah\\\\MataKuliah\\\\Semester8\\\\TA\\\\rme-klinik-menganti\\\\src\\\\app\\\\rawat-jalan\" -Filter \"*.tsx\")",
+      "Bash(Select-Object FullName)",
+      "Bash(node --max-old-space-size=4096 node_modules/typescript/bin/tsc --noEmit)"
     ]
   }
 }

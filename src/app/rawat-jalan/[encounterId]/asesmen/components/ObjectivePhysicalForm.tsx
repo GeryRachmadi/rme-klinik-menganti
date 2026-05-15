@@ -18,12 +18,12 @@ import type { DraftState } from './AsesmenPageClient';
 
 // ─── Prop types ──────────────────────────────────────────────────────────────
 
-export interface PhysicalExamFormRef {
+export interface ObjectivePhysicalFormRef {
   submitForm: () => Promise<PhysicalExamData | null>;
   restoreDraft: (data: PhysicalExamData) => void;
 }
 
-interface PhysicalExamFormProps {
+interface ObjectivePhysicalFormProps {
   encounterId: string;
   isEditMode?: boolean;
   canEdit?: boolean;
@@ -41,7 +41,7 @@ interface DraftPayload {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-const PhysicalExamForm = forwardRef<PhysicalExamFormRef, PhysicalExamFormProps>(({
+const ObjectivePhysicalForm = forwardRef<ObjectivePhysicalFormRef, ObjectivePhysicalFormProps>(({
   encounterId,
   isEditMode = false,
   canEdit = true,
@@ -86,7 +86,7 @@ const PhysicalExamForm = forwardRef<PhysicalExamFormRef, PhysicalExamFormProps>(
   useImperativeHandle(ref, () => ({
     submitForm: async () => {
       const isValid = await trigger();
-      console.log('[PhysicalExamForm] Validation result:', { isValid, data: getValues(), errors: formState.errors });
+      console.log('[ObjectivePhysicalForm] Validation result:', { isValid, data: getValues(), errors: formState.errors });
       if (!isValid) return null;
       // Re-parse through schema so coerced numbers are returned, not raw strings
       const parsed = PhysicalExamSchema.safeParse(getValues());
@@ -321,6 +321,6 @@ const PhysicalExamForm = forwardRef<PhysicalExamFormRef, PhysicalExamFormProps>(
   );
 });
 
-PhysicalExamForm.displayName = 'PhysicalExamForm';
+ObjectivePhysicalForm.displayName = 'ObjectivePhysicalForm';
 
-export default PhysicalExamForm;
+export default ObjectivePhysicalForm;

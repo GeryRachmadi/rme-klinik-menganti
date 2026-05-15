@@ -2,10 +2,11 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import AssessmentForm, { AssessmentFormRef } from './AssessmentForm';
-import PhysicalExamForm, { PhysicalExamFormRef } from './PhysicalExamForm';
-import FormHasilPeriksa, { FormHasilPeriksaRef } from './FormHasilPeriksa';
-import { DiagnosisAutocomplete } from './DiagnosisAutocomplete';
+import SubjectiveInitialForm, { SubjectiveInitialFormRef } from './SubjectiveInitialForm';
+import ObjectivePhysicalForm, { ObjectivePhysicalFormRef } from './ObjectivePhysicalForm';
+import SubjectiveObjectiveExtendedForm, { SubjectiveObjectiveExtendedFormRef } from './SubjectiveObjectiveExtendedForm';
+import { AssessmentDiagnosisForm } from './AssessmentDiagnosisForm';
+import PlanProcedureForm, { PlanProcedureFormRef } from './PlanProcedureForm';
 import DraftFoundModal from './DraftFoundModal';
 import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useFormToast } from '@/hooks/useFormToast';
@@ -57,9 +58,10 @@ export default function AsesmenDokter({
   console.log('[AsesmenDokter] Assessment missing:', missingAssessment);
   console.log('[AsesmenDokter] Vitals missing:', missingVitals);
   
-  const assessmentRef = useRef<AssessmentFormRef>(null);
-  const physicalRef = useRef<PhysicalExamFormRef>(null);
-  const hasilPeriksaRef = useRef<FormHasilPeriksaRef>(null);
+  const assessmentRef = useRef<SubjectiveInitialFormRef>(null);
+  const physicalRef = useRef<ObjectivePhysicalFormRef>(null);
+  const hasilPeriksaRef = useRef<SubjectiveObjectiveExtendedFormRef>(null);
+  const procedureRef = useRef<PlanProcedureFormRef>(null);
 
   const [isSubmittingCentral, setIsSubmittingCentral] = useState(false);
   const [selectedDiagnoses, setSelectedDiagnoses] = useState<Array<{code: string, display: string, notes?: string}>>([]);
@@ -248,7 +250,7 @@ export default function AsesmenDokter({
       {/* Kajian Awal / Subjective (Editable by Doctor) */}
       <div>
         <div className="h-px bg-gray-200 mb-6" />
-        <AssessmentForm
+        <SubjectiveInitialForm
           ref={assessmentRef}
           encounterId={encounterId}
           defaultValues={defaultValues}
@@ -260,7 +262,7 @@ export default function AsesmenDokter({
       {/* Pemeriksaan Fisik / Objective (Editable by Doctor) */}
       <div>
         <div className="h-px bg-gray-200 mb-6" />
-        <PhysicalExamForm
+        <ObjectivePhysicalForm
           ref={physicalRef}
           encounterId={encounterId}
           isEditMode={isEditMode}
@@ -283,7 +285,7 @@ export default function AsesmenDokter({
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 flex flex-col gap-6">
           {/* S/O Lanjutan fields — no outer card since we are already inside one */}
-          <FormHasilPeriksa
+          <SubjectiveObjectiveExtendedForm
             ref={hasilPeriksaRef}
             encounterId={encounterId}
             hideSubmitButton={true}
@@ -327,11 +329,13 @@ export default function AsesmenDokter({
               </div>
             )}
 
-            <DiagnosisAutocomplete
+            <AssessmentDiagnosisForm
               encounterId={encounterId}
               onSelectDiagnosis={handleSelectDiagnosis}
             />
           </div>
+
+          <PlanProcedureForm ref={procedureRef} encounterId={encounterId} />
         </div>
       </div>
 
