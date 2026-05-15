@@ -1,19 +1,13 @@
 import { ProcedureFormValues } from "../schemas/procedure-schema";
 
 export const transformProcedurePayload = (data: ProcedureFormValues) => {
-  if (!data.useManual && !data.codeIcd9) return null; // No procedure entered
-
-  if (data.useManual) {
-    return {
-      codeIcd9: "MANUAL",
-      display: data.manualText || "",
-      notes: data.notes || ""
-    };
+  if (!data.procedures || data.procedures.length === 0) {
+    return [];
   }
 
-  return {
-    codeIcd9: data.codeIcd9 || "",
-    display: data.display || "",
-    notes: data.notes || ""
-  };
+  return data.procedures.map(item => ({
+    codeIcd9: item.codeIcd9,
+    display: item.display,
+    notes: item.notes || ""
+  }));
 };

@@ -5,6 +5,7 @@ import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { ProcedureFormSchema, type ProcedureFormValues, type ProcedureItem } from '@/lib/schemas/procedure-schema';
+import { transformProcedurePayload } from '@/lib/utils/transform-procedure';
 import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft';
 import { useFormToast } from '@/hooks/useFormToast';
 import { PlanProcedureAutocomplete, type SelectedProcedure } from './PlanProcedureAutocomplete';
@@ -61,7 +62,7 @@ const PlanProcedureForm = forwardRef<PlanProcedureFormRef, PlanProcedureFormProp
       if (hasManual) {
         showWarning('⚠️ Terdapat tindakan manual yang disimpan tanpa validasi kode ICD-9 CM');
       }
-      return data.procedures;
+      return transformProcedurePayload(data);
     },
   }));
 
