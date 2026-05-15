@@ -333,6 +333,13 @@ export default function AsesmenDokter({
               encounterId={encounterId}
               onSelectDiagnosis={handleSelectDiagnosis}
             />
+            <button
+              type="button"
+              onClick={() => setSelectedDiagnoses([])}
+              className="text-blue-500 hover:text-blue-700 underline cursor-pointer font-medium text-sm mt-2 self-end italic"
+            >
+              Kosongkan Input
+            </button>
           </div>
 
           <PlanProcedureForm ref={procedureRef} encounterId={encounterId} />

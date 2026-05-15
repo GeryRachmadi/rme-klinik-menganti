@@ -190,6 +190,13 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
                   ${isPenyakitNull ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800 placeholder-gray-400'}`}
                 style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
               />
+              <button
+                type="button"
+                onClick={() => { setValue('penyakit', [], { shouldValidate: true }); setValue('catatanPenyakit', '', { shouldValidate: true }); }}
+                className="text-blue-500 hover:text-blue-700 underline cursor-pointer font-medium text-sm mt-2 self-end italic"
+              >
+                Kosongkan Input
+              </button>
               <FieldErrorMessage message={errors.penyakit?.message} />
             </div>
 
@@ -255,6 +262,13 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
                   ${isAlergiNull ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800 placeholder-gray-400'}`}
                 style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
               />
+              <button
+                type="button"
+                onClick={() => { setValue('alergi', [], { shouldValidate: true }); setValue('catatanAlergi', '', { shouldValidate: true }); }}
+                className="text-blue-500 hover:text-blue-700 underline cursor-pointer font-medium text-sm mt-2 self-end italic"
+              >
+                Kosongkan Input
+              </button>
               <FieldErrorMessage message={errors.alergi?.message} />
             </div>
 
@@ -312,6 +326,13 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
                   ${isObatNull ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800 placeholder-gray-400'}`}
                 style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
               />
+              <button
+                type="button"
+                onClick={() => { setValue('obat', [], { shouldValidate: true }); setValue('catatanObat', '', { shouldValidate: true }); }}
+                className="text-blue-500 hover:text-blue-700 underline cursor-pointer font-medium text-sm mt-2 self-end italic"
+              >
+                Kosongkan Input
+              </button>
               <FieldErrorMessage message={errors.obat?.message} />
             </div>
 

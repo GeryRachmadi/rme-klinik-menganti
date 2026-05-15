@@ -149,6 +149,13 @@ const PlanProcedureForm = forwardRef<PlanProcedureFormRef, PlanProcedureFormProp
       <PlanProcedureAutocomplete
         onProcedureChange={handleProcedureChange}
       />
+      <button
+        type="button"
+        onClick={() => setValue('procedures', [])}
+        className="text-blue-500 hover:text-blue-700 underline cursor-pointer font-medium text-sm mt-2 self-end italic"
+      >
+        Kosongkan Input
+      </button>
     </div>
   );
 });
