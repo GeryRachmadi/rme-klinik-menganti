@@ -56,7 +56,7 @@ export const PlanFormSchema = z.object({
     const hasRujukan = data.rujukan?.isActive === true;
     return hasProcedure || hasManualProcedure || hasMedication || hasEdukasi || hasRujukan;
   },
-  { message: "Tidak ada data untuk disimpan. Isi minimal satu tindakan, resep, rujukan, atau edukasi." }
+  { message: "Data Rencana Asesmen belum lengkap. Silakan isi minimal satu dari: Tindakan, Resep, Rujukan, atau Edukasi." }
 );
 
 export type PlanFormData = z.infer<typeof PlanFormSchema>;

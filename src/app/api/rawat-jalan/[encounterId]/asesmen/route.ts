@@ -22,7 +22,7 @@ export async function POST(
 
   try {
     const body = await request.json();
-    const { assessmentData, physicalData, hasilPeriksaData, selectedDiagnoses } = body;
+    const { assessmentData, physicalData, hasilPeriksaData, selectedDiagnoses, plan } = body;
 
     const encounter = await prisma.encounter.findUnique({
       where: { id: encounterId },
@@ -41,7 +41,7 @@ export async function POST(
     }
 
     await prisma.$transaction(async (tx) => {
-      // Save diagnoses
+      // Step 1: Save diagnoses
       if (selectedDiagnoses && selectedDiagnoses.length > 0) {
         await tx.conditionDiagnosis.createMany({
           data: selectedDiagnoses.map(
@@ -56,7 +56,7 @@ export async function POST(
         });
       }
 
-      // Update or create Observation
+      // Step 2: Update or create Observation (vitals + doctor notes)
       const existingObs = encounter.observations?.[0] ?? null;
       const doctorNotes = hasilPeriksaData?.pemeriksaanFisikTambahan || null;
 
@@ -96,7 +96,54 @@ export async function POST(
         });
       }
 
-      // Update Encounter status to SELESAI
+      // Step 3: Procedures (Tindakan Medis)
+      const procedures: Array<{ codeCpt: string; display: string; notes?: string }> =
+        plan?.procedure?.procedures ?? [];
+      if (procedures.length > 0) {
+        await tx.procedure.createMany({
+          data: procedures.map((p) => ({
+            encounterId,
+            codeCpt: p.codeCpt === "MANUAL" ? null : p.codeCpt,
+            display: p.display,
+            notes: p.notes || null,
+          })),
+        });
+      }
+
+      // Step 4: Medication (Resep Obat)
+      const medicationText: string | undefined = plan?.medication?.medicationText?.trim();
+      if (medicationText) {
+        await tx.medicationRequest.create({
+          data: {
+            encounterId,
+            medication: medicationText,
+          },
+        });
+      }
+
+      // Step 5: Referral (Rujukan)
+      if (plan?.rujukan?.isActive === true) {
+        await tx.serviceRequest.create({
+          data: {
+            encounterId,
+            intent: plan.rujukan.tujuanRujukan?.trim() || "Tidak ditentukan",
+            note: plan.rujukan.alasanRujukan?.trim() || null,
+          },
+        });
+      }
+
+      // Step 6: Education (Edukasi / Anjuran) — stored as a separate Observation note
+      const edikasiText: string | undefined = plan?.edukasi?.anjuranEdukasi?.trim();
+      if (edikasiText) {
+        await tx.observation.create({
+          data: {
+            encounterId,
+            notes: `[Edukasi Pasien]: ${edikasiText}`,
+          },
+        });
+      }
+
+      // Step 7: Mark encounter as SELESAI
       await tx.encounter.update({
         where: { id: encounterId },
         data: {
@@ -108,11 +155,12 @@ export async function POST(
     });
 
     return Response.json(
-      { success: true, message: "Asesmen berhasil disimpan. Kunjungan Selesai." },
+      { success: true, message: "Asesmen dan rencana tindak lanjut berhasil disimpan." },
       { status: 200 }
     );
   } catch (error) {
-    console.error("[TR-70] Asesmen save error:", error);
-    return Response.json({ error: "Gagal menyimpan data ke server." }, { status: 500 });
+    console.error("[TR-76] Asesmen save error:", error);
+    const message = error instanceof Error ? error.message : "Gagal menyimpan data ke server.";
+    return Response.json({ error: message }, { status: 500 });
   }
 }

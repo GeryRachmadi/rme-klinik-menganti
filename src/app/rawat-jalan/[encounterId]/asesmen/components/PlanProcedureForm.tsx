@@ -60,9 +60,9 @@ const PlanProcedureForm = forwardRef<PlanProcedureFormRef, PlanProcedureFormProp
   useImperativeHandle(ref, () => ({
     submitForm: async () => {
       const data = getValues();
-      const hasManual = data.procedures.some(p => p.codeIcd9 === 'MANUAL');
+      const hasManual = data.procedures.some(p => p.codeCpt === 'MANUAL');
       if (hasManual) {
-        showWarning('⚠️ Terdapat tindakan manual yang disimpan tanpa validasi kode ICD-9 CM');
+        showWarning('⚠️ Terdapat tindakan manual yang disimpan tanpa validasi kode CPT/CDT');
       }
       return transformProcedurePayload(data);
     },
@@ -77,7 +77,7 @@ const PlanProcedureForm = forwardRef<PlanProcedureFormRef, PlanProcedureFormProp
 
   const handleProcedureChange = (proc: SelectedProcedure) => {
     const updated: ProcedureItem[] = [...procedures, {
-      codeIcd9: proc.code,
+      codeCpt: proc.code,
       display: proc.display,
       notes: proc.notes || '',
     }];
@@ -128,13 +128,13 @@ const PlanProcedureForm = forwardRef<PlanProcedureFormRef, PlanProcedureFormProp
             <span
               key={index}
               className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1 text-sm font-bold border ${
-                proc.codeIcd9 === 'MANUAL'
+                proc.codeCpt === 'MANUAL'
                   ? 'bg-yellow-50 text-yellow-800 border-yellow-200'
                   : 'bg-[#F0FDFA] text-[#006B5F] border-[#14B8A6]'
               }`}
               style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
             >
-              <span className="font-semibold">[{proc.codeIcd9 === 'MANUAL' ? 'Manual' : proc.codeIcd9}]</span>
+              <span className="font-semibold">[{proc.codeCpt === 'MANUAL' ? 'Manual' : proc.codeCpt}]</span>
               <span>–</span>
               <span>{proc.display}</span>
               <button

@@ -21,5 +21,11 @@ export const ICD10_MOCK_DATA = [
   { code: 'J01.90', display: 'Acute sinusitis, unspecified' },
   { code: 'J20.9', display: 'Acute bronchitis, unspecified' },
   { code: 'H65.90', display: 'Unspecified nonsuppurative otitis media, unspecified ear' },
-  { code: 'L20.9', display: 'Atopic dermatitis, unspecified' }
+  { code: 'L20.9', display: 'Atopic dermatitis, unspecified' },
+  { code: 'K04.0', display: 'Pulpitis' },
+  { code: 'K02.9', display: 'Dental caries, unspecified' },
+  { code: 'K05.3', display: 'Chronic periodontitis, unspecified' },
+  { code: 'K03.8', display: 'Other specified diseases of hard tissues of teeth' },
+  { code: 'K02.1', display: 'Caries of dentine' },
+  { code: 'K05.2', display: 'Aggressive periodontitis' },
 ];

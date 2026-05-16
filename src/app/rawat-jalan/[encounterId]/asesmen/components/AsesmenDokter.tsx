@@ -252,6 +252,12 @@ export default function AsesmenDokter({
         return;
       }
 
+      if (!selectedDiagnoses || selectedDiagnoses.length === 0) {
+        showError('Diagnosis Utama (ICD-10) wajib diisi!');
+        setIsSubmittingCentral(false);
+        return;
+      }
+
       // Extract Plan data without triggering internal validation
       const planPayload = {
         procedure: procedureRef.current?.getValues ? procedureRef.current.getValues() : {},
@@ -264,21 +270,23 @@ export default function AsesmenDokter({
       if (!planValidation.success) {
         const errorMessage =
           planValidation.error?.issues?.[0]?.message ||
-          planValidation.error?.errors?.[0]?.message ||
-          'Tidak ada data untuk disimpan. Isi minimal satu tindakan, resep, rujukan, atau edukasi.';
+          'Data Rencana Asesmen belum lengkap. Silakan isi minimal satu dari: Tindakan, Resep, Rujukan, atau Edukasi.';
         showError(errorMessage);
         setIsSubmittingCentral(false);
         return;
       }
       console.log('[AsesmenDokter] Validated Plan Data:', planValidation.data);
-      showSuccess('Validasi Lolos! (Test Mode: Submit ke database dicegah sementara)');
-      setIsSubmittingCentral(false);
-      return;
 
       const response = await fetch(`/api/rawat-jalan/${encounterId}/asesmen`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assessmentData, physicalData, hasilPeriksaData, selectedDiagnoses }),
+        body: JSON.stringify({
+          assessmentData,
+          physicalData,
+          hasilPeriksaData,
+          selectedDiagnoses,
+          plan: planValidation.data,
+        }),
       });
       const result = await response.json();
 
@@ -288,11 +296,18 @@ export default function AsesmenDokter({
       }
 
       saved = true;
-      localStorage.removeItem(getAssessmentDraftKey(encounterId));
-      localStorage.removeItem(getPhysicalExamDraftKey(encounterId));
-      localStorage.removeItem(getHasilPeriksaDraftKey(encounterId));
-      localStorage.removeItem(`draft_diagnoses_${encounterId}`);
-      showSuccess('Asesmen berhasil disimpan. Status kunjungan: SELESAI');
+      const keysToRemove = [
+        getAssessmentDraftKey(encounterId),
+        getPhysicalExamDraftKey(encounterId),
+        getHasilPeriksaDraftKey(encounterId),
+        `draft_diagnoses_${encounterId}`,
+        `draft_procedure_${encounterId}`,
+        `draft_medication_${encounterId}`,
+        `draft_education_${encounterId}`,
+        `draft_referral_${encounterId}`,
+      ];
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      showSuccess('Asesmen dan rencana tindak lanjut berhasil disimpan!');
       setTimeout(() => router.push('/rawat-jalan'), 2000);
 
     } catch (error: any) {

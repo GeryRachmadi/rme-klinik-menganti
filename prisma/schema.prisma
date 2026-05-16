@@ -231,7 +231,7 @@ model ConditionDiagnosis {
 
 model Procedure {
   id        String   @id @default(cuid())
-  codeIcd9  String?
+  codeCpt   String?
   display   String
   notes     String?
   createdAt DateTime @default(now())

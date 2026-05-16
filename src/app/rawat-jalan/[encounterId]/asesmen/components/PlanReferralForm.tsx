@@ -64,6 +64,21 @@ const PlanReferralForm = forwardRef<PlanReferralFormRef, PlanReferralFormProps>(
   useAutoSaveDraft(draftKey, currentFormData);
 
   const isActive = watch('isActive');
+  const tujuanValue = watch('tujuanRujukan');
+  const alasanValue = watch('alasanRujukan');
+
+  // Cross-field re-validation: the refine() error lives on tujuanRujukan's path,
+  // so filling alasanRujukan alone won't clear it. Re-trigger tujuanRujukan whenever
+  // alasanRujukan changes (and vice versa) so the refinement re-runs for both.
+  useEffect(() => {
+    if (isActive) trigger('tujuanRujukan');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [alasanValue]);
+
+  useEffect(() => {
+    if (isActive) trigger('alasanRujukan');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tujuanValue]);
 
   useEffect(() => {
     if (!isMountedRef.current) {
