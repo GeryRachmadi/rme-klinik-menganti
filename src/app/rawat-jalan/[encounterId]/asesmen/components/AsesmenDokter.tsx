@@ -7,6 +7,9 @@ import ObjectivePhysicalForm, { ObjectivePhysicalFormRef } from './ObjectivePhys
 import SubjectiveObjectiveExtendedForm, { SubjectiveObjectiveExtendedFormRef } from './SubjectiveObjectiveExtendedForm';
 import { AssessmentDiagnosisForm } from './AssessmentDiagnosisForm';
 import PlanProcedureForm, { PlanProcedureFormRef } from './PlanProcedureForm';
+import PlanMedicationForm, { PlanMedicationFormRef } from './PlanMedicationForm';
+import PlanEducationForm, { PlanEducationFormRef } from './PlanEducationForm';
+import PlanReferralForm, { PlanReferralFormRef } from './PlanReferralForm';
 import DraftFoundModal from './DraftFoundModal';
 import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useFormToast } from '@/hooks/useFormToast';
@@ -62,6 +65,9 @@ export default function AsesmenDokter({
   const physicalRef = useRef<ObjectivePhysicalFormRef>(null);
   const hasilPeriksaRef = useRef<SubjectiveObjectiveExtendedFormRef>(null);
   const procedureRef = useRef<PlanProcedureFormRef>(null);
+  const medicationRef = useRef<PlanMedicationFormRef>(null);
+  const educationRef = useRef<PlanEducationFormRef>(null);
+  const referralRef = useRef<PlanReferralFormRef>(null);
 
   const [isSubmittingCentral, setIsSubmittingCentral] = useState(false);
   const [selectedDiagnoses, setSelectedDiagnoses] = useState<Array<{code: string, display: string, notes?: string}>>([]);
@@ -343,6 +349,9 @@ export default function AsesmenDokter({
           </div>
 
           <PlanProcedureForm ref={procedureRef} encounterId={encounterId} />
+          <PlanMedicationForm ref={medicationRef} encounterId={encounterId} />
+          <PlanEducationForm ref={educationRef} encounterId={encounterId} />
+          <PlanReferralForm ref={referralRef} encounterId={encounterId} />
         </div>
       </div>
 
