@@ -13,7 +13,7 @@ import PlanReferralForm, { PlanReferralFormRef } from './PlanReferralForm';
 import DraftFoundModal from './DraftFoundModal';
 import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useFormToast } from '@/hooks/useFormToast';
-import { getAssessmentDraftKey, getPhysicalExamDraftKey, getHasilPeriksaDraftKey } from '@/lib/constants/storage-keys';
+import { getAssessmentDraftKey, getPhysicalExamDraftKey, getHasilPeriksaDraftKey, getProcedureDraftKey, getMedicationDraftKey, getEducationDraftKey, getReferralDraftKey } from '@/lib/constants/storage-keys';
 import MissingDataWarning from './MissingDataWarning';
 
 export interface AsesmenDokterProps {
@@ -76,54 +76,96 @@ export default function AsesmenDokter({
     assessment?: any;
     physical?: any;
     hasilPeriksa?: any;
+    diagnoses?: any;
+    plan?: any;
   }>({});
   const [draftTypes, setDraftTypes] = useState<string[]>([]);
 
+  // Persist selectedDiagnoses whenever they change
   useEffect(() => {
-    if (isEditMode) return;
+    if (selectedDiagnoses.length > 0) {
+      localStorage.setItem(`draft_diagnoses_${encounterId}`, JSON.stringify(selectedDiagnoses));
+    }
+  }, [selectedDiagnoses, encounterId]);
 
-    const draftA = localStorage.getItem(getAssessmentDraftKey(encounterId));
-    const draftP = localStorage.getItem(getPhysicalExamDraftKey(encounterId));
-    const draftH = localStorage.getItem(getHasilPeriksaDraftKey(encounterId));
+  useEffect(() => {
+    // if (isEditMode) return; // temporarily disabled for debugging
 
     const parsedDrafts: any = {};
     const types: string[] = [];
 
-    if (draftA) {
+    // Flexible helper: handles both { data: {...} } and raw { ... } structures
+    const checkLegacyDraft = (key: string, typeName: string, stateKey: string) => {
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
       try {
-        const payload = JSON.parse(draftA);
-        if (payload.data) {
-          parsedDrafts.assessment = payload.data;
-          types.push('assessment');
+        const payload = JSON.parse(raw);
+        const validData = payload.data !== undefined ? payload.data : payload;
+        if (validData && typeof validData === 'object' && Object.keys(validData).length > 0) {
+          parsedDrafts[stateKey] = validData;
+          if (!types.includes(typeName)) types.push(typeName);
+        } else {
+          localStorage.removeItem(key);
         }
-      } catch (e) {
-        localStorage.removeItem(getAssessmentDraftKey(encounterId));
+      } catch {
+        localStorage.removeItem(key);
       }
+    };
+
+    checkLegacyDraft(getAssessmentDraftKey(encounterId), 'assessment', 'assessment');
+    checkLegacyDraft(getPhysicalExamDraftKey(encounterId), 'physical', 'physical');
+    checkLegacyDraft(getHasilPeriksaDraftKey(encounterId), 'hasil-periksa', 'hasilPeriksa');
+
+    // Diagnosis draft — stored as a raw array, not an object
+    try {
+      const raw = localStorage.getItem(`draft_diagnoses_${encounterId}`);
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (Array.isArray(d) && d.length > 0) {
+          parsedDrafts.diagnoses = d;
+          if (!types.includes('hasil-periksa')) types.push('hasil-periksa');
+        } else {
+          localStorage.removeItem(`draft_diagnoses_${encounterId}`);
+        }
+      }
+    } catch {
+      localStorage.removeItem(`draft_diagnoses_${encounterId}`);
     }
 
-    if (draftP) {
+    // Plan drafts — each key has its own content check
+    const planDraftChecks = [
+      {
+        key: `draft_procedure_${encounterId}`,
+        hasContent: (d: any) => Array.isArray(d?.procedures) && d.procedures.length > 0,
+      },
+      {
+        key: `draft_medication_${encounterId}`,
+        hasContent: (d: any) => !!d?.medicationText,
+      },
+      {
+        key: `draft_education_${encounterId}`,
+        hasContent: (d: any) => !!d?.anjuranEdukasi,
+      },
+      {
+        key: `draft_referral_${encounterId}`,
+        hasContent: (d: any) => d?.isActive === true || !!d?.tujuanRujukan || !!d?.alasanRujukan,
+      },
+    ];
+    const hasPlanDraft = planDraftChecks.some(({ key, hasContent }) => {
       try {
-        const payload = JSON.parse(draftP);
-        if (payload.data) {
-          parsedDrafts.physical = payload.data;
-          types.push('physical');
-        }
-      } catch (e) {
-        localStorage.removeItem(getPhysicalExamDraftKey(encounterId));
+        const raw = localStorage.getItem(key);
+        if (!raw) return false;
+        const payload = JSON.parse(raw);
+        const d = payload.data ?? payload;
+        if (hasContent(d)) return true;
+        localStorage.removeItem(key);
+        return false;
+      } catch {
+        localStorage.removeItem(key);
+        return false;
       }
-    }
-
-    if (draftH) {
-      try {
-        const payload = JSON.parse(draftH);
-        if (payload.data) {
-          parsedDrafts.hasilPeriksa = payload.data;
-          types.push('hasil-periksa');
-        }
-      } catch (e) {
-        localStorage.removeItem(getHasilPeriksaDraftKey(encounterId));
-      }
-    }
+    });
+    if (hasPlanDraft) types.push('plan');
 
     if (types.length > 0) {
       setAvailableDrafts(parsedDrafts);
@@ -142,6 +184,9 @@ export default function AsesmenDokter({
     if (availableDrafts.hasilPeriksa && hasilPeriksaRef.current) {
       hasilPeriksaRef.current.restoreDraft(availableDrafts.hasilPeriksa);
     }
+    if (availableDrafts.diagnoses) {
+      setSelectedDiagnoses(availableDrafts.diagnoses);
+    }
     setShowDraftModal(false);
     showSuccess('Draf berhasil dipulihkan.');
   };
@@ -150,6 +195,17 @@ export default function AsesmenDokter({
     localStorage.removeItem(getAssessmentDraftKey(encounterId));
     localStorage.removeItem(getPhysicalExamDraftKey(encounterId));
     localStorage.removeItem(getHasilPeriksaDraftKey(encounterId));
+    localStorage.removeItem(`draft_diagnoses_${encounterId}`);
+    hasilPeriksaRef.current?.resetForm();
+    setSelectedDiagnoses([]);
+    localStorage.removeItem(getProcedureDraftKey(encounterId));
+    localStorage.removeItem(getMedicationDraftKey(encounterId));
+    localStorage.removeItem(getEducationDraftKey(encounterId));
+    localStorage.removeItem(getReferralDraftKey(encounterId));
+    procedureRef.current?.resetForm();
+    medicationRef.current?.resetForm();
+    educationRef.current?.resetForm();
+    referralRef.current?.resetForm();
     setShowDraftModal(false);
   };
 
@@ -211,6 +267,7 @@ export default function AsesmenDokter({
       localStorage.removeItem(getAssessmentDraftKey(encounterId));
       localStorage.removeItem(getPhysicalExamDraftKey(encounterId));
       localStorage.removeItem(getHasilPeriksaDraftKey(encounterId));
+      localStorage.removeItem(`draft_diagnoses_${encounterId}`);
       showSuccess('Asesmen berhasil disimpan. Status kunjungan: SELESAI');
       setTimeout(() => router.push('/rawat-jalan'), 2000);
 
@@ -301,8 +358,8 @@ export default function AsesmenDokter({
           {/* Diagnosis Utama subsection */}
           <div className="flex flex-col gap-4">
             <h3
-              className="text-sm font-bold text-[#0F766E] uppercase tracking-wider font-poppins"
-              style={{ WebkitTextStroke: '0.2px #0F766E' }}
+              className="text-sm font-bold text-[#0F766E] uppercase tracking-wider"
+              style={{ WebkitTextStroke: '0.2px #0F766E', fontFamily: '"Plus Jakarta Sans", sans-serif' }}
             >
               Diagnosis Utama
             </h3>
@@ -313,11 +370,12 @@ export default function AsesmenDokter({
                 {selectedDiagnoses.map((diag, idx) => (
                   <span
                     key={`${diag.code}-${idx}`}
-                    className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1 text-sm font-medium border ${
+                    className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1 text-sm font-bold border ${
                       diag.code === 'MANUAL'
                         ? 'bg-yellow-50 text-yellow-800 border-yellow-200'
-                        : 'bg-teal-50 text-teal-700 border-teal-200'
+                        : 'bg-teal-50 text-[#006B5F] border-teal-200'
                     }`}
+                    style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
                   >
                     <span className="font-semibold">[{diag.code}]</span>
                     <span>–</span>
@@ -348,10 +406,12 @@ export default function AsesmenDokter({
             </button>
           </div>
 
-          <PlanProcedureForm ref={procedureRef} encounterId={encounterId} />
-          <PlanMedicationForm ref={medicationRef} encounterId={encounterId} />
-          <PlanEducationForm ref={educationRef} encounterId={encounterId} />
-          <PlanReferralForm ref={referralRef} encounterId={encounterId} />
+          <div className="flex flex-col gap-6">
+            <PlanProcedureForm ref={procedureRef} encounterId={encounterId} />
+            <PlanMedicationForm ref={medicationRef} encounterId={encounterId} />
+            <PlanEducationForm ref={educationRef} encounterId={encounterId} />
+            <PlanReferralForm ref={referralRef} encounterId={encounterId} />
+          </div>
         </div>
       </div>
 

@@ -12,6 +12,7 @@ const getReferralDraftKey = (encounterId: string) => `draft_referral_${encounter
 
 export interface PlanReferralFormRef {
   submitForm: () => Promise<ReferralFormValues | null>;
+  resetForm: () => void;
 }
 
 interface PlanReferralFormProps {
@@ -51,6 +52,9 @@ const PlanReferralForm = forwardRef<PlanReferralFormRef, PlanReferralFormProps>(
       const isValid = await trigger();
       if (!isValid) return null;
       return getValues();
+    },
+    resetForm: () => {
+      reset({ isActive: false, tujuanRujukan: '', alasanRujukan: '' });
     },
   }));
 
@@ -97,55 +101,54 @@ const PlanReferralForm = forwardRef<PlanReferralFormRef, PlanReferralFormProps>(
         </div>
       )}
 
-      <h3
-        className="text-sm font-bold text-[#0F766E] uppercase tracking-wider font-poppins mb-3 mt-8"
-        style={{ WebkitTextStroke: '0.2px #0F766E' }}
-      >
-        Rujukan (Opsional)
-      </h3>
-
-      <label className="flex items-center gap-2.5 text-sm cursor-pointer text-gray-700 hover:text-gray-900">
-        <input
-          type="checkbox"
-          {...register('isActive')}
-          className="rounded border-gray-300 text-[#0F766E] focus:ring-[#0F766E] w-4 h-4 cursor-pointer"
-        />
-        <span className="font-medium">Rujuk ke Fasilitas Lain</span>
-      </label>
-
-      {isActive && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-[#0F766E] uppercase tracking-wider">
-              Tujuan Rujukan
-            </label>
-            <input
-              type="text"
-              {...register('tujuanRujukan')}
-              placeholder="Contoh: RSUD Ibnu Sina Gresik"
-              className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] text-sm transition-colors"
-            />
-            {errors.tujuanRujukan && (
-              <p className="text-red-500 text-[13px] mt-1">{errors.tujuanRujukan.message}</p>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-[#0F766E] uppercase tracking-wider">
-              Alasan Rujukan
-            </label>
-            <textarea
-              {...register('alasanRujukan')}
-              placeholder="Pertimbangan Medis..."
-              rows={2}
-              className="w-full border border-gray-200 rounded-xl p-3 text-sm bg-[#F9FAFB] text-gray-900 placeholder-gray-400 resize-y focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] transition-colors"
-            />
-            {errors.alasanRujukan && (
-              <p className="text-red-500 text-[13px] mt-1">{errors.alasanRujukan.message}</p>
-            )}
-          </div>
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-5">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={isActive}
+            onClick={() => setValue('isActive', !isActive, { shouldValidate: true })}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${isActive ? 'bg-teal-600' : 'bg-gray-300'}`}
+          >
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isActive ? 'translate-x-6' : 'translate-x-1'}`} />
+          </button>
+          <span className="text-sm font-bold text-gray-800" style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}>Rujuk ke Fasilitas Lain</span>
         </div>
-      )}
+
+        {isActive && (
+          <div className="flex flex-col gap-4 mt-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-[#0F766E] uppercase tracking-wider" style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
+                Tujuan Rujukan
+              </label>
+              <input
+                type="text"
+                {...register('tujuanRujukan')}
+                placeholder="Contoh: RSUD Ibnu Sina Gresik"
+                className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] text-sm transition-colors"
+              />
+              {errors.tujuanRujukan && (
+                <p className="text-red-500 text-[13px] mt-1">{errors.tujuanRujukan.message}</p>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-[#0F766E] uppercase tracking-wider" style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
+                Alasan Rujukan
+              </label>
+              <textarea
+                {...register('alasanRujukan')}
+                placeholder="Pertimbangan Medis..."
+                rows={3}
+                className="w-full border border-gray-200 rounded-xl p-4 text-sm bg-gray-50 text-gray-800 placeholder-gray-400 resize-y focus:outline-none focus:ring-1 min-h-[80px] focus:ring-[#0F766E] focus:border-[#0F766E] transition-colors"
+              />
+              {errors.alasanRujukan && (
+                <p className="text-red-500 text-[13px] mt-1">{errors.alasanRujukan.message}</p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 });

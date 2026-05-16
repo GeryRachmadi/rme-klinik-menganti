@@ -27,7 +27,9 @@
       "Bash(Get-ChildItem -Recurse \"C:\\\\Users\\\\Gery Rachmadi\\\\Documents\\\\akademik\\\\kuliah\\\\MataKuliah\\\\Semester8\\\\TA\\\\rme-klinik-menganti\\\\src\\\\app\\\\rawat-jalan\" -Filter \"*.tsx\")",
       "Bash(Select-Object FullName)",
       "Bash(node --max-old-space-size=4096 node_modules/typescript/bin/tsc --noEmit)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Gery Rachmadi\\\\Documents\\\\akademik\\\\kuliah\\\\MataKuliah\\\\Semester8\\\\TA\\\\rme-klinik-menganti\\\\src\\\\app\\\\rawat-jalan\" -Recurse)",
+      "Bash(Select-Object -First 30)"
     ]
   }
 }

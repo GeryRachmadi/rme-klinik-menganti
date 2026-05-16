@@ -14,6 +14,7 @@ const getProcedureDraftKey = (encounterId: string) => `draft_procedure_${encount
 
 export interface PlanProcedureFormRef {
   submitForm: () => Promise<ProcedureItem[]>;
+  resetForm: () => void;
 }
 
 interface PlanProcedureFormProps {
@@ -64,6 +65,9 @@ const PlanProcedureForm = forwardRef<PlanProcedureFormRef, PlanProcedureFormProp
       }
       return transformProcedurePayload(data);
     },
+    resetForm: () => {
+      reset({ procedures: [], useManual: false, manualText: '', manualNote: '' });
+    },
   }));
 
   const currentFormData = watch();
@@ -109,8 +113,8 @@ const PlanProcedureForm = forwardRef<PlanProcedureFormRef, PlanProcedureFormProp
       )}
 
       <h3
-        className="text-sm font-bold text-[#0F766E] uppercase tracking-wider font-poppins mb-3"
-        style={{ WebkitTextStroke: '0.2px #0F766E' }}
+        className="text-sm font-bold text-[#0F766E] uppercase tracking-wider mb-3"
+        style={{ WebkitTextStroke: '0.2px #0F766E', fontFamily: '"Plus Jakarta Sans", sans-serif' }}
       >
         Tindakan Medis
       </h3>
@@ -121,11 +125,12 @@ const PlanProcedureForm = forwardRef<PlanProcedureFormRef, PlanProcedureFormProp
           {(procedures || []).map((proc, index) => (
             <span
               key={index}
-              className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1 text-sm font-medium border ${
+              className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1 text-sm font-bold border ${
                 proc.codeIcd9 === 'MANUAL'
                   ? 'bg-yellow-50 text-yellow-800 border-yellow-200'
-                  : 'bg-[#F0FDFA] text-[#0F766E] border-[#14B8A6]'
+                  : 'bg-[#F0FDFA] text-[#006B5F] border-[#14B8A6]'
               }`}
+              style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
             >
               {proc.codeIcd9 !== 'MANUAL' && (
                 <>

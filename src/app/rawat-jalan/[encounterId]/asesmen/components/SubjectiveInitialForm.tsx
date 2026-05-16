@@ -110,18 +110,22 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
       if (!isValid) return null;
       return getValues();
     },
-    restoreDraft: (data: AssessmentFormValues) => {
-      reset({
-        penyakit: Array.from(new Set(data.penyakit ?? [])),
-        alergi: Array.from(new Set(data.alergi ?? [])),
-        obat: Array.from(new Set(data.obat ?? [])),
-        catatanPenyakit: data.catatanPenyakit ?? '',
-        catatanAlergi: data.catatanAlergi ?? '',
-        catatanObat: data.catatanObat ?? '',
-        tidakAdaPenyakit: data.tidakAdaPenyakit ?? false,
-        tidakAdaAlergi: data.tidakAdaAlergi ?? false,
-        tidakAdaObat: data.tidakAdaObat ?? false,
-      });
+    restoreDraft: (data: any) => {
+      if (!data) return;
+      setTimeout(() => {
+        reset({
+          ...data,
+          penyakit: Array.from(new Set(data.penyakit ?? [])),
+          alergi: Array.from(new Set(data.alergi ?? [])),
+          obat: Array.from(new Set(data.obat ?? [])),
+          catatanPenyakit: data.catatanPenyakit ?? '',
+          catatanAlergi: data.catatanAlergi ?? '',
+          catatanObat: data.catatanObat ?? '',
+          tidakAdaPenyakit: data.tidakAdaPenyakit ?? false,
+          tidakAdaAlergi: data.tidakAdaAlergi ?? false,
+          tidakAdaObat: data.tidakAdaObat ?? false,
+        });
+      }, 0);
     }
   }));
 
@@ -150,8 +154,8 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
             {/* SECTION: PENYAKIT */}
             <div className="flex flex-col">
               <h3
-                className="text-sm font-bold text-[#0F766E] uppercase tracking-wider font-poppins mb-3"
-                style={{ WebkitTextStroke: '0.2px #0F766E' }}
+                className="text-sm font-bold text-[#0F766E] uppercase tracking-wider mb-3"
+                style={{ WebkitTextStroke: '0.2px #0F766E', fontFamily: '"Plus Jakarta Sans", sans-serif' }}
               >
                 Riwayat Penyakit Terdahulu
               </h3>
@@ -203,8 +207,8 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
             {/* SECTION: ALERGI */}
             <div className="flex flex-col">
               <h3
-                className="text-sm font-bold text-[#0F766E] uppercase tracking-wider font-poppins mb-3"
-                style={{ WebkitTextStroke: '0.2px #0F766E' }}
+                className="text-sm font-bold text-[#0F766E] uppercase tracking-wider mb-3"
+                style={{ WebkitTextStroke: '0.2px #0F766E', fontFamily: '"Plus Jakarta Sans", sans-serif' }}
               >
                 Riwayat Alergi
               </h3>
@@ -275,8 +279,8 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
             {/* SECTION: OBAT */}
             <div className="flex flex-col">
               <h3
-                className="text-sm font-bold text-[#0F766E] uppercase tracking-wider font-poppins mb-3"
-                style={{ WebkitTextStroke: '0.2px #0F766E' }}
+                className="text-sm font-bold text-[#0F766E] uppercase tracking-wider mb-3"
+                style={{ WebkitTextStroke: '0.2px #0F766E', fontFamily: '"Plus Jakarta Sans", sans-serif' }}
               >
                 Pengobatan Rutin
               </h3>

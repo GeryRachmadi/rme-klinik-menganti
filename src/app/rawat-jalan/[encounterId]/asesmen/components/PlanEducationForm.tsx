@@ -10,6 +10,7 @@ const getEducationDraftKey = (encounterId: string) => `draft_education_${encount
 
 export interface PlanEducationFormRef {
   submitForm: () => Promise<EducationFormValues | null>;
+  resetForm: () => void;
 }
 
 interface PlanEducationFormProps {
@@ -46,6 +47,9 @@ const PlanEducationForm = forwardRef<PlanEducationFormRef, PlanEducationFormProp
       if (!isValid) return null;
       return getValues();
     },
+    resetForm: () => {
+      reset({ anjuranEdukasi: '' });
+    },
   }));
 
   const currentFormData = watch();
@@ -54,10 +58,13 @@ const PlanEducationForm = forwardRef<PlanEducationFormRef, PlanEducationFormProp
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-semibold text-[#0F766E] uppercase tracking-wider">
-          Edukasi / Anjuran Istirahat{' '}
-          <span className="text-gray-400 font-normal normal-case tracking-normal ml-1">(Opsional)</span>
-        </label>
+        <h3
+          className="text-sm font-bold text-[#0F766E] uppercase tracking-wider"
+          style={{ WebkitTextStroke: '0.2px #0F766E', fontFamily: '"Plus Jakarta Sans", sans-serif' }}
+        >
+          Edukasi / Anjuran
+          <span className="text-gray-400 font-normal normal-case tracking-normal ml-1" style={{ WebkitTextStroke: '0' }}>(Opsional)</span>
+        </h3>
         <textarea
           {...register('anjuranEdukasi')}
           placeholder="Contoh: Istirahat, hindari aktivitas berat..."

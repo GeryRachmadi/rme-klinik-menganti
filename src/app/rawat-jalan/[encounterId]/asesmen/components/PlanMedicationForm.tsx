@@ -10,6 +10,7 @@ const getMedicationDraftKey = (encounterId: string) => `draft_medication_${encou
 
 export interface PlanMedicationFormRef {
   submitForm: () => Promise<MedicationFormValues | null>;
+  resetForm: () => void;
 }
 
 interface PlanMedicationFormProps {
@@ -46,6 +47,9 @@ const PlanMedicationForm = forwardRef<PlanMedicationFormRef, PlanMedicationFormP
       if (!isValid) return null;
       return getValues();
     },
+    resetForm: () => {
+      reset({ medicationText: '' });
+    },
   }));
 
   const currentFormData = watch();
@@ -53,17 +57,13 @@ const PlanMedicationForm = forwardRef<PlanMedicationFormRef, PlanMedicationFormP
 
   return (
     <div className="flex flex-col gap-4">
-      <h3
-        className="text-sm font-bold text-[#0F766E] uppercase tracking-wider font-poppins mb-3 mt-6"
-        style={{ WebkitTextStroke: '0.2px #0F766E' }}
-      >
-        Resep Obat &amp; Edukasi
-      </h3>
-
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-semibold text-[#0F766E] uppercase tracking-wider">
+        <h3
+          className="text-sm font-bold text-[#0F766E] uppercase tracking-wider"
+          style={{ WebkitTextStroke: '0.2px #0F766E', fontFamily: '"Plus Jakarta Sans", sans-serif' }}
+        >
           Resep Obat
-        </label>
+        </h3>
         <textarea
           {...register('medicationText')}
           placeholder="Contoh: Paracetamol 500mg, 3x1 sehari, 7 hari"

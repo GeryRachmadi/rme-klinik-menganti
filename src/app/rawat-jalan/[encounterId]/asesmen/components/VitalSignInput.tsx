@@ -62,7 +62,7 @@ export default function VitalSignInput({
   return (
     <div className="flex flex-col gap-1.5" style={{ fontFamily: 'var(--font-jakarta)' }}>
       <div className={`flex items-center gap-2 ${warning ? "text-yellow-600" : ""}`}>
-        <label className="text-xs font-bold text-[#0F766E] uppercase tracking-wider">
+        <label className="text-xs font-bold text-[#0F766E] uppercase tracking-wider" style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
           {label}
         </label>
         {warning && <AlertCircle className="h-4 w-4" />}

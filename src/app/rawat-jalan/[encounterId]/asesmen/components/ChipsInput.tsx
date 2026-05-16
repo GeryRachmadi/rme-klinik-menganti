@@ -76,9 +76,9 @@ export default function ChipsInput({
       {value.length > 0 && (
         <div className="flex flex-wrap gap-2 items-center mb-3">
           {value.map((chip, index) => {
-            const colorClass = getChipColor ? getChipColor(chip) : 'bg-[#E6F5F4] border-[#B2DFDB] text-[#0F766E]';
+            const colorClass = getChipColor ? getChipColor(chip) : 'bg-[#E6F5F4] border-[#B2DFDB] text-[#006B5F]';
             return (
-              <span key={`${chip}-${index}`} className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-sm font-medium border ${colorClass}`}>
+              <span key={`${chip}-${index}`} className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-sm font-bold border ${colorClass}`} style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
                 {chip}
                 {!disabled && (
                   <button type="button" onClick={() => handleRemove(chip)} className="hover:bg-black/10 rounded-full p-0.5">

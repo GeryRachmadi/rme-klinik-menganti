@@ -112,7 +112,7 @@ export function AssessmentDiagnosisForm({ onSelectDiagnosis, encounterId }: Asse
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold text-[#0F766E] uppercase tracking-wider">
+          <label className="text-xs font-bold text-[#0F766E] uppercase tracking-wider" style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
             Catatan <span className="text-gray-400 font-normal normal-case tracking-normal ml-1">(Opsional)</span>
           </label>
           <textarea

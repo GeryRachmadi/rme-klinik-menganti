@@ -11,6 +11,7 @@ import { useFormToast } from '@/hooks/useFormToast';
 export interface SubjectiveObjectiveExtendedFormRef {
   submitForm: () => Promise<HasilPeriksaData>;
   restoreDraft: (data: HasilPeriksaData) => void;
+  resetForm: () => void;
 }
 
 export interface SubjectiveObjectiveExtendedFormProps {
@@ -53,9 +54,15 @@ const SubjectiveObjectiveExtendedForm = forwardRef<SubjectiveObjectiveExtendedFo
       }
       return getValues();
     },
-    restoreDraft: (data: HasilPeriksaData) => {
-      reset(data);
-    }
+    restoreDraft: (data: any) => {
+      if (!data) return;
+      setTimeout(() => {
+        reset({ ...data });
+      }, 0);
+    },
+    resetForm: () => {
+      reset({ keluhanUtama: '', pemeriksaanFisikTambahan: '' });
+    },
   }));
 
   const currentFormData = watch();
@@ -69,8 +76,8 @@ const SubjectiveObjectiveExtendedForm = forwardRef<SubjectiveObjectiveExtendedFo
       {/* Keluhan Utama */}
       <div className="flex flex-col">
         <h3
-          className="text-sm font-bold text-[#0F766E] uppercase tracking-wider font-poppins mb-3"
-          style={{ WebkitTextStroke: '0.2px #0F766E' }}
+          className="text-sm font-bold text-[#0F766E] uppercase tracking-wider mb-3"
+          style={{ WebkitTextStroke: '0.2px #0F766E', fontFamily: '"Plus Jakarta Sans", sans-serif' }}
         >
           Keluhan Utama
         </h3>
@@ -94,11 +101,11 @@ const SubjectiveObjectiveExtendedForm = forwardRef<SubjectiveObjectiveExtendedFo
       {/* Pemeriksaan Fisik Tambahan */}
       <div className="flex flex-col">
         <h3
-          className="text-sm font-bold text-[#0F766E] uppercase tracking-wider font-poppins mb-3"
-          style={{ WebkitTextStroke: '0.2px #0F766E' }}
+          className="text-sm font-bold text-[#0F766E] uppercase tracking-wider mb-3"
+          style={{ WebkitTextStroke: '0.2px #0F766E', fontFamily: '"Plus Jakarta Sans", sans-serif' }}
         >
           Pemeriksaan Fisik Tambahan
-          <span className="text-gray-400 font-normal normal-case tracking-normal ml-1">(Opsional)</span>
+          <span className="text-gray-400 font-normal normal-case tracking-normal ml-1" style={{ WebkitTextStroke: '0' }}>(Opsional)</span>
         </h3>
         <textarea
           id="pemeriksaanFisikTambahan"

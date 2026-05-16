@@ -92,8 +92,11 @@ const ObjectivePhysicalForm = forwardRef<ObjectivePhysicalFormRef, ObjectivePhys
       const parsed = PhysicalExamSchema.safeParse(getValues());
       return parsed.success ? parsed.data : null;
     },
-    restoreDraft: (data: PhysicalExamData) => {
-      reset(data);
+    restoreDraft: (data: any) => {
+      if (!data) return;
+      setTimeout(() => {
+        reset({ ...data });
+      }, 0);
     }
   }), [formState, trigger, getValues, reset]);
 
@@ -284,7 +287,7 @@ const ObjectivePhysicalForm = forwardRef<ObjectivePhysicalFormRef, ObjectivePhys
               />
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#0F766E] uppercase tracking-wider">
+                  <span className="text-xs font-bold text-[#0F766E] uppercase tracking-wider" style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
                     BMI
                   </span>
                   <span className="text-xs font-medium text-gray-400">
@@ -298,7 +301,7 @@ const ObjectivePhysicalForm = forwardRef<ObjectivePhysicalFormRef, ObjectivePhys
 
             {/* Row 3: Catatan */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-[#0F766E] uppercase tracking-wider">
+              <label className="text-xs font-bold text-[#0F766E] uppercase tracking-wider" style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
                 Catatan
                 <span className="text-gray-400 font-normal normal-case tracking-normal ml-1">(Opsional)</span>
               </label>

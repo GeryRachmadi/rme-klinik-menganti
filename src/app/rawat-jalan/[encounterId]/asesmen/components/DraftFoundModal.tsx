@@ -4,7 +4,7 @@ import { FileText } from 'lucide-react';
 
 interface DraftFoundModalProps {
   isOpen: boolean;
-  draftTypes: Array<'assessment' | 'physical' | 'hasil-periksa'>;
+  draftTypes: Array<'assessment' | 'physical' | 'hasil-periksa' | 'plan'>;
   onUseDraft: () => void;
   onRejectDraft: () => void;
 }
