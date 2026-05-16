@@ -11,6 +11,7 @@ const getMedicationDraftKey = (encounterId: string) => `draft_medication_${encou
 export interface PlanMedicationFormRef {
   submitForm: () => Promise<MedicationFormValues | null>;
   resetForm: () => void;
+  getValues: () => MedicationFormValues;
 }
 
 interface PlanMedicationFormProps {
@@ -50,6 +51,7 @@ const PlanMedicationForm = forwardRef<PlanMedicationFormRef, PlanMedicationFormP
     resetForm: () => {
       reset({ medicationText: '' });
     },
+    getValues: () => getValues(),
   }));
 
   const currentFormData = watch();

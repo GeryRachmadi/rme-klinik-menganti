@@ -14,6 +14,7 @@ import DraftFoundModal from './DraftFoundModal';
 import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useFormToast } from '@/hooks/useFormToast';
 import { getAssessmentDraftKey, getPhysicalExamDraftKey, getHasilPeriksaDraftKey, getProcedureDraftKey, getMedicationDraftKey, getEducationDraftKey, getReferralDraftKey } from '@/lib/constants/storage-keys';
+import { PlanFormSchema } from '@/lib/schemas/plan-schema';
 import MissingDataWarning from './MissingDataWarning';
 
 export interface AsesmenDokterProps {
@@ -251,6 +252,29 @@ export default function AsesmenDokter({
         return;
       }
 
+      // Extract Plan data without triggering internal validation
+      const planPayload = {
+        procedure: procedureRef.current?.getValues ? procedureRef.current.getValues() : {},
+        medication: medicationRef.current?.getValues ? medicationRef.current.getValues() : {},
+        edukasi: educationRef.current?.getValues ? educationRef.current.getValues() : {},
+        rujukan: referralRef.current?.getValues ? referralRef.current.getValues() : { isActive: false },
+      };
+
+      const planValidation = PlanFormSchema.safeParse(planPayload);
+      if (!planValidation.success) {
+        const errorMessage =
+          planValidation.error?.issues?.[0]?.message ||
+          planValidation.error?.errors?.[0]?.message ||
+          'Tidak ada data untuk disimpan. Isi minimal satu tindakan, resep, rujukan, atau edukasi.';
+        showError(errorMessage);
+        setIsSubmittingCentral(false);
+        return;
+      }
+      console.log('[AsesmenDokter] Validated Plan Data:', planValidation.data);
+      showSuccess('Validasi Lolos! (Test Mode: Submit ke database dicegah sementara)');
+      setIsSubmittingCentral(false);
+      return;
+
       const response = await fetch(`/api/rawat-jalan/${encounterId}/asesmen`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -377,7 +401,7 @@ export default function AsesmenDokter({
                     }`}
                     style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
                   >
-                    <span className="font-semibold">[{diag.code}]</span>
+                    <span className="font-semibold">[{diag.code === 'MANUAL' ? 'Manual' : diag.code}]</span>
                     <span>–</span>
                     <span>{diag.display}</span>
                     <button

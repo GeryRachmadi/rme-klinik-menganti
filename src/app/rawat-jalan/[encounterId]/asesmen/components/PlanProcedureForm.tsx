@@ -15,6 +15,7 @@ const getProcedureDraftKey = (encounterId: string) => `draft_procedure_${encount
 export interface PlanProcedureFormRef {
   submitForm: () => Promise<ProcedureItem[]>;
   resetForm: () => void;
+  getValues: () => ProcedureFormValues;
 }
 
 interface PlanProcedureFormProps {
@@ -68,6 +69,7 @@ const PlanProcedureForm = forwardRef<PlanProcedureFormRef, PlanProcedureFormProp
     resetForm: () => {
       reset({ procedures: [], useManual: false, manualText: '', manualNote: '' });
     },
+    getValues: () => getValues(),
   }));
 
   const currentFormData = watch();
@@ -132,12 +134,8 @@ const PlanProcedureForm = forwardRef<PlanProcedureFormRef, PlanProcedureFormProp
               }`}
               style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
             >
-              {proc.codeIcd9 !== 'MANUAL' && (
-                <>
-                  <span className="font-semibold">[{proc.codeIcd9}]</span>
-                  <span>–</span>
-                </>
-              )}
+              <span className="font-semibold">[{proc.codeIcd9 === 'MANUAL' ? 'Manual' : proc.codeIcd9}]</span>
+              <span>–</span>
               <span>{proc.display}</span>
               <button
                 type="button"

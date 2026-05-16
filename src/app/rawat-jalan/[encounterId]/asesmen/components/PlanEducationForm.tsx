@@ -11,6 +11,7 @@ const getEducationDraftKey = (encounterId: string) => `draft_education_${encount
 export interface PlanEducationFormRef {
   submitForm: () => Promise<EducationFormValues | null>;
   resetForm: () => void;
+  getValues: () => EducationFormValues;
 }
 
 interface PlanEducationFormProps {
@@ -50,6 +51,7 @@ const PlanEducationForm = forwardRef<PlanEducationFormRef, PlanEducationFormProp
     resetForm: () => {
       reset({ anjuranEdukasi: '' });
     },
+    getValues: () => getValues(),
   }));
 
   const currentFormData = watch();

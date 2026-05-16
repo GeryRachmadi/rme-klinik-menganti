@@ -13,6 +13,7 @@ const getReferralDraftKey = (encounterId: string) => `draft_referral_${encounter
 export interface PlanReferralFormRef {
   submitForm: () => Promise<ReferralFormValues | null>;
   resetForm: () => void;
+  getValues: () => ReferralFormValues;
 }
 
 interface PlanReferralFormProps {
@@ -56,6 +57,7 @@ const PlanReferralForm = forwardRef<PlanReferralFormRef, PlanReferralFormProps>(
     resetForm: () => {
       reset({ isActive: false, tujuanRujukan: '', alasanRujukan: '' });
     },
+    getValues: () => getValues(),
   }));
 
   const currentFormData = watch();

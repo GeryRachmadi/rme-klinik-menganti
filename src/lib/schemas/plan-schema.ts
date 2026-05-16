@@ -27,3 +27,36 @@ export const ReferralFormSchema = z.object({
 );
 
 export type ReferralFormValues = z.infer<typeof ReferralFormSchema>;
+
+// Root schema for the entire Plan section — at least one subsection must have content
+export const PlanFormSchema = z.object({
+  procedure: z.object({
+    procedures: z.array(z.any()).optional(),
+    useManual: z.boolean().optional(),
+    manualText: z.string().optional(),
+    manualNote: z.string().optional(),
+  }).optional(),
+  medication: z.object({
+    medicationText: z.string().optional(),
+  }).optional(),
+  edukasi: z.object({
+    anjuranEdukasi: z.string().optional(),
+  }).optional(),
+  rujukan: z.object({
+    isActive: z.boolean().optional(),
+    tujuanRujukan: z.string().optional(),
+    alasanRujukan: z.string().optional(),
+  }).optional(),
+}).refine(
+  (data) => {
+    const hasProcedure = Array.isArray(data.procedure?.procedures) && data.procedure.procedures.length > 0;
+    const hasManualProcedure = data.procedure?.useManual === true && !!data.procedure?.manualText?.trim();
+    const hasMedication = !!data.medication?.medicationText?.trim();
+    const hasEdukasi = !!data.edukasi?.anjuranEdukasi?.trim();
+    const hasRujukan = data.rujukan?.isActive === true;
+    return hasProcedure || hasManualProcedure || hasMedication || hasEdukasi || hasRujukan;
+  },
+  { message: "Tidak ada data untuk disimpan. Isi minimal satu tindakan, resep, rujukan, atau edukasi." }
+);
+
+export type PlanFormData = z.infer<typeof PlanFormSchema>;
