@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle2, Info } from 'lucide-react';
 import SubjectiveInitialForm, { SubjectiveInitialFormRef } from './SubjectiveInitialForm';
 import ObjectivePhysicalForm, { ObjectivePhysicalFormRef } from './ObjectivePhysicalForm';
 import { useFormToast } from '@/hooks/useFormToast';
@@ -16,6 +16,7 @@ export interface AsesmenPerawatProps {
   encounterId: string;
   patient: Record<string, any>;
   encounter: Record<string, any>;
+  userRole?: string;
   defaultValues?: Record<string, any>;
   isEditMode?: boolean;
 }
@@ -24,11 +25,14 @@ export default function AsesmenPerawat({
   encounterId,
   patient,
   encounter,
+  userRole,
   defaultValues,
   isEditMode = false,
 }: AsesmenPerawatProps) {
   const router = useRouter();
   const { toast, showSuccess, showError } = useFormToast();
+
+  const isReadOnly = encounter?.status?.toUpperCase() === 'SELESAI' && userRole?.toUpperCase() !== 'ADMIN';
   
   const assessmentRef = useRef<SubjectiveInitialFormRef>(null);
   const physicalRef = useRef<ObjectivePhysicalFormRef>(null);
@@ -42,7 +46,8 @@ export default function AsesmenPerawat({
   const [draftTypes, setDraftTypes] = useState<string[]>([]);
 
   useEffect(() => {
-    if (isEditMode) return; // Skip drafts if editing existing data
+    if (isEditMode) return;
+    if (isReadOnly) return;
 
     const draftA = localStorage.getItem(getAssessmentDraftKey(encounterId));
     const draftP = localStorage.getItem(getPhysicalExamDraftKey(encounterId));
@@ -79,7 +84,7 @@ export default function AsesmenPerawat({
       setDraftTypes(types);
       setShowDraftModal(true);
     }
-  }, [encounterId, isEditMode]);
+  }, [encounterId, isEditMode, isReadOnly]);
 
   const handleUseDraft = () => {
     if (availableDrafts.assessment && assessmentRef.current) {
@@ -156,7 +161,7 @@ export default function AsesmenPerawat({
       localStorage.removeItem(getPhysicalExamDraftKey(encounterId));
 
       showSuccess('Asesmen perawatan berhasil disimpan.');
-      router.push('/rawat-jalan');
+      setTimeout(() => router.push('/rawat-jalan'), 1500);
     } catch (error: any) {
       console.error(error);
       showError(error.message || 'Terjadi kesalahan sistem.');
@@ -188,6 +193,16 @@ export default function AsesmenPerawat({
         onRejectDraft={handleRejectDraft}
       />
 
+      {isReadOnly && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-3">
+          <Info size={20} className="text-blue-500 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-semibold text-blue-900 font-jakarta">Asesmen Sudah Selesai</p>
+            <p className="text-sm text-blue-700 font-jakarta">Hubungi Admin jika perlu mengubah data.</p>
+          </div>
+        </div>
+      )}
+
       {/* Kajian Awal / Subjective */}
       <div>
         <div className="h-px bg-gray-200 mb-6" />
@@ -197,6 +212,7 @@ export default function AsesmenPerawat({
           defaultValues={defaultValues}
           isEditMode={isEditMode}
           hideSubmitButton={true}
+          isReadOnly={isReadOnly}
         />
       </div>
 
@@ -210,6 +226,7 @@ export default function AsesmenPerawat({
           canEdit={true}
           defaultValues={defaultValues}
           hideSubmitButton={true}
+          isReadOnly={isReadOnly}
         />
       </div>
 
@@ -223,21 +240,23 @@ export default function AsesmenPerawat({
         >
           Batal
         </button>
-        <button
-          type="button"
-          onClick={handleCentralSubmit}
-          disabled={isSubmittingCentral}
-          className="px-8 py-2.5 bg-[#0F766E] hover:bg-teal-800 text-white font-semibold rounded-xl transition-colors shadow-sm text-sm min-w-[120px] flex justify-center items-center cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
-        >
-          {isSubmittingCentral ? (
-            <>
-              <Loader2 className="animate-spin mr-2 h-4 w-4" />
-              Menyimpan...
-            </>
-          ) : (
-            'Simpan'
-          )}
-        </button>
+        {!isReadOnly && (
+          <button
+            type="button"
+            onClick={handleCentralSubmit}
+            disabled={isSubmittingCentral}
+            className="px-8 py-2.5 bg-[#0F766E] hover:bg-teal-800 text-white font-semibold rounded-xl transition-colors shadow-sm text-sm min-w-[120px] flex justify-center items-center cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {isSubmittingCentral ? (
+              <>
+                <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                Menyimpan...
+              </>
+            ) : (
+              'Simpan'
+            )}
+          </button>
+        )}
       </div>
     </div>
   );

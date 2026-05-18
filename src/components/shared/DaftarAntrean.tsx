@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search,
-  Eye,
   Pencil,
   Trash2,
   ChevronLeft,
@@ -14,6 +13,7 @@ import {
   Calendar,
 } from "lucide-react";
 import EncounterRegistrationDrawer from "@/components/shared/EncounterRegistrationDrawer";
+import EncounterEditDrawer from "@/components/shared/EncounterEditDrawer";
 
 type Prioritas = "Stabil" | "Cukup Berisiko" | "Berisiko" | "Berisiko Tinggi";
 type StatusAntrean = "Menunggu" | "Diperiksa" | "Selesai" | "Batal";
@@ -59,6 +59,10 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
   const [antreanData, setAntreanData] = useState<AntreanData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddEncounterOpen, setIsAddEncounterOpen] = useState(false);
+  const [editEncounterId, setEditEncounterId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; namaPasien: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [actionToast, setActionToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filterTanggal, setFilterTanggal] = useState("");
@@ -90,6 +94,31 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
     const interval = setInterval(fetchAntrean, 5000);
     return () => clearInterval(interval);
   }, [fetchAntrean]);
+
+  const showActionToast = (message: string, type: "success" | "error") => {
+    setActionToast({ message, type });
+    setTimeout(() => setActionToast(null), 3000);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/encounters/${deleteTarget.id}`, { method: "DELETE" });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        showActionToast(json.error ?? "Gagal menghapus antrean.", "error");
+        return;
+      }
+      setDeleteTarget(null);
+      await fetchAntrean();
+      showActionToast("Antrean berhasil dihapus.", "success");
+    } catch {
+      showActionToast("Terjadi kesalahan tidak terduga.", "error");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const filteredData = antreanData.filter((item) => {
     const matchSearch =
@@ -214,8 +243,8 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
                   { label: "POLI & DOKTER", width: "w-[18%]" },
                   { label: "PRIORITAS",     width: "w-[12%]" },
                   { label: "STATUS",        width: "w-[13%]" },
-                  { label: "ASESMEN",       width: "w-[14%]" },
-                  { label: "ACTION",        width: "w-[8%]"  },
+                  ...(canAssess  ? [{ label: "ASESMEN", width: "w-[14%]" }] : []),
+                  ...(isAuthorized ? [{ label: "ACTION", width: "w-[8%]"  }] : []),
                 ].map((col) => (
                   <th
                     key={col.label}
@@ -229,7 +258,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="py-16 text-center">
+                  <td colSpan={5 + (canAssess ? 1 : 0) + (isAuthorized ? 1 : 0)} className="py-16 text-center">
                     <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
                       <Loader2 size={16} className="animate-spin" /> Memuat data...
                     </div>
@@ -237,7 +266,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
                 </tr>
               ) : filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-16 text-center">
+                  <td colSpan={5 + (canAssess ? 1 : 0) + (isAuthorized ? 1 : 0)} className="py-16 text-center">
                     <p className="text-sm text-gray-400">
                       Tidak ada antrean yang ditemukan.
                     </p>
@@ -302,8 +331,16 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
                       </span>
                     </td>
 
-                    <td className="py-4 align-top">
-                      {canAssess && (row.status === "Menunggu" || row.status === "Diperiksa") ? (
+                    {canAssess && <td className="py-4 align-top">
+                      {row.status === "Selesai" ? (
+                        <button
+                          onClick={() => router.push(`/rawat-jalan/${row.id}/asesmen`)}
+                          className="px-3 py-1.5 rounded-full text-xs font-semibold bg-[#3B82F6] hover:bg-blue-600 text-white transition-colors cursor-pointer"
+                          style={{ fontFamily: "var(--font-poppins)" }}
+                        >
+                          {userRole === "ADMIN" ? "Edit Asesmen" : "Lihat Asesmen"}
+                        </button>
+                      ) : canAssess && (row.status === "Menunggu" || row.status === "Diperiksa") ? (
                         <button
                           onClick={() => router.push(`/rawat-jalan/${row.id}/asesmen`)}
                           className="px-3 py-1.5 rounded-full text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white transition-colors cursor-pointer"
@@ -314,25 +351,33 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
                       ) : (
                         <span className="text-xs text-gray-300">—</span>
                       )}
-                    </td>
+                    </td>}
 
-                    <td className="py-4 align-top">
-                      <div className="flex items-center gap-2">
-                        <button className="p-2 bg-gray-50 rounded-lg text-gray-400 hover:bg-blue-50 hover:text-blue-500 transition-colors">
-                          <Eye size={15} strokeWidth={2} />
-                        </button>
-                        {isAuthorized && (
-                          <>
-                            <button className="p-2 bg-gray-50 rounded-lg text-gray-400 hover:bg-amber-50 hover:text-amber-500 transition-colors">
-                              <Pencil size={15} strokeWidth={2} />
-                            </button>
-                            <button className="p-2 bg-gray-50 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors">
-                              <Trash2 size={15} strokeWidth={2} />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
+                    {isAuthorized && (
+                      <td className="py-4 align-top">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setEditEncounterId(row.id)}
+                            className="p-2 bg-gray-50 rounded-lg text-gray-400 hover:bg-amber-50 hover:text-amber-500 transition-colors cursor-pointer"
+                            title="Edit kunjungan"
+                          >
+                            <Pencil size={15} strokeWidth={2} />
+                          </button>
+                          <button
+                            onClick={() => row.status === "Menunggu" && setDeleteTarget({ id: row.id, namaPasien: row.namaPasien })}
+                            disabled={row.status !== "Menunggu"}
+                            title={row.status !== "Menunggu" ? "Hanya antrean Menunggu yang dapat dihapus" : "Hapus antrean"}
+                            className={`p-2 rounded-lg transition-colors ${
+                              row.status === "Menunggu"
+                                ? "bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 cursor-pointer"
+                                : "bg-gray-50 text-gray-200 cursor-not-allowed"
+                            }`}
+                          >
+                            <Trash2 size={15} strokeWidth={2} />
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
@@ -358,6 +403,75 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
         onClose={() => setIsAddEncounterOpen(false)}
         onEncounterCreated={fetchAntrean}
       />
+
+      <EncounterEditDrawer
+        encounterId={editEncounterId}
+        isOpen={!!editEncounterId}
+        onClose={() => setEditEncounterId(null)}
+        onUpdated={fetchAntrean}
+      />
+
+      {/* Delete confirmation modal */}
+      {deleteTarget && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-40" onClick={isDeleting ? undefined : () => setDeleteTarget(null)} />
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ fontFamily: "var(--font-jakarta)" }}
+          >
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-50 mx-auto mb-4">
+                <Trash2 size={22} className="text-red-500" strokeWidth={2} />
+              </div>
+              <h3
+                className="text-base font-bold text-gray-800 text-center mb-1"
+                style={{ fontFamily: "var(--font-poppins)" }}
+              >
+                Hapus Antrean?
+              </h3>
+              <p className="text-sm text-gray-500 text-center mb-6">
+                Antrean <span className="font-semibold text-gray-700">{deleteTarget.namaPasien}</span> akan dihapus secara permanen dan tidak dapat dikembalikan.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDeleteTarget(null)}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isDeleting ? (
+                    <><Loader2 size={14} className="animate-spin" /> Menghapus...</>
+                  ) : (
+                    "Ya, Hapus"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Action toast */}
+      {actionToast && (
+        <div
+          className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 bg-white rounded-2xl shadow-lg px-5 py-3.5 border ${
+            actionToast.type === "error" ? "border-red-200" : "border-green-200"
+          }`}
+          style={{ fontFamily: "var(--font-jakarta)" }}
+        >
+          {actionToast.type === "error" ? (
+            <span className="text-red-500 text-sm font-medium">{actionToast.message}</span>
+          ) : (
+            <span className="text-green-600 text-sm font-medium">{actionToast.message}</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

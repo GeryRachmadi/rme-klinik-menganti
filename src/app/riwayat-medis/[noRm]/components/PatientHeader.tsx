@@ -15,7 +15,10 @@ export default function PatientHeader({
   if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
 
   const genderLabel = patient.jenisKelamin === "LAKI_LAKI" ? "Laki-laki" : "Perempuan";
-  
+  const genderColor = patient.jenisKelamin === "LAKI_LAKI"
+    ? "bg-blue-100 text-blue-700"
+    : "bg-pink-100 text-pink-700";
+
   const initials = patient.namaLengkap
     .split(" ")
     .slice(0, 2)
@@ -34,20 +37,42 @@ export default function PatientHeader({
         </div>
         
         {/* Info */}
-        <div className="flex flex-col items-start gap-1">
+        <div className="flex flex-col gap-2">
           <h1
             className="text-2xl font-bold text-gray-900 leading-tight"
             style={{ fontFamily: "var(--font-poppins)" }}
           >
             {patient.namaLengkap}
           </h1>
-          
-          <p className="text-sm text-gray-500" style={{ fontFamily: "var(--font-jakarta)" }}>
-            {genderLabel} • {age} tahun • {patient.nik}
-          </p>
-          
-          <div className="bg-[#006B4E] text-white px-3 py-1 rounded-full text-xs font-semibold mt-1" style={{ fontFamily: "var(--font-jakarta)" }}>
-            {patient.noRm}
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className="bg-[#006B4E] text-white px-3 py-0.5 rounded-full text-xs font-semibold"
+              style={{ fontFamily: "var(--font-jakarta)" }}
+            >
+              {patient.noRm}
+            </span>
+            <span
+              className="bg-gray-100 text-gray-600 px-3 py-0.5 rounded-full text-xs font-medium"
+              style={{ fontFamily: "var(--font-jakarta)" }}
+            >
+              NIK: {patient.nik}
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`px-3 py-0.5 rounded-full text-xs font-medium ${genderColor}`}
+              style={{ fontFamily: "var(--font-jakarta)" }}
+            >
+              {genderLabel}
+            </span>
+            <span
+              className="bg-teal-50 text-teal-700 px-3 py-0.5 rounded-full text-xs font-medium"
+              style={{ fontFamily: "var(--font-jakarta)" }}
+            >
+              {age} tahun
+            </span>
           </div>
         </div>
       </div>

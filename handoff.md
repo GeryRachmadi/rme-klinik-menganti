@@ -1,442 +1,173 @@
-# 📋 Project Handoff & State: UC-11 Catat Tindak Lanjut
+# 📋 Project Handoff & State: Post TR-76.8 Polish + ACTION CRUD
 
-**Date:** May 15, 2026 | **Session:** UC-11 Plan/P Implementation (TR-71 + TR-72)
+**Date:** May 19, 2026 | **Session:** TR-76.8 Finalization + UI Polish + Rawat Jalan CRUD
 **Branch:** `claude`
 **System:** Electronic Medical Record (RME) for Klinik Pratama Menganti
-**Focus:** UC-11 (Plan/P of SOAP) — ICD-9 CM search, multi-procedure form, manual fallback
-**Status:** ✅ UC-10 COMPLETE. ✅ TR-71 DONE. ✅ TR-72 DONE (array refactor). ⏳ TR-73 is next.
+**Status:** ✅ TR-76.8 COMPLETE. UC-11 full. All rawat-jalan CRUD live. Next: TR-13 (UC-12).
 
 ---
 
-## ✅ Completed Tasks
+## ✅ UC-11 Summary (TR-71 → TR-76 + TR-76.8) — Previously Completed
 
-### UC-08: Kajian Awal (TR-56–TR-60) ✅ DONE
-### UC-09: Pemeriksaan Fisik (TR-61–TR-65) ✅ DONE
-### UC-10: Input Diagnosis (TR-66–TR-70) ✅ DONE
-
-Full details of these phases are archived in the previous handoff.
-Key deliverables:
-- [x] `AsesmenPerawat.tsx` + `AsesmenDokter.tsx` wrappers
-- [x] forwardRef orchestration + unified "Simpan" button
-- [x] `SubjectiveObjectiveExtendedForm.tsx`, `AssessmentDiagnosisForm.tsx`, `MissingDataWarning.tsx`
-- [x] `POST /api/rawat-jalan/[encounterId]/asesmen/route.ts`
-  - RBAC: DOKTER + ADMIN only
-  - `prisma.$transaction`: writes ConditionDiagnosis, Observation, Encounter (status→SELESAI)
-- [x] All bugs resolved: 5x chips duplication, draft modal stacking,
-      BMI loop, resolver type error, breadcrumb Link fix
+All SOAP+Plan forms for Dokter and Perawat are complete with atomic DB write, CPT/CDT procedure codes, draft detection, and read-only enforcement. See prior handoff for full details.
 
 ---
 
-### Security Incident Response (Post-TR-70) ✅ DONE
+## ✅ Completed This Session (May 19, 2026)
 
-**Threat:** CVSS 8.6 critical vulnerability in older Next.js versions
+### 1. TR-76.8 Bugfixes (Continued from previous session)
 
-- [x] Upgraded to `next@latest` via `npm install next@latest`
-- [x] Ran `npm audit fix` (surgical patch — moderate vulns resolved)
-- [x] All routes, API handlers, and Prisma calls verified post-upgrade
-
----
-
-### SOAP File Refactoring ✅ DONE
-
-All assessment component files renamed to strict SOAP naming convention:
-
-| Old Name | New Name |
+| Bug | Fix |
 |---|---|
-| `AssessmentForm.tsx` | `SubjectiveInitialForm.tsx` |
-| `PhysicalExamForm.tsx` | `ObjectivePhysicalForm.tsx` |
-| `FormHasilPeriksa.tsx` | `SubjectiveObjectiveExtendedForm.tsx` |
-| `DiagnosisAutocomplete.tsx` | `AssessmentDiagnosisForm.tsx` |
+| AsesmenPerawat had no read-only protection | Added full `isReadOnly` guard: banner, draft block, `isReadOnly` prop to SubjectiveInitialForm + ObjectivePhysicalForm, Simpan button hidden (not disabled) |
+| ACTION/ASESMEN columns always visible | Made both conditional: `isAuthorized` gates ACTION, `canAssess` gates ASESMEN |
+| SELESAI encounter blocked by redirect | Added `"SELESAI"` to `ACTIVE_STATUSES` in `asesmen/page.tsx` |
+| useSession crash (no SessionProvider) | Removed `useSession`; `userRole` prop-drilled from server `auth()` → page.tsx → both Asesmen components |
+| isReadOnly case sensitivity | Used `.toUpperCase()` on both sides |
+| SELESAI ASESMEN button wrong color | Changed to `bg-[#3B82F6] hover:bg-blue-600 text-white` |
+| Toast too quick before redirect (Perawat) | Added `setTimeout(() => router.push('/rawat-jalan'), 1500)` |
 
-All imports updated in: `AsesmenDokter.tsx`, `AsesmenPerawat.tsx`, `AsesmenPageClient.tsx`.
+### 2. Read-Only Banner Style Fix
 
----
+Both `AsesmenDokter.tsx` and `AsesmenPerawat.tsx`:
+- Removed `ℹ️` emoji → replaced with `<Info>` icon from lucide-react
+- Added `font-jakarta` class to both `<p>` lines
+- `Info` added to lucide-react imports in both files
 
-### TR-71: ICD-9 CM Search + Autocomplete ✅ DONE
+### 3. globals.css Font Bug Fix
 
-| Subtask | File | Status |
-|---|---|---|
-| TR-71.1 | `src/lib/constants/icd9cm-mock.ts` | ✅ 20 ICD-9 CM entries |
-| TR-71.2 | `src/lib/hooks/useProcedureSearch.ts` | ✅ 3-char min, 300ms debounce, case-insensitive |
-| TR-71.3 | `components/PlanProcedureAutocomplete.tsx` | ✅ Pure search+dropdown, no chip/state |
+**Root cause:** `globals.css` had two `@import "tailwindcss"` directives and two `body` blocks. The second `body` block (Next.js boilerplate leftover) had `font-family: Arial, Helvetica, sans-serif` which overrode the first.
 
-**Note:** Component ended up in the root `components/` folder (not `plan/` subfolder) to
-match the existing flat structure of all other assessment components.
+**Fix:** Rewrote `globals.css` as a single clean file:
+- Single `@import "tailwindcss"`
+- `@theme inline` registers `--font-jakarta` and `--font-poppins` as Tailwind utilities (removed broken Geist font references)
+- Single `body` block using `font-family: var(--font-jakarta)`
+- Plus Jakarta Sans now applies globally; `font-jakarta` / `font-poppins` utility classes work
 
----
+### 4. Patient Header Consistency
 
-### TR-72: Manual Fallback + Procedure Form Wrapper ✅ DONE
+**`PatientHeader.tsx`** (`riwayat-medis/[noRm]`):
+- Replaced plain text `{genderLabel} • {age} tahun • {nik}` with individual chips
+- Row 1: noRm badge (green `#006B4E`) + NIK badge (gray)
+- Row 2: gender chip (blue for Laki-laki, pink for Perempuan) + age chip (teal)
+- Matches PatientAssessmentHeader chip style exactly
 
-| Subtask | File | Status |
-|---|---|---|
-| TR-72.1 | `components/PlanProcedureAutocomplete.tsx` | ✅ Manual mode removed (moved to parent form) |
-| TR-72.2 | `src/lib/schemas/procedure-schema.ts` | ✅ Refactored to multi-procedure array schema |
-| TR-72.3 | `src/lib/utils/transform-procedure.ts` | ⚠️ STALE — see note below |
-| TR-72.4 | `components/PlanProcedureForm.tsx` | ✅ Multi-procedure form with chips + manual toggle |
+**`PatientAssessmentHeader.tsx`** (`rawat-jalan/[encounterId]/asesmen`):
+- Avatar updated: `w-12 h-12 bg-teal-100` → `w-16 h-16 border-2 border-teal-500 bg-teal-50 text-teal-600 text-2xl`
+- Matches the bordered avatar style from riwayat-medis PatientHeader
 
-**Schema Refactor (Breaking Change):** `procedure-schema.ts` was refactored from single-object
-to array-based. `ProcedureFormValues` now has:
-- `procedures: ProcedureItem[]` — the array (with `codeIcd9`, `display`, `notes?`)
-- `useManual: boolean` — local toggle for manual input UI
-- `manualText: string` — temporary text input for manual entry
-- `manualNote: string` — temporary notes input for manual entry
+### 5. Rawat Jalan ACTION CRUD (Pencil + Trash)
 
-**⚠️ `transform-procedure.ts` is now stale.** It still references the old single-item field
-shape (`codeIcd9`, `display`, `useManual`, `manualText` at root). It will cause TypeScript errors.
-It is NOT imported anywhere currently. Update it during TR-76 when the API contract is defined.
+Previously both buttons showed `alert("...masih dalam tahap pengembangan")`.
 
----
+**New: `src/app/api/encounters/[encounterId]/route.ts`**
+- `GET` — fetch single encounter with patient + practitioner (for edit drawer prefill)
+- `PUT` — update priority, practitionerId, reasonCode, patientType; ADMIN/PENDAFTARAN only
+- `DELETE` — cascade-deletes all child records (syncQueues, observations, conditionDiagnoses, procedures, serviceRequests, medicationRequests) then the encounter; rejects with 400 if status ≠ MENUNGGU
 
-### UI Fixes Applied ✅ DONE
+**New: `src/components/shared/EncounterEditDrawer.tsx`**
+- Slides in from right (same pattern as EncounterRegistrationDrawer)
+- Fetches encounter detail on open via GET /api/encounters/[encounterId]
+- Patient shown as read-only teal card (no patient search)
+- Editable fields: Prioritas, Jenis Pasien (Umum/BPJS toggle), Dokter (select), Keluhan Utama (textarea)
+- On success: refreshes table → closes after 1.5s with toast
+- Poli not editable (changing it would invalidate the queue number)
 
-- Merged Plan section into the main "Hasil Periksa Medis" white card (no separate card)
-- Removed `<hr>` divider between Diagnosis Utama and Tindakan Medis sections
-- Removed "RENCANA TINDAK LANJUT (PLAN)" heading
-- Manual fallback pattern in `PlanProcedureAutocomplete` now matches `AssessmentDiagnosisForm`
-
----
-
-## 🐞 Known Issues
-
-### ⚠️ `transform-procedure.ts` — TypeScript Errors
-- **File:** `src/lib/utils/transform-procedure.ts`
-- **Problem:** Schema changed to array; file still uses old single-item fields.
-- **Impact:** `tsc --noEmit` will flag errors in this file. Not imported anywhere.
-- **Fix:** Rewrite during TR-76 once API contract for Plan payload is finalized.
-
----
-
-## 🎯 Next Immediate Steps
-
-### Step 1: TR-73 — Medication + Education Forms
-**Priority:** HIGH | **Complexity:** 🟢 Low
-
-- `MedicationForm.tsx` (free-text prescription, max 1000 chars)
-- `EducationForm.tsx` (patient education advice, max 1000 chars)
-- Both use `forwardRef` + `useImperativeHandle` exposing `submitForm()`
-- Auto-save with `useAutoSaveDraft` hook (same pattern as other forms)
-- Draft keys: `draft_medication_${encounterId}`, `draft_education_${encounterId}`
-
-### Step 2: TR-74 — Referral Form + Ghost Data Prevention
-**Priority:** HIGH | **Complexity:** 🟡 Medium
-
-- `ReferralForm.tsx` with Aktif/Nonaktif toggle
-- Ghost data `useEffect`: when toggle goes OFF, clear `tujuanRujukan` + `alasanRujukan`
-- Free text for destination (no dropdown — would require master facility table)
-- Draft key: `draft_referral_${encounterId}`
-
-### Step 3: TR-75 — Root Validation Schema
-**Priority:** MEDIUM | **Complexity:** 🟡 Medium
-
-- `PlanFormSchema` with cross-field refinement
-- At least one of (procedure array non-empty / medication / rujukan aktif / edukasi) must be present
-
-### Step 4: TR-76 — UPGRADE Existing Assessment API (CRITICAL PATH)
-**Priority:** CRITICAL | **Complexity:** 🟠 High
-
-- DO NOT create a new API route
-- UPGRADE `POST /api/rawat-jalan/[encounterId]/asesmen/route.ts`
-- Extend payload to accept Plan data (procedures array, medication, rujukan, edukasi)
-- Also rewrite `transform-procedure.ts` to match the new array-based schema
-- Extend `prisma.$transaction` to also write: Procedure(s), MedicationRequest, ServiceRequest, Observation (edukasi)
-- Encounter.status → SELESAI only ONCE (last step)
-
-### Step 5: TR-ORCH-01 — Update AsesmenDokter.tsx
-**Priority:** HIGH | **Complexity:** 🟡 Medium
-
-- Wire `procedureRef.current?.submitForm()` into `handleCentralSubmit`
-- Add refs for MedicationForm, ReferralForm, EducationForm once built
-- Build unified payload combining Assessment + Plan data
-- Clear all 6 draft keys on success
+**Updated: `src/components/shared/DaftarAntrean.tsx`**
+- Pencil → opens `EncounterEditDrawer` for that row's `id`
+- Trash → disabled (greyed, tooltip) for non-Menunggu rows; enabled for Menunggu rows
+- Delete confirmation modal: centered card with patient name, "Ya, Hapus" + spinner
+- Action toast (bottom-center) for delete success/error
+- New state: `editEncounterId`, `deleteTarget`, `isDeleting`, `actionToast`
 
 ---
 
-## 🏗️ UC-11 Remaining Subtask Plan (TR-73 → TR-76)
-
-### TR-73: Medication + Education Forms
-
-| Subtask | File | Notes |
-|---------|------|-------|
-| TR-73.1 | `components/MedicationForm.tsx` | Free text, max 1000 chars; forwardRef + submitForm() |
-| TR-73.2 | `components/EducationForm.tsx` | Free text, max 1000 chars; forwardRef + submitForm() |
-| TR-73.3 | `src/lib/schemas/plan-schema.ts` | MedicationSchema + EducationSchema (both optional) |
-| TR-73.4 | Both form components | Draft auto-save via `useAutoSaveDraft` hook |
-
-### TR-74: Referral Form + Ghost Data Prevention
-
-| Subtask | File | Notes |
-|---------|------|-------|
-| TR-74.1 | `components/ReferralForm.tsx` | Toggle + 2 free-text fields; forwardRef + submitForm() |
-| TR-74.2 | Within ReferralForm | Ghost data useEffect: clear when toggle OFF |
-| TR-74.3 | `src/lib/schemas/plan-schema.ts` | ReferralSchema: both fields required if isActive=true |
-| TR-74.4 | Within ReferralForm | Draft auto-save: `draft_referral_${encounterId}` |
-
-**Ghost Data Prevention (CRITICAL):**
-```typescript
-// ✅ CORRECT: Clear when INACTIVE (! operator required)
-useEffect(() => {
-  if (!isRujakanAktif) {
-    form.setValue('tujuanRujukan', '', { shouldDirty: false })
-    form.setValue('alasanRujukan', '', { shouldDirty: false })
-  }
-}, [isRujakanAktif, form])
-```
-⚠️ The `!` (NOT operator) is mandatory. Without it, logic inverts and valid referral data
-gets wiped when the toggle is ON.
-
-### TR-75: Root Form Validation Schema
-
-| Subtask | File | Notes |
-|---------|------|-------|
-| TR-75.1 | `src/lib/schemas/plan-schema.ts` | PlanFormSchema with cross-field refinement |
-| TR-75.2 | Within AsesmenDokter submit | Toast: "Minimal harus ada satu tindakan/resep/rujukan/edukasi" |
-
-```typescript
-// At least one Plan section must be filled
-.refine((data) => {
-  const hasProcedure = data.procedures.length > 0
-  const hasMedication = !!data.medication?.medicationText
-  const hasRujukan = data.rujukan.isActive
-  const hasEdukasi = !!data.edukasi?.anjuranEdukasi
-  return hasProcedure || hasMedication || hasRujukan || hasEdukasi
-}, { message: "Minimal harus ada satu tindakan/resep/rujukan/edukasi" })
-```
-
-### TR-76: UPGRADE Assessment API (DO NOT CREATE NEW ROUTE)
-
-| Subtask | File | Notes |
-|---------|------|-------|
-| TR-76.1 | `api/rawat-jalan/[encounterId]/asesmen/route.ts` | Extend request interface with `plan` object |
-| TR-76.2 | Same file | RBAC check (DOKTER + ADMIN only; 403 otherwise) |
-| TR-76.3 | Same file | Unified validation (ALL forms validated before any DB write) |
-| TR-76.4 | Same file | Atomic transaction (see below) |
-| TR-76.5 | Same file | Full error responses: 400, 403, 404, 500 |
-| TR-76.6 | `src/lib/utils/transform-procedure.ts` | Rewrite to handle `ProcedureItem[]` array |
-| TR-76.7 | `AsesmenDokter.tsx` | Clear all 6 draft keys on success, redirect /rawat-jalan |
-
-**Extended Request Interface:**
-```typescript
-interface AssessmentAndPlanRequest {
-  // UC-10 (existing)
-  assessmentData: { ... }
-  physicalData: { ... }
-  hasilPeriksaData: { ... }
-  selectedDiagnoses: { code: string, display: string, notes?: string }[]
-
-  // UC-11 (new)
-  procedures: { codeIcd9: string, display: string, notes?: string }[]
-  medication?: { medicationText: string }
-  rujukan: { isActive: boolean, tujuanRujukan?: string, alasanRujukan?: string }
-  edukasi?: { anjuranEdukasi: string }
-}
-```
-
-**Atomic Transaction (inside `prisma.$transaction`):**
-1. Existing: ConditionHistory, AllergyIntolerance, MedicationStatement (from assessmentData)
-2. Existing: Observation (vitals from physicalData)
-3. Existing: ConditionDiagnosis (from selectedDiagnoses)
-4. **NEW:** `Procedure.createMany` ← from `procedures[]` array (skip if empty)
-5. **NEW:** `MedicationRequest.create` ← if `medication.medicationText` provided
-6. **NEW:** `ServiceRequest.create` ← always; tujuan/alasan forced null if `!isActive`
-7. **NEW:** `Observation.create` ← if edukasi; `code: "edukasi-pasien"` (FHIR)
-8. **LAST:** `Encounter.update` ← status: "SELESAI" (ONCE, LAST STEP ONLY)
-
-**Draft Keys to Clear on Success:**
-1. `draft_assessment_${encounterId}`
-2. `draft_physical_${encounterId}`
-3. `draft_hasil-periksa_${encounterId}`
-4. `draft_procedure_${encounterId}`
-5. `draft_medication_${encounterId}`
-6. `draft_referral_${encounterId}`
-7. `draft_education_${encounterId}`
-
----
-
-## 📁 Current File Structure (UC-11 — as built)
+## 📁 Current File Structure (as-built)
 
 ```
 src/app/rawat-jalan/[encounterId]/asesmen/
-├── page.tsx                                  (existing — role check)
-├── components/
-│   ├── AsesmenDokter.tsx                     (MODIFIED — Plan section wired)
-│   ├── AsesmenPerawat.tsx                    (MODIFIED — SOAP imports updated)
-│   ├── AsesmenPageClient.tsx                 (MODIFIED — SOAP imports updated)
-│   ├── SubjectiveInitialForm.tsx             (was AssessmentForm)
-│   ├── ObjectivePhysicalForm.tsx             (was PhysicalExamForm)
-│   ├── SubjectiveObjectiveExtendedForm.tsx   (was FormHasilPeriksa)
-│   ├── AssessmentDiagnosisForm.tsx           (was DiagnosisAutocomplete)
-│   ├── PlanProcedureForm.tsx                 ← TR-72 NEW (multi-procedure wrapper)
-│   ├── PlanProcedureAutocomplete.tsx         ← TR-71 NEW (pure search+dropdown)
-│   ├── DraftFoundModal.tsx
-│   └── MissingDataWarning.tsx
+├── page.tsx                               ← ACTIVE_STATUSES includes SELESAI; userRole prop-drilled
+└── components/
+    ├── AsesmenDokter.tsx                  ← isReadOnly via userRole prop; Info icon banner
+    ├── AsesmenPerawat.tsx                 ← Full isReadOnly; Simpan hidden when read-only; 1.5s redirect delay
+    ├── PatientAssessmentHeader.tsx        ← Updated avatar (w-16, border-2 border-teal-500)
+    ├── SubjectiveInitialForm.tsx          ← isReadOnly disables chips/textareas/buttons
+    ├── ObjectivePhysicalForm.tsx          ← isReadOnly disables vitals + catatan
+    ├── SubjectiveObjectiveExtendedForm.tsx ← isReadOnly disables both textareas
+    ├── AssessmentDiagnosisForm.tsx        ← returns null when isReadOnly
+    ├── PlanProcedureForm.tsx              ← isReadOnly hides autocomplete/X/Kosongkan
+    ├── PlanMedicationForm.tsx             ← isReadOnly disables textarea
+    ├── PlanEducationForm.tsx              ← isReadOnly disables textarea
+    └── PlanReferralForm.tsx               ← isReadOnly disables toggle + inputs
 
-src/lib/
-├── constants/
-│   └── icd9cm-mock.ts                        ← TR-71.1 NEW (20 ICD-9 entries)
-├── hooks/
-│   └── useProcedureSearch.ts                 ← TR-71.2 NEW
-├── schemas/
-│   └── procedure-schema.ts                   ← TR-72 REWRITTEN (array schema)
-└── utils/
-    └── transform-procedure.ts                ← ⚠️ STALE (rewrite in TR-76)
+src/app/riwayat-medis/[noRm]/components/
+└── PatientHeader.tsx                      ← Chip-style noRm, NIK, gender, age badges
 
-src/app/api/rawat-jalan/[encounterId]/asesmen/
-└── route.ts                                  ← TR-76 will UPGRADE (not create new)
-```
+src/app/api/encounters/
+├── route.ts                               ← GET (list) + POST (create)
+└── [encounterId]/
+    ├── route.ts                           ← GET + PUT + DELETE (NEW)
+    ├── assessment/route.ts
+    └── physical-exam/route.ts
 
-**Still to create (TR-73 + TR-74):**
-- `components/MedicationForm.tsx`
-- `components/EducationForm.tsx`
-- `components/ReferralForm.tsx`
-- `src/lib/schemas/plan-schema.ts`
+src/components/shared/
+├── DaftarAntrean.tsx                      ← Edit drawer + delete modal wired
+├── EncounterRegistrationDrawer.tsx
+└── EncounterEditDrawer.tsx                ← NEW
 
----
-
-## 🛠️ Technical Decisions (UC-11)
-
-### 7. Atomic Assessment + Plan in One Transaction
-**Decision:** Upgrade existing TR-70 API to accept the full SOAP payload in one request.
-No separate Plan API endpoint.
-**Why:** A separate Plan API creates a two-step save where Assessment could succeed
-while Plan fails, leaving a half-saved medical record. `prisma.$transaction` guarantees
-all-or-nothing atomicity.
-
-### 8. Multi-Procedure Array (Revised from Single-Procedure MVP)
-**Decision:** Procedures are now a `ProcedureItem[]` array (not a single object).
-**Why:** The single-procedure assumption was dropped — primary care visits commonly
-involve multiple procedures (e.g., blood test + ECG + consultation). The array approach
-adds minimal complexity while correctly modeling reality.
-
-### 9. Payload Transform Deferred to TR-76
-**Decision:** `transform-procedure.ts` is left stale until TR-76.
-**Why:** The API contract for the Plan payload needs to be finalized first. Transforming
-prematurely locks in an assumption that may need to change.
-
-### 10. Manual Fallback Owned by Parent Form (PlanProcedureForm)
-**Decision:** `PlanProcedureAutocomplete` is a pure search+dropdown component.
-All manual input state (checkbox, textarea, "Tambah" button) lives in `PlanProcedureForm`.
-**Why:** Mirrors the `AssessmentDiagnosisForm` pattern. Keeps the autocomplete component
-stateless and reusable. Manual entries are appended to the same `procedures[]` array
-with `codeIcd9: "MANUAL"`.
-
-### 11. Patient Education → Observation Table (FHIR-Compliant)
-**Decision:** Education notes saved as `Observation` with `code: "edukasi-pasien"`.
-**Why:** Aligns with HL7 FHIR standard. Avoids schema bloat. Queryable by code.
-
-### 12. Free Text for Rujukan Destination
-**Decision:** Plain text input, not a dropdown.
-**Why:** A dropdown would require a master facility table. Doctor types manually
-(e.g., "RSUD Ibnu Sina Gresik"). Acceptable for thesis scope.
-
-### 13. Ghost Data Prevention on Rujukan Toggle
-**Decision:** When the Rujukan toggle is OFF, `tujuanRujukan` and `alasanRujukan`
-are cleared immediately via useEffect. Backend also forces them null when `isActive=false`.
-**Why:** Two-layer protection — frontend clears, backend enforces.
-⚠️ Critical: condition must be `if (!plan.rujukan.isActive)` with the `!` operator.
-
-### 14. 1-Second Debounced Auto-Save via `useAutoSaveDraft`
-**Decision:** All forms use the shared `useAutoSaveDraft(draftKey, formData)` hook.
-**Why:** Centralizes the debounce logic. Saves on every keystroke pause without
-thrashing localStorage. Safer than `onBlur` — captures data if tab is abruptly closed.
-Draft format: `{ data: formValues, timestamp: number }`.
-Restoration: always parse as `const { data } = JSON.parse(saved)` then `reset(data)`.
-
----
-
-## 📊 Prisma Schema — New Tables for UC-11
-
-### Procedure (NEW)
-```prisma
-model Procedure {
-  id          String   @id @default(cuid())
-  encounterId String
-  patientId   String
-  codeIcd9    String   // "99213" or "MANUAL"
-  display     String   // Procedure name or manual text
-  notes       String?
-  status      String   @default("completed")
-  performedAt DateTime @default(now())
-  createdBy   String
-  createdAt   DateTime @default(now())
-}
-```
-
-### MedicationRequest (NEW)
-```prisma
-model MedicationRequest {
-  id              String   @id @default(cuid())
-  encounterId     String
-  patientId       String
-  medicationText  String   // FREE TEXT prescription
-  instructions    String?
-  status          String   @default("active")
-  createdBy       String
-  createdAt       DateTime @default(now())
-}
-```
-
-### ServiceRequest (NEW)
-```prisma
-model ServiceRequest {
-  id              String   @id @default(cuid())
-  encounterId     String
-  patientId       String
-  isActive        Boolean  @default(false)
-  tujuanRujukan   String?  // null when isActive=false
-  alasanRujukan   String?  // null when isActive=false
-  status          String   @default("draft")
-  createdBy       String
-  createdAt       DateTime @default(now())
-}
-```
-
-### Observation (EXISTING — extended use)
-- `code: "edukasi-pasien"` → new semantic code for education records
-- `notes` field stores education text
-- No schema migration required (existing columns reused)
-
----
-
-## 🔗 Dependencies & Blockers
-
-### Current Blockers
-⚠️ `transform-procedure.ts` has TypeScript errors (stale schema). Non-blocking for
-frontend work. Must be fixed before TR-76.
-
-### UC-11 Dependency Chain
-```
-TR-71 ✅ (Mock + Hook + Autocomplete)
-TR-72 ✅ (Schema Array Refactor + PlanProcedureForm)
-↓
-TR-73 ⏳ (Medication + Education)   ← Can run parallel with TR-74
-TR-74 ⏳ (Referral)                 ← Can run parallel with TR-73
-↓
-TR-75 ⏳ (Root Validation Schema)
-↓
-TR-76 ⏳ (UPGRADE API — CRITICAL PATH + fix transform-procedure.ts)
-↓
-TR-ORCH-01 ⏳ (AsesmenDokter.tsx — wire all Plan refs into submit)
+src/app/globals.css                        ← Fixed: single @import, single body, @theme inline with Jakarta/Poppins
+src/hooks/useAutoSaveDraft.ts              ← isReadOnly param skips localStorage writes
 ```
 
 ---
 
-## 📅 Overall Roadmap
+## 🔑 Key Architectural Notes
+
+**isReadOnly pattern:**
+```typescript
+const isReadOnly = encounter?.status?.toUpperCase() === 'SELESAI'
+  && userRole?.toUpperCase() !== 'ADMIN';
+```
+- Computed synchronously from props (no useSession needed)
+- `userRole` prop-drilled from server `auth()` in page.tsx
+
+**Delete safety:**
+- Only MENUNGGU encounters can be deleted (enforced in both API and UI)
+- Cascade order in $transaction: syncQueues → observations → conditionDiagnoses → procedures → serviceRequests → medicationRequests → encounter
+
+**Font setup (globals.css):**
+- `@theme inline` maps `--font-jakarta` and `--font-poppins` to Tailwind utilities
+- next/font sets the CSS variables on `<body>` at runtime via `plusJakartaSans.variable`
+- Body default: `font-family: var(--font-jakarta)`
+
+---
+
+## 🎯 Next Steps
+
+### TR-13 [UC-12] — Kirim Resume Medis (SATUSEHAT Integration)
+- TR-77: Tombol Simpan & Kirim ke SATUSEHAT
+- TR-78: Susun data SOAP ke FHIR JSON Bundle
+- TR-79: Integrasi POST ke SATUSEHAT API
+- TR-80: Error handling retry queue
+- TR-81: Tombol Kirim Ulang retry
+
+---
+
+## 📊 Overall Roadmap
+
 - ✅ UC-08: Kajian Awal (TR-56–TR-60)
 - ✅ UC-09: Pemeriksaan Fisik (TR-61–TR-65)
 - ✅ UC-10: Input Diagnosis (TR-66–TR-70)
+- ✅ UC-11: Catat Tindak Lanjut (TR-71–TR-76)
 - ✅ Security Patch (CVSS 8.6 Next.js)
-- ✅ SOAP file refactoring (all component renames + import fixes)
-- ✅ TR-71: ICD-9 CM search hook + autocomplete component
-- ✅ TR-72: Procedure schema (array) + PlanProcedureForm wrapper
-- ⏳ TR-73: Medication + Education forms
-- ⏳ TR-74: Referral form
-- ⏳ TR-75: Root validation schema
-- ⏳ TR-76: UPGRADE API endpoint (critical path)
-- ⏳ TR-ORCH-01: Wire all Plan refs into AsesmenDokter submit
-- ⏳ Full end-to-end SOAP testing
-- ⏳ UC-12 (SATUSEHAT integration) if in scope
+- ✅ CPT/CDT nomenclature refactor
+- ✅ QA Phase 2 verification (TC 3.1–3.9)
+- ✅ TR-76.8: Encounter Read-Only View & Admin Override
+- ✅ UI Polish: Patient header chips, avatar border, font fix, Info icon banner
+- ✅ Rawat Jalan ACTION CRUD: Edit drawer + Delete with confirmation
+- ⏳ UC-12: Kirim Resume Medis (SATUSEHAT integration)
 - ⏳ Thesis writeup
 
 ---
 
-**Last Updated:** May 15, 2026 | **Next Review:** Before starting TR-73
+**Last Updated:** May 19, 2026 | **Next Review:** Before starting TR-13

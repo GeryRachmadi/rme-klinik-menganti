@@ -30,6 +30,7 @@ interface ObjectivePhysicalFormProps {
   defaultValues?: Record<string, any>;
   hideSubmitButton?: boolean;
   draftState?: DraftState;
+  isReadOnly?: boolean;
 }
 
 // ─── Draft payload ────────────────────────────────────────────────────────────
@@ -48,6 +49,7 @@ const ObjectivePhysicalForm = forwardRef<ObjectivePhysicalFormRef, ObjectivePhys
   draftState,
   defaultValues,
   hideSubmitButton = false,
+  isReadOnly = false,
 }, ref) => {
   const router = useRouter();
   const draftKey = getPhysicalExamDraftKey(encounterId);
@@ -110,7 +112,7 @@ const ObjectivePhysicalForm = forwardRef<ObjectivePhysicalFormRef, ObjectivePhys
   const bmi = watch('bmi');
   const catatan = watch('catatan') ?? '';
 
-  useAutoSaveDraft(draftKey, { tekananDarah, suhu, nadi, napas, tinggiBadan, beratBadan, bmi, catatan });
+  useAutoSaveDraft(draftKey, { tekananDarah, suhu, nadi, napas, tinggiBadan, beratBadan, bmi, catatan }, isReadOnly);
 
   useEffect(() => {
     const outOfBounds = getOutOfBoundsFields(
@@ -195,6 +197,7 @@ const ObjectivePhysicalForm = forwardRef<ObjectivePhysicalFormRef, ObjectivePhys
                     placeholder="130/85"
                     warning={outOfBoundsFields.includes('tekananDarah')}
                     error={fieldState.error?.message}
+                    disabled={isReadOnly}
                   />
                 )}
               />
@@ -212,6 +215,7 @@ const ObjectivePhysicalForm = forwardRef<ObjectivePhysicalFormRef, ObjectivePhys
                     placeholder="36.5"
                     warning={outOfBoundsFields.includes('suhu')}
                     error={fieldState.error?.message}
+                    disabled={isReadOnly}
                   />
                 )}
               />
@@ -228,6 +232,7 @@ const ObjectivePhysicalForm = forwardRef<ObjectivePhysicalFormRef, ObjectivePhys
                     placeholder="80"
                     warning={outOfBoundsFields.includes('nadi')}
                     error={fieldState.error?.message}
+                    disabled={isReadOnly}
                   />
                 )}
               />
@@ -244,6 +249,7 @@ const ObjectivePhysicalForm = forwardRef<ObjectivePhysicalFormRef, ObjectivePhys
                     placeholder="20"
                     warning={outOfBoundsFields.includes('napas')}
                     error={fieldState.error?.message}
+                    disabled={isReadOnly}
                   />
                 )}
               />
@@ -265,6 +271,7 @@ const ObjectivePhysicalForm = forwardRef<ObjectivePhysicalFormRef, ObjectivePhys
                     placeholder="170"
                     warning={outOfBoundsFields.includes('tinggiBadan')}
                     error={fieldState.error?.message}
+                    disabled={isReadOnly}
                   />
                 )}
               />
@@ -282,6 +289,7 @@ const ObjectivePhysicalForm = forwardRef<ObjectivePhysicalFormRef, ObjectivePhys
                     placeholder="65"
                     warning={outOfBoundsFields.includes('beratBadan')}
                     error={fieldState.error?.message}
+                    disabled={isReadOnly}
                   />
                 )}
               />
@@ -309,7 +317,8 @@ const ObjectivePhysicalForm = forwardRef<ObjectivePhysicalFormRef, ObjectivePhys
                 {...register('catatan')}
                 placeholder="Catatan tambahan pemeriksaan fisik..."
                 rows={4}
-                className="w-full border border-gray-200 rounded-xl p-4 text-sm bg-gray-50 text-gray-800 placeholder-gray-400 resize-y focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] min-h-[100px] transition-colors"
+                disabled={isReadOnly}
+                className={`w-full border border-gray-200 rounded-xl p-4 text-sm placeholder-gray-400 resize-y focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] min-h-[100px] transition-colors ${isReadOnly ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800'}`}
                 style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
               />
               <p className="text-[12px] text-gray-400 text-right" style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}>

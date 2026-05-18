@@ -19,12 +19,14 @@ export interface SubjectiveObjectiveExtendedFormProps {
   hideSubmitButton?: boolean;
   /** When true, renders only the <form> fields without the outer h2 + white card wrapper */
   hideWrapper?: boolean;
+  isReadOnly?: boolean;
 }
 
 const SubjectiveObjectiveExtendedForm = forwardRef<SubjectiveObjectiveExtendedFormRef, SubjectiveObjectiveExtendedFormProps>(({
   encounterId,
   hideSubmitButton = false,
   hideWrapper = false,
+  isReadOnly = false,
 }, ref) => {
   const draftKey = getHasilPeriksaDraftKey(encounterId);
 
@@ -66,7 +68,7 @@ const SubjectiveObjectiveExtendedForm = forwardRef<SubjectiveObjectiveExtendedFo
   }));
 
   const currentFormData = watch();
-  useAutoSaveDraft(draftKey, currentFormData);
+  useAutoSaveDraft(draftKey, currentFormData, isReadOnly);
 
   const keluhanUtamaLength = currentFormData.keluhanUtama?.length || 0;
   const pemeriksaanFisikTambahanLength = currentFormData.pemeriksaanFisikTambahan?.length || 0;
@@ -85,8 +87,10 @@ const SubjectiveObjectiveExtendedForm = forwardRef<SubjectiveObjectiveExtendedFo
           id="keluhanUtama"
           rows={4}
           placeholder="Masukkan keluhan utama pasien..."
-          className={`w-full border rounded-xl p-4 text-sm font-sans resize-y focus:outline-none focus:ring-1 min-h-[100px] transition-colors bg-gray-50 text-gray-800 placeholder-gray-400
-            ${errors.keluhanUtama ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#0F766E] focus:border-[#0F766E]'}`}
+          disabled={isReadOnly}
+          className={`w-full border rounded-xl p-4 text-sm font-sans resize-y focus:outline-none focus:ring-1 min-h-[100px] transition-colors placeholder-gray-400
+            ${errors.keluhanUtama ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#0F766E] focus:border-[#0F766E]'}
+            ${isReadOnly ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800'}`}
           style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
           {...register('keluhanUtama')}
         />
@@ -111,8 +115,10 @@ const SubjectiveObjectiveExtendedForm = forwardRef<SubjectiveObjectiveExtendedFo
           id="pemeriksaanFisikTambahan"
           rows={4}
           placeholder="Masukkan hasil pemeriksaan fisik tambahan..."
-          className={`w-full border rounded-xl p-4 text-sm font-sans resize-y focus:outline-none focus:ring-1 min-h-[100px] transition-colors bg-gray-50 text-gray-800 placeholder-gray-400
-            ${errors.pemeriksaanFisikTambahan ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#0F766E] focus:border-[#0F766E]'}`}
+          disabled={isReadOnly}
+          className={`w-full border rounded-xl p-4 text-sm font-sans resize-y focus:outline-none focus:ring-1 min-h-[100px] transition-colors placeholder-gray-400
+            ${errors.pemeriksaanFisikTambahan ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#0F766E] focus:border-[#0F766E]'}
+            ${isReadOnly ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800'}`}
           style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
           {...register('pemeriksaanFisikTambahan')}
         />

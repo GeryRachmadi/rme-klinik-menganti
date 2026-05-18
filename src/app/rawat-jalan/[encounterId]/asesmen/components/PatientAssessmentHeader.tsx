@@ -56,7 +56,7 @@ export default function PatientAssessmentHeader({
 
           <div className="flex items-start gap-4">
           <div
-            className="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold text-lg flex-shrink-0"
+            className="w-16 h-16 rounded-full border-2 border-teal-500 bg-teal-50 flex items-center justify-center text-teal-600 font-bold text-2xl flex-shrink-0"
             style={{ fontFamily: 'var(--font-poppins)' }}
           >
             {initials}
@@ -123,7 +123,7 @@ export default function PatientAssessmentHeader({
         </div>
 
         <a
-          href={`/rekam-medis/${patient.noRm}`}
+          href={`/riwayat-medis/${patient.noRm}`}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-teal-700 bg-teal-50 border border-teal-200 rounded-full hover:bg-teal-100 transition-colors shrink-0 self-start"

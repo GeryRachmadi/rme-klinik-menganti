@@ -18,10 +18,12 @@ export interface PlanReferralFormRef {
 
 interface PlanReferralFormProps {
   encounterId: string;
+  isReadOnly?: boolean;
 }
 
 const PlanReferralForm = forwardRef<PlanReferralFormRef, PlanReferralFormProps>(({
   encounterId,
+  isReadOnly = false,
 }, ref) => {
   const draftKey = getReferralDraftKey(encounterId);
   const { toast, showWarning } = useFormToast();
@@ -38,6 +40,7 @@ const PlanReferralForm = forwardRef<PlanReferralFormRef, PlanReferralFormProps>(
   });
 
   useEffect(() => {
+    if (isReadOnly) return;
     const saved = localStorage.getItem(draftKey);
     if (!saved) return;
     try {
@@ -46,7 +49,7 @@ const PlanReferralForm = forwardRef<PlanReferralFormRef, PlanReferralFormProps>(
     } catch {
       localStorage.removeItem(draftKey);
     }
-  }, [draftKey, reset]);
+  }, [draftKey, reset, isReadOnly]);
 
   useImperativeHandle(ref, () => ({
     submitForm: async () => {
@@ -61,7 +64,7 @@ const PlanReferralForm = forwardRef<PlanReferralFormRef, PlanReferralFormProps>(
   }));
 
   const currentFormData = watch();
-  useAutoSaveDraft(draftKey, currentFormData);
+  useAutoSaveDraft(draftKey, currentFormData, isReadOnly);
 
   const isActive = watch('isActive');
   const tujuanValue = watch('tujuanRujukan');
@@ -124,8 +127,9 @@ const PlanReferralForm = forwardRef<PlanReferralFormRef, PlanReferralFormProps>(
             type="button"
             role="switch"
             aria-checked={isActive}
-            onClick={() => setValue('isActive', !isActive, { shouldValidate: true })}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${isActive ? 'bg-teal-600' : 'bg-gray-300'}`}
+            onClick={() => !isReadOnly && setValue('isActive', !isActive, { shouldValidate: true })}
+            disabled={isReadOnly}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${isActive ? 'bg-teal-600' : 'bg-gray-300'} ${isReadOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
           >
             <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isActive ? 'translate-x-6' : 'translate-x-1'}`} />
           </button>
@@ -142,7 +146,8 @@ const PlanReferralForm = forwardRef<PlanReferralFormRef, PlanReferralFormProps>(
                 type="text"
                 {...register('tujuanRujukan')}
                 placeholder="Contoh: RSUD Ibnu Sina Gresik"
-                className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] text-sm transition-colors"
+                disabled={isReadOnly}
+                className={`block w-full px-3 py-2.5 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] text-sm transition-colors ${isReadOnly ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-900'}`}
               />
               {errors.tujuanRujukan && (
                 <p className="text-red-500 text-[13px] mt-1">{errors.tujuanRujukan.message}</p>
@@ -157,7 +162,8 @@ const PlanReferralForm = forwardRef<PlanReferralFormRef, PlanReferralFormProps>(
                 {...register('alasanRujukan')}
                 placeholder="Pertimbangan Medis..."
                 rows={3}
-                className="w-full border border-gray-200 rounded-xl p-4 text-sm bg-gray-50 text-gray-800 placeholder-gray-400 resize-y focus:outline-none focus:ring-1 min-h-[80px] focus:ring-[#0F766E] focus:border-[#0F766E] transition-colors"
+                disabled={isReadOnly}
+                className={`w-full border border-gray-200 rounded-xl p-4 text-sm placeholder-gray-400 resize-y focus:outline-none focus:ring-1 min-h-[80px] focus:ring-[#0F766E] focus:border-[#0F766E] transition-colors ${isReadOnly ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800'}`}
               />
               {errors.alasanRujukan && (
                 <p className="text-red-500 text-[13px] mt-1">{errors.alasanRujukan.message}</p>

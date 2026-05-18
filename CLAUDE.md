@@ -98,21 +98,24 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 ## Jira Project
 - Project: Tugas Akhir - RME Klinik Pratama Menganti Gresik
 - Key: TR
-- Current progress: TR-70 Done (UC-10 Input Diagnosis) complete
-- Next: TR-12 [UC-11] Catat Tindak Lanjut
+- Current progress: TR-76 Done (UC-11 Catat Tindak Lanjut) complete
+- Next: TR-13 [UC-12] Kirim Resume Medis (SATUSEHAT integration)
+- Backlog: TR-76.8 Encounter Read-Only View & Admin Override
 
-## LATEST REFACTORING (P2 Quality Polish)
+## LATEST CHANGES (UC-11 Completion)
 
-**Branch:** claude (merged from gemini)
+**Branch:** claude
 
-**Changes:**
-- Extracted SectionTitle → src/components/ui/SectionTitle.tsx (4 duplicates consolidated)
-- encounters/route.ts: Removed any types, moved formatTitleCase to module level
-- DaftarAntrean.tsx: Removed ~50 inline font styles, removed Indonesian comments, aligned badges to rounded-full
-- EncounterRegistrationDrawer.tsx: Fixed JSX (selected → defaultValue), aligned padding p-8 → p-6
-- PatientEditDrawer & PatientRegistrationDrawer: Removed unused imports, use shared SectionTitle
+**Key architectural decisions:**
+- Procedure codes renamed from ICD-9 CM → CPT/CDT. Mock file is `src/lib/constants/cpt-cdt-mock.ts` (includes 6 CDT dental codes). Old `icd9cm-mock.ts` re-exports for compat.
+- Procedure model field `codeIcd9` → `codeCpt` (migrated via `prisma db push`).
+- Manual procedure entries are stored with `codeCpt: null` in the database.
+- Education notes stored as a second `Observation` record with `notes` prefixed `[Edukasi Pasien]:`.
+- Plan validation: `PlanFormSchema` in `plan-schema.ts` requires at least one of procedure/medication/referral/education before submit.
+- Draft detection: `useEffect` in `AsesmenDokter` uses flexible `checkLegacyDraft` helper that handles both `{data:{...}}` and raw `{...}` localStorage structures.
+- All Plan forms expose `getValues()` on their ref (no internal validation triggered) for safe payload extraction.
 
-**Status:** Code quality aligned. Ready for P0 logic implementation.
+**Status:** UC-11 fully complete. QA Phase 2 passed (TC 3.1–TC 3.9). UC-12 is next.
 
 ### TR-1 [SETUP] Project Infrastructure
 - TR-14 ✅ Setup Next.js project dengan TypeScript dan Tailwind CSS
@@ -194,12 +197,13 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 - TR-70 ✅ API endpoint ConditionDiagnosis
 
 ### TR-12 [UC-11] Catat Tindak Lanjut
-- TR-71 ⏳ Search ICD-9 CM autocomplete
-- TR-72 ⏳ Fallback input manual tindakan
-- TR-73 ⏳ Form Resep Obat dan Edukasi
-- TR-74 ⏳ Form Rujukan toggle
-- TR-75 ⏳ Validasi form kosong tetap bisa simpan
-- TR-76 ⏳ API endpoint Procedure, ServiceRequest, MedicationRequest
+- TR-71 ✅ Search CPT/CDT autocomplete (renamed from ICD-9 CM)
+- TR-72 ✅ Fallback input manual tindakan
+- TR-73 ✅ Form Resep Obat (PlanMedicationForm) dan Edukasi (PlanEducationForm)
+- TR-74 ✅ Form Rujukan toggle (PlanReferralForm) dengan ghost-data prevention
+- TR-75 ✅ Validasi plan: minimal 1 dari tindakan/resep/rujukan/edukasi wajib diisi
+- TR-76 ✅ API endpoint Procedure, MedicationRequest, ServiceRequest, Observation (edukasi)
+- TR-76.8 ⏳ Encounter Read-Only View & Admin Override (backlog)
 
 ### TR-13 [UC-12] Kirim Resume Medis
 - TR-77 ⏳ Tombol Simpan & Kirim ke SATUSEHAT

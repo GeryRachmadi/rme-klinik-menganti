@@ -20,10 +20,12 @@ export interface PlanProcedureFormRef {
 
 interface PlanProcedureFormProps {
   encounterId: string;
+  isReadOnly?: boolean;
 }
 
 const PlanProcedureForm = forwardRef<PlanProcedureFormRef, PlanProcedureFormProps>(({
   encounterId,
+  isReadOnly = false,
 }, ref) => {
   const draftKey = getProcedureDraftKey(encounterId);
   const { toast, showWarning } = useFormToast();
@@ -45,6 +47,7 @@ const PlanProcedureForm = forwardRef<PlanProcedureFormRef, PlanProcedureFormProp
   });
 
   useEffect(() => {
+    if (isReadOnly) return;
     const saved = localStorage.getItem(draftKey);
     if (!saved) return;
     try {
@@ -53,7 +56,7 @@ const PlanProcedureForm = forwardRef<PlanProcedureFormRef, PlanProcedureFormProp
     } catch {
       localStorage.removeItem(draftKey);
     }
-  }, [draftKey, reset]);
+  }, [draftKey, reset, isReadOnly]);
 
   const procedures = watch('procedures') ?? [];
 
@@ -73,7 +76,7 @@ const PlanProcedureForm = forwardRef<PlanProcedureFormRef, PlanProcedureFormProp
   }));
 
   const currentFormData = watch();
-  useAutoSaveDraft(draftKey, currentFormData);
+  useAutoSaveDraft(draftKey, currentFormData, isReadOnly);
 
   const handleProcedureChange = (proc: SelectedProcedure) => {
     const updated: ProcedureItem[] = [...procedures, {
@@ -137,29 +140,35 @@ const PlanProcedureForm = forwardRef<PlanProcedureFormRef, PlanProcedureFormProp
               <span className="font-semibold">[{proc.codeCpt === 'MANUAL' ? 'Manual' : proc.codeCpt}]</span>
               <span>–</span>
               <span>{proc.display}</span>
-              <button
-                type="button"
-                onClick={() => handleRemoveProcedure(index)}
-                aria-label="Hapus tindakan"
-                className="hover:bg-black/10 rounded-full p-0.5 ml-0.5 leading-none cursor-pointer"
-              >
-                <span className="text-base leading-none">×</span>
-              </button>
+              {!isReadOnly && (
+                <button
+                  type="button"
+                  onClick={() => handleRemoveProcedure(index)}
+                  aria-label="Hapus tindakan"
+                  className="hover:bg-black/10 rounded-full p-0.5 ml-0.5 leading-none cursor-pointer"
+                >
+                  <span className="text-base leading-none">×</span>
+                </button>
+              )}
             </span>
           ))}
         </div>
       )}
 
-      <PlanProcedureAutocomplete
-        onProcedureChange={handleProcedureChange}
-      />
-      <button
-        type="button"
-        onClick={() => setValue('procedures', [])}
-        className="text-blue-500 hover:text-blue-700 underline cursor-pointer font-medium text-sm mt-2 self-end italic"
-      >
-        Kosongkan Input
-      </button>
+      {!isReadOnly && (
+        <>
+          <PlanProcedureAutocomplete
+            onProcedureChange={handleProcedureChange}
+          />
+          <button
+            type="button"
+            onClick={() => setValue('procedures', [])}
+            className="text-blue-500 hover:text-blue-700 underline cursor-pointer font-medium text-sm mt-2 self-end italic"
+          >
+            Kosongkan Input
+          </button>
+        </>
+      )}
     </div>
   );
 });

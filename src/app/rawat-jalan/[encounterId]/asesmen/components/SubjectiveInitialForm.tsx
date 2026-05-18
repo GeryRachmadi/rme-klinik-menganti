@@ -27,6 +27,7 @@ interface SubjectiveInitialFormProps {
   isEditMode?: boolean;
   hideSubmitButton?: boolean;
   draftState?: DraftState;
+  isReadOnly?: boolean;
 }
 
 interface DraftPayload {
@@ -79,6 +80,7 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
   defaultValues,
   isEditMode = false,
   hideSubmitButton = false,
+  isReadOnly = false,
 }, ref) => {
   const router = useRouter();
   const [alergiSeverity, setAlergiSeverity] = useState('Sedang');
@@ -130,7 +132,7 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
   }));
 
   const currentFormData = watch();
-  useAutoSaveDraft(getAssessmentDraftKey(encounterId), currentFormData);
+  useAutoSaveDraft(getAssessmentDraftKey(encounterId), currentFormData, isReadOnly);
 
   const isPenyakitNull = watch('tidakAdaPenyakit');
   const isAlergiNull = watch('tidakAdaAlergi');
@@ -167,7 +169,7 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
                     addLabel="Riwayat"
                     value={field.value ?? []}
                     suggestions={SUGGESTIONS_PENYAKIT}
-                    disabled={isPenyakitNull}
+                    disabled={isPenyakitNull || isReadOnly}
                     negationLabel="Pasien menyangkal ada riwayat penyakit"
                     negationChecked={isPenyakitNull}
                     onNegationChange={(checked) => {
@@ -187,20 +189,22 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
               />
               <textarea
                 {...register('catatanPenyakit')}
-                disabled={isPenyakitNull}
+                disabled={isPenyakitNull || isReadOnly}
                 placeholder={isPenyakitNull ? 'Tidak ada catatan' : 'Tambahkan Catatan Disini (Opsional)'}
                 className={`w-full mt-2 border rounded-xl p-4 text-sm font-sans resize-y focus:outline-none focus:ring-1 min-h-[100px] transition-colors
                   ${errors.penyakit ? 'border-red-500 focus:ring-red-500' : 'focus:ring-[#0F766E] focus:border-[#0F766E] border-gray-200'}
-                  ${isPenyakitNull ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800 placeholder-gray-400'}`}
+                  ${isPenyakitNull || isReadOnly ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800 placeholder-gray-400'}`}
                 style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
               />
-              <button
-                type="button"
-                onClick={() => { setValue('penyakit', [], { shouldValidate: true }); setValue('catatanPenyakit', '', { shouldValidate: true }); }}
-                className="text-blue-500 hover:text-blue-700 underline cursor-pointer font-medium text-sm mt-2 self-end italic"
-              >
-                Kosongkan Input
-              </button>
+              {!isReadOnly && (
+                <button
+                  type="button"
+                  onClick={() => { setValue('penyakit', [], { shouldValidate: true }); setValue('catatanPenyakit', '', { shouldValidate: true }); }}
+                  className="text-blue-500 hover:text-blue-700 underline cursor-pointer font-medium text-sm mt-2 self-end italic"
+                >
+                  Kosongkan Input
+                </button>
+              )}
               <FieldErrorMessage message={errors.penyakit?.message} />
             </div>
 
@@ -220,7 +224,7 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
                     addLabel="Riwayat"
                     value={field.value ?? []}
                     suggestions={SUGGESTIONS_ALERGI}
-                    disabled={isAlergiNull}
+                    disabled={isAlergiNull || isReadOnly}
                     negationLabel="No Known Allergies (NKA)"
                     negationChecked={isAlergiNull}
                     onNegationChange={(checked) => {
@@ -239,7 +243,7 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
                       <select
                         value={alergiSeverity}
                         onChange={(e) => setAlergiSeverity(e.target.value)}
-                        disabled={isAlergiNull}
+                        disabled={isAlergiNull || isReadOnly}
                         className="rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E] bg-white disabled:bg-gray-100"
                       >
                         <option>Tinggi</option>
@@ -259,20 +263,22 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
               />
               <textarea
                 {...register('catatanAlergi')}
-                disabled={isAlergiNull}
+                disabled={isAlergiNull || isReadOnly}
                 placeholder={isAlergiNull ? 'Tidak ada catatan' : 'Tambahkan Catatan Disini (Opsional)'}
                 className={`w-full mt-2 border rounded-xl p-4 text-sm font-sans resize-y focus:outline-none focus:ring-1 min-h-[100px] transition-colors
                   ${errors.alergi ? 'border-red-500 focus:ring-red-500' : 'focus:ring-[#0F766E] focus:border-[#0F766E] border-gray-200'}
-                  ${isAlergiNull ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800 placeholder-gray-400'}`}
+                  ${isAlergiNull || isReadOnly ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800 placeholder-gray-400'}`}
                 style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
               />
-              <button
-                type="button"
-                onClick={() => { setValue('alergi', [], { shouldValidate: true }); setValue('catatanAlergi', '', { shouldValidate: true }); }}
-                className="text-blue-500 hover:text-blue-700 underline cursor-pointer font-medium text-sm mt-2 self-end italic"
-              >
-                Kosongkan Input
-              </button>
+              {!isReadOnly && (
+                <button
+                  type="button"
+                  onClick={() => { setValue('alergi', [], { shouldValidate: true }); setValue('catatanAlergi', '', { shouldValidate: true }); }}
+                  className="text-blue-500 hover:text-blue-700 underline cursor-pointer font-medium text-sm mt-2 self-end italic"
+                >
+                  Kosongkan Input
+                </button>
+              )}
               <FieldErrorMessage message={errors.alergi?.message} />
             </div>
 
@@ -292,7 +298,7 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
                     addLabel="Riwayat"
                     value={field.value ?? []}
                     suggestions={SUGGESTIONS_OBAT}
-                    disabled={isObatNull}
+                    disabled={isObatNull || isReadOnly}
                     negationLabel="Tidak ada pengobatan rutin"
                     negationChecked={isObatNull}
                     onNegationChange={(checked) => {
@@ -313,7 +319,7 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
                         value={obatDosage}
                         onChange={(e) => setObatDosage(e.target.value)}
                         placeholder="Dosis (opsional)"
-                        disabled={isObatNull}
+                        disabled={isObatNull || isReadOnly}
                         className="rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E] w-36 disabled:bg-gray-100"
                       />
                     }
@@ -323,20 +329,22 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
               />
               <textarea
                 {...register('catatanObat')}
-                disabled={isObatNull}
+                disabled={isObatNull || isReadOnly}
                 placeholder={isObatNull ? 'Tidak ada catatan' : 'Tambahkan Catatan Disini (Opsional)'}
                 className={`w-full mt-2 border rounded-xl p-4 text-sm font-sans resize-y focus:outline-none focus:ring-1 min-h-[100px] transition-colors
                   ${errors.obat ? 'border-red-500 focus:ring-red-500' : 'focus:ring-[#0F766E] focus:border-[#0F766E] border-gray-200'}
-                  ${isObatNull ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800 placeholder-gray-400'}`}
+                  ${isObatNull || isReadOnly ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800 placeholder-gray-400'}`}
                 style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
               />
-              <button
-                type="button"
-                onClick={() => { setValue('obat', [], { shouldValidate: true }); setValue('catatanObat', '', { shouldValidate: true }); }}
-                className="text-blue-500 hover:text-blue-700 underline cursor-pointer font-medium text-sm mt-2 self-end italic"
-              >
-                Kosongkan Input
-              </button>
+              {!isReadOnly && (
+                <button
+                  type="button"
+                  onClick={() => { setValue('obat', [], { shouldValidate: true }); setValue('catatanObat', '', { shouldValidate: true }); }}
+                  className="text-blue-500 hover:text-blue-700 underline cursor-pointer font-medium text-sm mt-2 self-end italic"
+                >
+                  Kosongkan Input
+                </button>
+              )}
               <FieldErrorMessage message={errors.obat?.message} />
             </div>
 

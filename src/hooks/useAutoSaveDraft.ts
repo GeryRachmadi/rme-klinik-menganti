@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
 import { ASSESSMENT_CONFIG } from '@/lib/constants/assessment-validation';
 
-export function useAutoSaveDraft(storageKey: string, data: unknown) {
+export function useAutoSaveDraft(storageKey: string, data: unknown, isReadOnly?: boolean) {
   useEffect(() => {
+    if (isReadOnly) return;
     const timeoutId = setTimeout(() => {
       localStorage.setItem(
         storageKey,
@@ -11,5 +12,5 @@ export function useAutoSaveDraft(storageKey: string, data: unknown) {
     }, ASSESSMENT_CONFIG.autoSaveDebounceMs);
 
     return () => clearTimeout(timeoutId);
-  }, [storageKey, data]);
+  }, [storageKey, data, isReadOnly]);
 }

@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 const ALLOWED_ROLES = ["ADMIN", "DOKTER", "PERAWAT", "PENDAFTARAN"];
-const ACTIVE_STATUSES = ["MENUNGGU", "DIPERIKSA"];
+const ACTIVE_STATUSES = ["MENUNGGU", "DIPERIKSA", "SELESAI"];
 
 export default async function AsesmenPage({
   params,
@@ -141,6 +141,7 @@ export default async function AsesmenPage({
             encounterId={encounterId}
             patient={encounter.patient}
             encounter={encounter}
+            userRole={userRole}
             defaultValues={defaultValues}
             isEditMode={isEditMode}
           />
@@ -149,7 +150,7 @@ export default async function AsesmenPage({
             encounterId={encounterId}
             patient={encounter.patient}
             encounter={encounter}
-            session={session}
+            userRole={userRole}
             defaultValues={defaultValues}
             isEditMode={isEditMode}
             initialAssessment={initialAssessment}

@@ -11,7 +11,7 @@ import PlanMedicationForm, { PlanMedicationFormRef } from './PlanMedicationForm'
 import PlanEducationForm, { PlanEducationFormRef } from './PlanEducationForm';
 import PlanReferralForm, { PlanReferralFormRef } from './PlanReferralForm';
 import DraftFoundModal from './DraftFoundModal';
-import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle2, Info } from 'lucide-react';
 import { useFormToast } from '@/hooks/useFormToast';
 import { getAssessmentDraftKey, getPhysicalExamDraftKey, getHasilPeriksaDraftKey, getProcedureDraftKey, getMedicationDraftKey, getEducationDraftKey, getReferralDraftKey } from '@/lib/constants/storage-keys';
 import { PlanFormSchema } from '@/lib/schemas/plan-schema';
@@ -21,7 +21,7 @@ export interface AsesmenDokterProps {
   encounterId: string;
   patient: Record<string, any>;
   encounter: Record<string, any>;
-  session?: any;
+  userRole?: string;
   defaultValues?: Record<string, any>;
   isEditMode?: boolean;
   initialAssessment: { penyakit: string[]; alergi: string[]; obat: string[] } | null;
@@ -37,7 +37,7 @@ export default function AsesmenDokter({
   encounterId,
   patient,
   encounter,
-  session,
+  userRole,
   defaultValues,
   isEditMode = false,
   initialAssessment,
@@ -45,6 +45,8 @@ export default function AsesmenDokter({
 }: AsesmenDokterProps) {
   const router = useRouter();
   const { toast, showSuccess, showError } = useFormToast();
+
+  const isReadOnly = encounter?.status?.toUpperCase() === 'SELESAI' && userRole?.toUpperCase() !== 'ADMIN';
 
   const missingAssessment =
     initialAssessment === null ||
@@ -90,6 +92,7 @@ export default function AsesmenDokter({
   }, [selectedDiagnoses, encounterId]);
 
   useEffect(() => {
+    if (isReadOnly) return;
     // if (isEditMode) return; // temporarily disabled for debugging
 
     const parsedDrafts: any = {};
@@ -173,7 +176,7 @@ export default function AsesmenDokter({
       setDraftTypes(types);
       setShowDraftModal(true);
     }
-  }, [encounterId, isEditMode]);
+  }, [encounterId, isEditMode, isReadOnly]);
 
   const handleUseDraft = () => {
     if (availableDrafts.assessment && assessmentRef.current) {
@@ -347,6 +350,16 @@ export default function AsesmenDokter({
         onRejectDraft={handleRejectDraft}
       />
 
+      {isReadOnly && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-3">
+          <Info size={20} className="text-blue-500 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-semibold text-blue-900 font-jakarta">Asesmen Sudah Selesai</p>
+            <p className="text-sm text-blue-700 font-jakarta">Hubungi Admin jika perlu mengubah data.</p>
+          </div>
+        </div>
+      )}
+
       <MissingDataWarning missingAssessment={missingAssessment} missingVitals={missingVitals} />
 
       {/* Kajian Awal / Subjective (Editable by Doctor) */}
@@ -358,6 +371,7 @@ export default function AsesmenDokter({
           defaultValues={defaultValues}
           isEditMode={isEditMode}
           hideSubmitButton={true}
+          isReadOnly={isReadOnly}
         />
       </div>
 
@@ -371,6 +385,7 @@ export default function AsesmenDokter({
           canEdit={true}
           defaultValues={defaultValues}
           hideSubmitButton={true}
+          isReadOnly={isReadOnly}
         />
       </div>
 
@@ -392,6 +407,7 @@ export default function AsesmenDokter({
             encounterId={encounterId}
             hideSubmitButton={true}
             hideWrapper={true}
+            isReadOnly={isReadOnly}
           />
 
           {/* Diagnosis Utama subsection */}
@@ -419,14 +435,16 @@ export default function AsesmenDokter({
                     <span className="font-semibold">[{diag.code === 'MANUAL' ? 'Manual' : diag.code}]</span>
                     <span>–</span>
                     <span>{diag.display}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveDiagnosis(diag.code, idx)}
-                      aria-label={`Hapus diagnosis`}
-                      className="hover:bg-black/10 rounded-full p-0.5 ml-0.5 leading-none cursor-pointer"
-                    >
-                      <span className="text-base leading-none">×</span>
-                    </button>
+                    {!isReadOnly && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveDiagnosis(diag.code, idx)}
+                        aria-label={`Hapus diagnosis`}
+                        className="hover:bg-black/10 rounded-full p-0.5 ml-0.5 leading-none cursor-pointer"
+                      >
+                        <span className="text-base leading-none">×</span>
+                      </button>
+                    )}
                   </span>
                 ))}
               </div>
@@ -435,21 +453,24 @@ export default function AsesmenDokter({
             <AssessmentDiagnosisForm
               encounterId={encounterId}
               onSelectDiagnosis={handleSelectDiagnosis}
+              isReadOnly={isReadOnly}
             />
-            <button
-              type="button"
-              onClick={() => setSelectedDiagnoses([])}
-              className="text-blue-500 hover:text-blue-700 underline cursor-pointer font-medium text-sm mt-2 self-end italic"
-            >
-              Kosongkan Input
-            </button>
+            {!isReadOnly && (
+              <button
+                type="button"
+                onClick={() => setSelectedDiagnoses([])}
+                className="text-blue-500 hover:text-blue-700 underline cursor-pointer font-medium text-sm mt-2 self-end italic"
+              >
+                Kosongkan Input
+              </button>
+            )}
           </div>
 
           <div className="flex flex-col gap-6">
-            <PlanProcedureForm ref={procedureRef} encounterId={encounterId} />
-            <PlanMedicationForm ref={medicationRef} encounterId={encounterId} />
-            <PlanEducationForm ref={educationRef} encounterId={encounterId} />
-            <PlanReferralForm ref={referralRef} encounterId={encounterId} />
+            <PlanProcedureForm ref={procedureRef} encounterId={encounterId} isReadOnly={isReadOnly} />
+            <PlanMedicationForm ref={medicationRef} encounterId={encounterId} isReadOnly={isReadOnly} />
+            <PlanEducationForm ref={educationRef} encounterId={encounterId} isReadOnly={isReadOnly} />
+            <PlanReferralForm ref={referralRef} encounterId={encounterId} isReadOnly={isReadOnly} />
           </div>
         </div>
       </div>
@@ -464,21 +485,23 @@ export default function AsesmenDokter({
         >
           Batal
         </button>
-        <button
-          type="button"
-          onClick={handleCentralSubmit}
-          disabled={isSubmittingCentral}
-          className="px-8 py-2.5 bg-[#0F766E] hover:bg-teal-800 text-white font-semibold rounded-xl transition-colors shadow-sm text-sm min-w-[120px] flex justify-center items-center cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
-        >
-          {isSubmittingCentral ? (
-            <>
-              <Loader2 className="animate-spin mr-2 h-4 w-4" />
-              Menyimpan...
-            </>
-          ) : (
-            'Simpan Asesmen'
-          )}
-        </button>
+        <div title={isReadOnly ? 'Asesmen sudah selesai dan tidak dapat diedit.' : undefined}>
+          <button
+            type="button"
+            onClick={handleCentralSubmit}
+            disabled={isSubmittingCentral || isReadOnly}
+            className={`px-8 py-2.5 bg-[#0F766E] hover:bg-teal-800 text-white font-semibold rounded-xl transition-colors shadow-sm text-sm min-w-[120px] flex justify-center items-center ${isSubmittingCentral || isReadOnly ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+          >
+            {isSubmittingCentral ? (
+              <>
+                <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                Menyimpan...
+              </>
+            ) : (
+              'Simpan Asesmen'
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

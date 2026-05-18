@@ -7,9 +7,11 @@ const HTML_TAG_REGEX = /<[^>]*>/g;
 export interface AssessmentDiagnosisFormProps {
   onSelectDiagnosis: (code: string, display: string, notes?: string) => void;
   encounterId?: string;
+  isReadOnly?: boolean;
 }
 
-export function AssessmentDiagnosisForm({ onSelectDiagnosis, encounterId }: AssessmentDiagnosisFormProps) {
+export function AssessmentDiagnosisForm({ onSelectDiagnosis, encounterId, isReadOnly }: AssessmentDiagnosisFormProps) {
+  if (isReadOnly) return null;
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
