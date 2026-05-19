@@ -161,7 +161,7 @@ export function PlanProcedureAutocomplete({
           onFocus={handleFocus}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          placeholder="Cari kode CPT/CDT atau nama tindakan..."
+          placeholder="Cari kode ICD-9-CM atau nama tindakan..."
           className="block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg leading-5 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] text-sm transition-colors"
           autoComplete="off"
         />

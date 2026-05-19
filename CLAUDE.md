@@ -98,24 +98,26 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 ## Jira Project
 - Project: Tugas Akhir - RME Klinik Pratama Menganti Gresik
 - Key: TR
-- Current progress: TR-76 Done (UC-11 Catat Tindak Lanjut) complete
-- Next: TR-13 [UC-12] Kirim Resume Medis (SATUSEHAT integration)
-- Backlog: TR-76.8 Encounter Read-Only View & Admin Override
+- Current progress: TR-79 Done (SATUSEHAT Phase 1 — schema + auth utilities complete)
+- Next: TR-80 Auto-sync IHS ID on patient registration
+- Backlog: TR-81 FHIR Bundle builder, TR-82 UI + error handling
 
-## LATEST CHANGES (UC-11 Completion)
+## LATEST CHANGES (TR-13 SATUSEHAT Phase 1)
 
-**Branch:** claude
+**Branch:** gemini
 
 **Key architectural decisions:**
-- Procedure codes renamed from ICD-9 CM → CPT/CDT. Mock file is `src/lib/constants/cpt-cdt-mock.ts` (includes 6 CDT dental codes). Old `icd9cm-mock.ts` re-exports for compat.
-- Procedure model field `codeIcd9` → `codeCpt` (migrated via `prisma db push`).
-- Manual procedure entries are stored with `codeCpt: null` in the database.
+- Procedure codes renamed from CPT/CDT → ICD-9-CM. Field `codeCpt` → `codeIcd9` in Prisma schema, API route, Zod schema, transform utility, and all UI components. SATUSEHAT strictly requires ICD-9-CM. Mock constant renamed `CPT_CDT_MOCK` → `ICD9CM_MOCK`.
+- Manual procedure entries are stored with `codeIcd9: null` in the database.
+- `Encounter` model now has `syncStatus String @default("UNSYNCED")` and `transactionId String?` for SATUSEHAT sync tracking (values: UNSYNCED | SUCCESS | FAILED_SYNC).
+- `src/lib/satusehat.ts` created with: `getSATUSEHATToken()` (in-memory OAuth2 cache, 60s proactive refresh), `getPatientIHSId(nik)` / `getPractitionerIHSId(nik)` (FHIR R4 identifier lookup), `toFHIRDateTime()` (WIB +07:00 offset), `formatVitalSign()` (null → dataAbsentReason).
+- SATUSEHAT base URL: `https://api-satusehat-stg.dto.kemkes.go.id` (staging). Avoid legacy `/fhir/r4/` or `/oauth2/token` paths.
 - Education notes stored as a second `Observation` record with `notes` prefixed `[Edukasi Pasien]:`.
 - Plan validation: `PlanFormSchema` in `plan-schema.ts` requires at least one of procedure/medication/referral/education before submit.
 - Draft detection: `useEffect` in `AsesmenDokter` uses flexible `checkLegacyDraft` helper that handles both `{data:{...}}` and raw `{...}` localStorage structures.
 - All Plan forms expose `getValues()` on their ref (no internal validation triggered) for safe payload extraction.
 
-**Status:** UC-11 fully complete. QA Phase 2 passed (TC 3.1–TC 3.9). UC-12 is next.
+**Status:** TR-77/78/79 complete. SATUSEHAT Phase 1 done. TR-80 (IHS auto-sync on patient registration) is next.
 
 ### TR-1 [SETUP] Project Infrastructure
 - TR-14 ✅ Setup Next.js project dengan TypeScript dan Tailwind CSS
@@ -206,11 +208,12 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 - TR-76.8 ⏳ Encounter Read-Only View & Admin Override (backlog)
 
 ### TR-13 [UC-12] Kirim Resume Medis
-- TR-77 ⏳ Tombol Simpan & Kirim ke SATUSEHAT
-- TR-78 ⏳ Susun data SOAP ke FHIR JSON Bundle
-- TR-79 ⏳ Integrasi POST ke SATUSEHAT API
-- TR-80 ⏳ Error handling retry queue
-- TR-81 ⏳ Tombol Kirim Ulang retry
+- TR-77 ✅ Refactoring terminologi medis: codeCpt → codeIcd9 (ICD-9-CM alignment)
+- TR-78 ✅ Tambah syncStatus + transactionId ke model Encounter
+- TR-79 ✅ Buat src/lib/satusehat.ts: OAuth2 token manager, IHS lookup, FHIR helpers
+- TR-80 ⏳ Auto-sync IHS ID Pasien saat pendaftaran (UC-04 integration)
+- TR-81 ⏳ FHIR Bundle builder: pack SOAP data → FHIR R4 transaction Bundle
+- TR-82 ⏳ UI "Simpan & Kirim" + syncStatus flip + tombol Kirim Ulang
 
 ## TR-101 [UC-13] Kelola Rekam Medis
 - TR-102 ✅ Setup action button handlers di Rekam Medis

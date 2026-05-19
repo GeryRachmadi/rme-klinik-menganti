@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
-import { CPT_CDT_MOCK, CptCdtEntry } from '../constants/cpt-cdt-mock';
+import { ICD9CM_MOCK, Icd9CmEntry } from '../constants/icd9cm-mock';
 
 export interface UseProcedureSearchResult {
-  results: CptCdtEntry[];
+  results: Icd9CmEntry[];
   isLoading: boolean;
   error: string | null;
 }
 
 export function useProcedureSearch(query: string): UseProcedureSearchResult {
-  const [results, setResults] = useState<CptCdtEntry[]>([]);
+  const [results, setResults] = useState<Icd9CmEntry[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,7 +35,7 @@ export function useProcedureSearch(query: string): UseProcedureSearchResult {
     try {
       const lowerQuery = searchQuery.toLowerCase();
 
-      const matched = CPT_CDT_MOCK.filter((item) => {
+      const matched = ICD9CM_MOCK.filter((item) => {
         const matchCode = item.code.toLowerCase().includes(lowerQuery);
         const matchDisplay = item.display.toLowerCase().includes(lowerQuery);
         const matchCategory = item.category?.toLowerCase().includes(lowerQuery) ?? false;

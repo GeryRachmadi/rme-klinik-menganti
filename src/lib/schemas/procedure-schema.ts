@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const ProcedureItemSchema = z.object({
-  codeCpt: z.string(),
+  codeIcd9: z.string(),
   display: z.string(),
   notes: z.string().optional()
 });

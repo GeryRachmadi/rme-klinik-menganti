@@ -31,7 +31,9 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Gery Rachmadi\\\\Documents\\\\akademik\\\\kuliah\\\\MataKuliah\\\\Semester8\\\\TA\\\\rme-klinik-menganti\\\\src\\\\app\\\\rawat-jalan\" -Recurse)",
       "Bash(Select-Object -First 30)",
       "Bash(node --loader ts-node/esm -e \"\")",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(PGPASSWORD=\"password\" psql *)",
+      "Bash(Remove-Item *)"
     ]
   }
 }

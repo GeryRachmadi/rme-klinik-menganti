@@ -1,9 +1,9 @@
-# 📋 Project Handoff & State: Post TR-76.8 Polish + ACTION CRUD
+# 📋 Project Handoff & State: TR-13 SATUSEHAT Phase 1 Complete
 
-**Date:** May 19, 2026 | **Session:** TR-76.8 Finalization + UI Polish + Rawat Jalan CRUD
-**Branch:** `claude`
+**Date:** May 19, 2026 | **Session:** TR-77/78/79 — SATUSEHAT Foundation
+**Branch:** `gemini`
 **System:** Electronic Medical Record (RME) for Klinik Pratama Menganti
-**Status:** ✅ TR-76.8 COMPLETE. UC-11 full. All rawat-jalan CRUD live. Next: TR-13 (UC-12).
+**Status:** ✅ TR-77/78/79 COMPLETE. SATUSEHAT Phase 1 (schema, auth utilities) done. Next: TR-80 (IHS auto-sync).
 
 ---
 
@@ -144,12 +144,42 @@ const isReadOnly = encounter?.status?.toUpperCase() === 'SELESAI'
 
 ## 🎯 Next Steps
 
-### TR-13 [UC-12] — Kirim Resume Medis (SATUSEHAT Integration)
-- TR-77: Tombol Simpan & Kirim ke SATUSEHAT
-- TR-78: Susun data SOAP ke FHIR JSON Bundle
-- TR-79: Integrasi POST ke SATUSEHAT API
-- TR-80: Error handling retry queue
-- TR-81: Tombol Kirim Ulang retry
+### 🎯 EPIC: TR-13 & UC-12 (SATUSEHAT API Integration)
+
+#### ✅ COMPLETED TASKS
+* **TR-77: Refactoring Terminologi Medis**
+  - *Status:* SUCCESS / COMPLETED
+  - *Details:* Renamed all `codeCpt` variables, fields, and types to `codeIcd9` across Prisma schema, API routes, and UI components (`PlanProcedureForm.tsx`). Dropped CPT codes completely since SATUSEHAT strictly requires ICD-9-CM for procedures.
+  - *Verification:* Local database updated via `npx prisma db push --accept-data-loss` and verified clean type compilation.
+
+* **TR-78: Persiapan Skema Database Encounter**
+  - *Status:* SUCCESS / COMPLETED
+  - *Details:* Added `syncStatus` (String, default: `"UNSYNCED"`) and `transactionId` (String, optional) to the `Encounter` model to support low-complexity MVP sync tracking.
+  - *Verification:* Database pushed and client types regenerated via `npx prisma generate`.
+
+* **TR-79: Autentikasi & Utilitas Core SATUSEHAT**
+  - *Status:* SUCCESS / COMPLETED
+  - *Details:* Created `src/lib/satusehat.ts` housing foundational API utilities:
+    1. `getSATUSEHATToken()`: OAuth2 fetcher with strict in-memory caching to bypass Kemenkes' 1-minute rate-limit ban penalty.
+    2. `getPatientIHSId(nik)` & `getPractitionerIHSId(nik)`: FHIR R4 identifier lookups using official endpoint paths (`/fhir-r4/v1/`).
+    3. `toFHIRDateTime()` & `formatVitalSign()`: Structural helpers for strict FHIR compliance.
+
+#### 🚀 REMAINING ROADMAP (NEXT TO-DO)
+* **TR-80: Implementasi UC-04 (Auto-Sync IHS ID Pasien)**
+  - *Objective:* Modify the local patient registration API POST route. Upon form submission, trigger `getPatientIHSId(nik)`. If found, save it to the `ihs` column. Must be non-blocking (catch errors and fallback to `null` so local registration never fails).
+* **TR-81: FHIR Bundle Builder (Engine Konversi)**
+  - *Objective:* Write backend TypeScript logic to pack local `Encounter`, `ConditionDiagnosis` (ICD-10), and `Procedure` (ICD-9-CM) into a strict FHIR R4 `transaction` Bundle JSON payload. For medications, use a hardcoded dummy KFA system code but pass the actual text into the display property as an MVP workaround.
+* **TR-82: UI Antarmuka & MVP Error Handling**
+  - *Objective:* Wire the "Simpan & Kirim ke SATUSEHAT" button in the Assessment view and build a dynamic Modal component that handles 3 exact UI states based on the Figma mockup:
+    1. **Loading State:** Display a spinner with the text *"Menyimpan Asesmen & Mengirim data ke SATUSEHAT... Mohon tunggu sebentar, sistem sedang memvalidasi data klinis."*
+    2. **Success State:** Display a green checkmark, the text *"Berhasil Disimpan & Dikirim!"*, the patient's brief info, and the `transactionId` received from Kemenkes.
+    3. **Error State:** Display a red warning icon, the text *"Gagal Sinkronisasi dengan SATUSEHAT!"*, the failure reason (e.g., Timeout / Connection failed), flag `syncStatus` as `FAILED_SYNC`, and provide a prominent **"Kirim Ulang"** (Resend) button.
+    4. **Button Behavior:** "Simpan & Kirim" button is disabled if the patient's `ihs` field is `null`; show tooltip *"Pasien tidak ditemukan di SATUSEHAT"* on hover.
+
+#### ⚠️ ARCHITECTURAL CONSTRAINTS & BLIND SPOTS
+1. **Strict Base URL:** Always use `https://api-satusehat-stg.dto.kemkes.go.id` as the environment variable. Avoid legacy sub-paths like `/fhir/r4/` or `/oauth2/token` which cause 404/NXDOMAIN errors.
+2. **Missing IHS Handling:** If a patient's IHS is null, disable the sync button on the UI and show a warning banner instead of sending a broken bundle.
+3. **Data Absent Reason:** Unmeasured vital signs must explicitly map to `dataAbsentReason: unknown` instead of sending `null` fields to prevent Kemenkes validation rejections.
 
 ---
 
@@ -165,9 +195,14 @@ const isReadOnly = encounter?.status?.toUpperCase() === 'SELESAI'
 - ✅ TR-76.8: Encounter Read-Only View & Admin Override
 - ✅ UI Polish: Patient header chips, avatar border, font fix, Info icon banner
 - ✅ Rawat Jalan ACTION CRUD: Edit drawer + Delete with confirmation
-- ⏳ UC-12: Kirim Resume Medis (SATUSEHAT integration)
+- ✅ TR-77: Refactoring codeCpt → codeIcd9 (ICD-9-CM alignment)
+- ✅ TR-78: Encounter syncStatus + transactionId schema fields
+- ✅ TR-79: SATUSEHAT OAuth2 + IHS lookup utilities + FHIR helpers
+- ⏳ TR-80: Auto-sync IHS ID on patient registration (UC-04)
+- ⏳ TR-81: FHIR Bundle builder (SOAP → FHIR R4 transaction)
+- ⏳ TR-82: "Simpan & Kirim" UI + syncStatus flip + resend button
 - ⏳ Thesis writeup
 
 ---
 
-**Last Updated:** May 19, 2026 | **Next Review:** Before starting TR-13
+**Last Updated:** May 20, 2026 | **Next Review:** Before starting TR-80

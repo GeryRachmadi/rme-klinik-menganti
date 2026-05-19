@@ -13,7 +13,7 @@ export type MedicationFormValues = z.infer<typeof MedicationFormSchema>;
 export type EducationFormValues = z.infer<typeof EducationFormSchema>;
 
 export const ReferralFormSchema = z.object({
-  isActive: z.boolean().default(false),
+  isActive: z.boolean(),
   tujuanRujukan: z.string().max(255).optional(),
   alasanRujukan: z.string().max(500).optional(),
 }).refine(

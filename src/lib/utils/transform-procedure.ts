@@ -6,7 +6,7 @@ export const transformProcedurePayload = (data: ProcedureFormValues) => {
   }
 
   return data.procedures.map(item => ({
-    codeCpt: item.codeCpt,
+    codeIcd9: item.codeIcd9,
     display: item.display,
     notes: item.notes || ""
   }));

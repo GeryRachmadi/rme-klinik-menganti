@@ -97,13 +97,13 @@ export async function POST(
       }
 
       // Step 3: Procedures (Tindakan Medis)
-      const procedures: Array<{ codeCpt: string; display: string; notes?: string }> =
+      const procedures: Array<{ codeIcd9: string; display: string; notes?: string }> =
         plan?.procedure?.procedures ?? [];
       if (procedures.length > 0) {
         await tx.procedure.createMany({
           data: procedures.map((p) => ({
             encounterId,
-            codeCpt: p.codeCpt === "MANUAL" ? null : p.codeCpt,
+            codeIcd9: p.codeIcd9 === "MANUAL" ? null : p.codeIcd9,
             display: p.display,
             notes: p.notes || null,
           })),

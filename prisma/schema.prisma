@@ -125,6 +125,8 @@ model Encounter {
   periodEnd     DateTime?
   reasonCode    String?
   patientType   String    @default("UMUM")
+  syncStatus    String    @default("UNSYNCED") // UNSYNCED | SUCCESS | FAILED_SYNC
+  transactionId String?                        // Kemenkes transaction ID from SATUSEHAT
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -231,7 +233,7 @@ model ConditionDiagnosis {
 
 model Procedure {
   id        String   @id @default(cuid())
-  codeCpt   String?
+  codeIcd9  String?
   display   String
   notes     String?
   createdAt DateTime @default(now())
