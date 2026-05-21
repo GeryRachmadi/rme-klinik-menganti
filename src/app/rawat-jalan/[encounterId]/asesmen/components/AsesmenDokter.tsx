@@ -683,11 +683,11 @@ export default function AsesmenDokter({
         </div>
         {/* SATUSEHAT status hint — below the button row */}
         {localSyncStatus === 'SUCCESS' ? (
-          <p className="text-xs text-green-600 font-medium">✓ Terkirim ke SATUSEHAT · ID: {transactionId}</p>
+          <p className="text-xs text-green-600 font-medium">Terkirim ke SATUSEHAT · ID: {transactionId}</p>
         ) : localSyncStatus === 'FAILED_SYNC' ? (
-          <p className="text-xs text-red-500 font-medium">⚠ Gagal dikirim ke SATUSEHAT</p>
+          <p className="text-xs text-red-500 font-medium">Gagal dikirim ke SATUSEHAT</p>
         ) : patientIhs ? (
-          <p className="text-xs text-teal-600 font-medium">✓ Data akan dikirim ke SATUSEHAT secara otomatis</p>
+          <p className="text-xs text-teal-600 font-medium">Data akan dikirim ke SATUSEHAT secara otomatis</p>
         ) : (
           <p className="text-xs text-gray-400">Pasien tidak terdaftar di SATUSEHAT</p>
         )}

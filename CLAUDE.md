@@ -98,9 +98,9 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 ## Jira Project
 - Project: Tugas Akhir - RME Klinik Pratama Menganti Gresik
 - Key: TR
-- Current progress: TR-79 Done (SATUSEHAT Phase 1 — schema + auth utilities complete)
-- Next: TR-80 Auto-sync IHS ID on patient registration
-- Backlog: TR-81 FHIR Bundle builder, TR-82 UI + error handling
+- Current progress: TR-82 Done (SATUSEHAT full epic complete — bundle builder, submit API, merged UI, UX revisions)
+- Next: Full blackbox regression testing (UC-01 → UC-12)
+- Backlog: Real credentials testing when Kemenkes resolves 401, thesis writeup
 
 ## LATEST CHANGES (TR-13 SATUSEHAT Phase 1)
 
@@ -117,7 +117,7 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 - Draft detection: `useEffect` in `AsesmenDokter` uses flexible `checkLegacyDraft` helper that handles both `{data:{...}}` and raw `{...}` localStorage structures.
 - All Plan forms expose `getValues()` on their ref (no internal validation triggered) for safe payload extraction.
 
-**Status:** TR-77/78/79 complete. SATUSEHAT Phase 1 done. TR-80 (IHS auto-sync on patient registration) is next.
+**Status:** TR-77 through TR-82 complete. SATUSEHAT epic done. TR-82 UX revised (merged button, auto-sync, static chip in queue, 10-patient mock). Ready for blackbox regression testing.
 
 ### TR-1 [SETUP] Project Infrastructure
 - TR-14 ✅ Setup Next.js project dengan TypeScript dan Tailwind CSS
@@ -211,9 +211,9 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 - TR-77 ✅ Refactoring terminologi medis: codeCpt → codeIcd9 (ICD-9-CM alignment)
 - TR-78 ✅ Tambah syncStatus + transactionId ke model Encounter
 - TR-79 ✅ Buat src/lib/satusehat.ts: OAuth2 token manager, IHS lookup, FHIR helpers
-- TR-80 ⏳ Auto-sync IHS ID Pasien saat pendaftaran (UC-04 integration)
-- TR-81 ⏳ FHIR Bundle builder: pack SOAP data → FHIR R4 transaction Bundle
-- TR-82 ⏳ UI "Simpan & Kirim" + syncStatus flip + tombol Kirim Ulang
+- TR-80 ✅ Auto-sync IHS ID Pasien saat pendaftaran (UC-04 integration)
+- TR-81 ✅ FHIR Bundle builder: pack SOAP data → FHIR R4 transaction Bundle
+- TR-82 ✅ UI merged save+sync + syncStatus flip + auto Error modal on FAILED_SYNC + UX revisions
 
 ## TR-101 [UC-13] Kelola Rekam Medis
 - TR-102 ✅ Setup action button handlers di Rekam Medis
