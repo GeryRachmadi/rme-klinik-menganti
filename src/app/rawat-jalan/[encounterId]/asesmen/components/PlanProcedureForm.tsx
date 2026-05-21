@@ -21,11 +21,13 @@ export interface PlanProcedureFormRef {
 interface PlanProcedureFormProps {
   encounterId: string;
   isReadOnly?: boolean;
+  defaultValues?: Array<{ codeIcd9: string; display: string; notes: string }>;
 }
 
 const PlanProcedureForm = forwardRef<PlanProcedureFormRef, PlanProcedureFormProps>(({
   encounterId,
   isReadOnly = false,
+  defaultValues,
 }, ref) => {
   const draftKey = getProcedureDraftKey(encounterId);
   const { toast, showWarning } = useFormToast();
@@ -35,11 +37,12 @@ const PlanProcedureForm = forwardRef<PlanProcedureFormRef, PlanProcedureFormProp
     setValue,
     reset,
     getValues,
+    formState: { isDirty },
   } = useForm<ProcedureFormValues>({
     resolver: zodResolver(ProcedureFormSchema) as Resolver<ProcedureFormValues>,
     mode: 'onChange',
     defaultValues: {
-      procedures: [],
+      procedures: defaultValues ?? [],
       useManual: false,
       manualText: '',
       manualNote: '',
@@ -52,7 +55,16 @@ const PlanProcedureForm = forwardRef<PlanProcedureFormRef, PlanProcedureFormProp
     if (!saved) return;
     try {
       const { data } = JSON.parse(saved);
-      if (data) reset(data);
+      if (data) {
+        // Migrate legacy draft: codeCpt → codeIcd9 (TR-77 rename)
+        if (Array.isArray(data.procedures)) {
+          data.procedures = data.procedures.map((p: Record<string, unknown>) => ({
+            ...p,
+            codeIcd9: p.codeIcd9 ?? p.codeCpt ?? 'MANUAL',
+          }));
+        }
+        reset(data);
+      }
     } catch {
       localStorage.removeItem(draftKey);
     }
@@ -76,7 +88,7 @@ const PlanProcedureForm = forwardRef<PlanProcedureFormRef, PlanProcedureFormProp
   }));
 
   const currentFormData = watch();
-  useAutoSaveDraft(draftKey, currentFormData, isReadOnly);
+  useAutoSaveDraft(draftKey, currentFormData, isReadOnly, isDirty);
 
   const handleProcedureChange = (proc: SelectedProcedure) => {
     const updated: ProcedureItem[] = [...procedures, {

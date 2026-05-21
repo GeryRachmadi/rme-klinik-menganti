@@ -17,19 +17,21 @@ export interface PlanEducationFormRef {
 interface PlanEducationFormProps {
   encounterId: string;
   isReadOnly?: boolean;
+  defaultValues?: { anjuranEdukasi?: string };
 }
 
 const PlanEducationForm = forwardRef<PlanEducationFormRef, PlanEducationFormProps>(({
   encounterId,
   isReadOnly = false,
+  defaultValues,
 }, ref) => {
   const draftKey = getEducationDraftKey(encounterId);
 
-  const { register, watch, reset, trigger, getValues } = useForm<EducationFormValues>({
+  const { register, watch, reset, trigger, getValues, formState: { isDirty } } = useForm<EducationFormValues>({
     resolver: zodResolver(EducationFormSchema),
     mode: 'onChange',
     defaultValues: {
-      anjuranEdukasi: '',
+      anjuranEdukasi: defaultValues?.anjuranEdukasi ?? '',
     },
   });
 
@@ -58,7 +60,7 @@ const PlanEducationForm = forwardRef<PlanEducationFormRef, PlanEducationFormProp
   }));
 
   const currentFormData = watch();
-  useAutoSaveDraft(draftKey, currentFormData, isReadOnly);
+  useAutoSaveDraft(draftKey, currentFormData, isReadOnly, isDirty);
 
   return (
     <div className="flex flex-col gap-4">

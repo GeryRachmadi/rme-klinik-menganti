@@ -19,23 +19,25 @@ export interface PlanReferralFormRef {
 interface PlanReferralFormProps {
   encounterId: string;
   isReadOnly?: boolean;
+  defaultValues?: { isActive?: boolean; tujuanRujukan?: string; alasanRujukan?: string };
 }
 
 const PlanReferralForm = forwardRef<PlanReferralFormRef, PlanReferralFormProps>(({
   encounterId,
   isReadOnly = false,
+  defaultValues,
 }, ref) => {
   const draftKey = getReferralDraftKey(encounterId);
   const { toast, showWarning } = useFormToast();
   const isMountedRef = useRef(false);
 
-  const { register, watch, reset, trigger, getValues, setValue, formState: { errors } } = useForm<ReferralFormValues>({
+  const { register, watch, reset, trigger, getValues, setValue, formState: { errors, isDirty } } = useForm<ReferralFormValues>({
     resolver: zodResolver(ReferralFormSchema),
     mode: 'onChange',
     defaultValues: {
-      isActive: false,
-      tujuanRujukan: '',
-      alasanRujukan: '',
+      isActive: defaultValues?.isActive ?? false,
+      tujuanRujukan: defaultValues?.tujuanRujukan ?? '',
+      alasanRujukan: defaultValues?.alasanRujukan ?? '',
     },
   });
 
@@ -64,7 +66,7 @@ const PlanReferralForm = forwardRef<PlanReferralFormRef, PlanReferralFormProps>(
   }));
 
   const currentFormData = watch();
-  useAutoSaveDraft(draftKey, currentFormData, isReadOnly);
+  useAutoSaveDraft(draftKey, currentFormData, isReadOnly, isDirty);
 
   const isActive = watch('isActive');
   const tujuanValue = watch('tujuanRujukan');
@@ -88,6 +90,7 @@ const PlanReferralForm = forwardRef<PlanReferralFormRef, PlanReferralFormProps>(
       isMountedRef.current = true;
       return;
     }
+    if (isReadOnly) return;
     if (!isActive) {
       setValue('tujuanRujukan', '', { shouldDirty: false });
       setValue('alasanRujukan', '', { shouldDirty: false });

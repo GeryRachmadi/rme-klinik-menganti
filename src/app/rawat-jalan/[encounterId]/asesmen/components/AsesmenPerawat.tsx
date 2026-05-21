@@ -16,6 +16,7 @@ export interface AsesmenPerawatProps {
   encounterId: string;
   patient: Record<string, any>;
   encounter: Record<string, any>;
+  encounterStatus?: string;
   userRole?: string;
   defaultValues?: Record<string, any>;
   isEditMode?: boolean;
@@ -25,6 +26,7 @@ export default function AsesmenPerawat({
   encounterId,
   patient,
   encounter,
+  encounterStatus,
   userRole,
   defaultValues,
   isEditMode = false,
@@ -44,6 +46,13 @@ export default function AsesmenPerawat({
     physical?: any;
   }>({});
   const [draftTypes, setDraftTypes] = useState<string[]>([]);
+
+  // Clear stale draft keys for SELESAI encounters regardless of role
+  useEffect(() => {
+    if (encounterStatus?.toUpperCase() !== 'SELESAI') return;
+    localStorage.removeItem(getAssessmentDraftKey(encounterId));
+    localStorage.removeItem(getPhysicalExamDraftKey(encounterId));
+  }, [encounterId, encounterStatus]);
 
   useEffect(() => {
     if (isEditMode) return;
@@ -111,26 +120,29 @@ export default function AsesmenPerawat({
 
       console.log('[AsesmenPerawat] Validation results:', { assessmentData, physicalData });
 
-      if (!assessmentData) {
-        showError('Periksa kembali bagian Kajian Awal Keperawatan.');
-        return;
-      }
-      if (!physicalData) {
-        showError('Periksa kembali bagian Pemeriksaan Fisik.');
+      const errors: string[] = [];
+      if (!assessmentData) errors.push('Kajian Awal Keperawatan');
+      if (!physicalData) errors.push('Pemeriksaan Fisik');
+      if (errors.length > 0) {
+        showError(`Periksa kembali bagian: ${errors.join(' dan ')}.`);
         return;
       }
 
+      // Both forms passed — non-null assertions safe here
+      const validAssessment = assessmentData!;
+      const validPhysical = physicalData!;
+
       // Submit Kajian Awal Keperawatan
       const parsedAssessment = {
-        penyakit: assessmentData.penyakit ?? [],
-        alergi: (assessmentData.alergi ?? []).map(parseAllergyChip),
-        obat: (assessmentData.obat ?? []).map(parseMedicationChip),
-        tidakAdaPenyakit: assessmentData.tidakAdaPenyakit,
-        tidakAdaAlergi: assessmentData.tidakAdaAlergi,
-        tidakAdaObat: assessmentData.tidakAdaObat,
-        catatanPenyakit: assessmentData.catatanPenyakit,
-        catatanAlergi: assessmentData.catatanAlergi,
-        catatanObat: assessmentData.catatanObat,
+        penyakit: validAssessment.penyakit ?? [],
+        alergi: (validAssessment.alergi ?? []).map(parseAllergyChip),
+        obat: (validAssessment.obat ?? []).map(parseMedicationChip),
+        tidakAdaPenyakit: validAssessment.tidakAdaPenyakit,
+        tidakAdaAlergi: validAssessment.tidakAdaAlergi,
+        tidakAdaObat: validAssessment.tidakAdaObat,
+        catatanPenyakit: validAssessment.catatanPenyakit,
+        catatanAlergi: validAssessment.catatanAlergi,
+        catatanObat: validAssessment.catatanObat,
       };
 
       const resAssessment = await fetch(`/api/encounters/${encounterId}/assessment`, {
@@ -148,7 +160,7 @@ export default function AsesmenPerawat({
       const resPhysical = await fetch(`/api/encounters/${encounterId}/physical-exam`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...physicalData, userConfirmedOutOfBounds: true }),
+        body: JSON.stringify({ ...validPhysical, userConfirmedOutOfBounds: true }),
       });
 
       if (!resPhysical.ok) {

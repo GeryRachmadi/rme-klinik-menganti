@@ -20,6 +20,7 @@ export interface SubjectiveObjectiveExtendedFormProps {
   /** When true, renders only the <form> fields without the outer h2 + white card wrapper */
   hideWrapper?: boolean;
   isReadOnly?: boolean;
+  defaultValues?: { keluhanUtama?: string; pemeriksaanFisikTambahan?: string };
 }
 
 const SubjectiveObjectiveExtendedForm = forwardRef<SubjectiveObjectiveExtendedFormRef, SubjectiveObjectiveExtendedFormProps>(({
@@ -27,6 +28,7 @@ const SubjectiveObjectiveExtendedForm = forwardRef<SubjectiveObjectiveExtendedFo
   hideSubmitButton = false,
   hideWrapper = false,
   isReadOnly = false,
+  defaultValues,
 }, ref) => {
   const draftKey = getHasilPeriksaDraftKey(encounterId);
 
@@ -37,13 +39,13 @@ const SubjectiveObjectiveExtendedForm = forwardRef<SubjectiveObjectiveExtendedFo
     reset,
     trigger,
     getValues,
-    formState: { errors, isValid, isSubmitting },
+    formState: { errors, isValid, isSubmitting, isDirty },
   } = useForm<HasilPeriksaData>({
     resolver: zodResolver(HasilPeriksaSchema),
     mode: 'onChange',
     defaultValues: {
-      keluhanUtama: '',
-      pemeriksaanFisikTambahan: '',
+      keluhanUtama: defaultValues?.keluhanUtama ?? '',
+      pemeriksaanFisikTambahan: defaultValues?.pemeriksaanFisikTambahan ?? '',
     },
   });
 
@@ -68,7 +70,7 @@ const SubjectiveObjectiveExtendedForm = forwardRef<SubjectiveObjectiveExtendedFo
   }));
 
   const currentFormData = watch();
-  useAutoSaveDraft(draftKey, currentFormData, isReadOnly);
+  useAutoSaveDraft(draftKey, currentFormData, isReadOnly, isDirty);
 
   const keluhanUtamaLength = currentFormData.keluhanUtama?.length || 0;
   const pemeriksaanFisikTambahanLength = currentFormData.pemeriksaanFisikTambahan?.length || 0;

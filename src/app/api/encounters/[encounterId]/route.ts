@@ -100,7 +100,7 @@ export async function DELETE(
     return NextResponse.json({ success: false, error: "Kunjungan tidak ditemukan" }, { status: 404 });
   }
 
-  if (encounter.status !== "MENUNGGU") {
+  if (session.user.role !== "ADMIN" && encounter.status !== "MENUNGGU") {
     return NextResponse.json(
       { success: false, error: "Hanya antrean dengan status Menunggu yang dapat dihapus." },
       { status: 400 }

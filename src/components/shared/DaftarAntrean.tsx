@@ -33,6 +33,7 @@ interface AntreanData {
   dokter: string;
   prioritas: string;
   status: string;
+  syncStatus?: string;
 }
 
 interface DaftarAntreanProps {
@@ -119,6 +120,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
       setIsDeleting(false);
     }
   };
+
 
   const filteredData = antreanData.filter((item) => {
     const matchSearch =
@@ -329,6 +331,11 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
                       >
                         {row.status}
                       </span>
+                      {row.syncStatus === "FAILED_SYNC" && (
+                        <span className="mt-1.5 inline-block px-2 py-0.5 rounded-full text-xs bg-red-50 text-red-600 border border-red-200">
+                          ⚠ Gagal: Sinkronisasi SATUSEHAT
+                        </span>
+                      )}
                     </td>
 
                     {canAssess && <td className="py-4 align-top">
@@ -364,11 +371,11 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
                             <Pencil size={15} strokeWidth={2} />
                           </button>
                           <button
-                            onClick={() => row.status === "Menunggu" && setDeleteTarget({ id: row.id, namaPasien: row.namaPasien })}
-                            disabled={row.status !== "Menunggu"}
-                            title={row.status !== "Menunggu" ? "Hanya antrean Menunggu yang dapat dihapus" : "Hapus antrean"}
+                            onClick={() => (userRole === "ADMIN" || row.status === "Menunggu") && setDeleteTarget({ id: row.id, namaPasien: row.namaPasien })}
+                            disabled={userRole !== "ADMIN" && row.status !== "Menunggu"}
+                            title={userRole !== "ADMIN" && row.status !== "Menunggu" ? "Hanya antrean Menunggu yang dapat dihapus" : "Hapus antrean"}
                             className={`p-2 rounded-lg transition-colors ${
-                              row.status === "Menunggu"
+                              userRole === "ADMIN" || row.status === "Menunggu"
                                 ? "bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 cursor-pointer"
                                 : "bg-gray-50 text-gray-200 cursor-not-allowed"
                             }`}

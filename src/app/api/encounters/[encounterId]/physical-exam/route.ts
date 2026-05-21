@@ -34,7 +34,10 @@ export async function POST(
       return Response.json({ error: "Encounter tidak ditemukan" }, { status: 404 });
     }
 
-    if (!["DIPERIKSA", "MENUNGGU"].includes(encounter.status)) {
+    const allowedStatuses = userRole === 'ADMIN'
+      ? ["MENUNGGU", "DIPERIKSA", "SELESAI"]
+      : ["MENUNGGU", "DIPERIKSA"];
+    if (!allowedStatuses.includes(encounter.status)) {
       return Response.json(
         { error: `Tidak dapat menambah pemeriksaan fisik di status ${encounter.status}` },
         { status: 400 }

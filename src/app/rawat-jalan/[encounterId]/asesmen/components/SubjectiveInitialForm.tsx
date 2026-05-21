@@ -90,7 +90,7 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
   const [isHydrated, setIsHydrated] = useState(false);
   const { toast, showSuccess, showError } = useFormToast();
 
-  const { control, handleSubmit, register, watch, setValue, reset, trigger, getValues, formState: { errors } } = useForm<AssessmentFormValues>({
+  const { control, handleSubmit, register, watch, setValue, reset, trigger, getValues, formState: { errors, isDirty } } = useForm<AssessmentFormValues>({
     resolver: zodResolver(AssessmentSchema),
     defaultValues: {
       penyakit: Array.from(new Set(defaultValues?.penyakit ?? [])),
@@ -132,7 +132,7 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
   }));
 
   const currentFormData = watch();
-  useAutoSaveDraft(getAssessmentDraftKey(encounterId), currentFormData, isReadOnly);
+  useAutoSaveDraft(getAssessmentDraftKey(encounterId), currentFormData, isReadOnly, isDirty);
 
   const isPenyakitNull = watch('tidakAdaPenyakit');
   const isAlergiNull = watch('tidakAdaAlergi');

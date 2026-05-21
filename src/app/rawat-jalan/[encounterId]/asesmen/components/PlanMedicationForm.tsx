@@ -17,19 +17,21 @@ export interface PlanMedicationFormRef {
 interface PlanMedicationFormProps {
   encounterId: string;
   isReadOnly?: boolean;
+  defaultValues?: { medicationText?: string };
 }
 
 const PlanMedicationForm = forwardRef<PlanMedicationFormRef, PlanMedicationFormProps>(({
   encounterId,
   isReadOnly = false,
+  defaultValues,
 }, ref) => {
   const draftKey = getMedicationDraftKey(encounterId);
 
-  const { register, watch, reset, trigger, getValues } = useForm<MedicationFormValues>({
+  const { register, watch, reset, trigger, getValues, formState: { isDirty } } = useForm<MedicationFormValues>({
     resolver: zodResolver(MedicationFormSchema),
     mode: 'onChange',
     defaultValues: {
-      medicationText: '',
+      medicationText: defaultValues?.medicationText ?? '',
     },
   });
 
@@ -58,7 +60,7 @@ const PlanMedicationForm = forwardRef<PlanMedicationFormRef, PlanMedicationFormP
   }));
 
   const currentFormData = watch();
-  useAutoSaveDraft(draftKey, currentFormData, isReadOnly);
+  useAutoSaveDraft(draftKey, currentFormData, isReadOnly, isDirty);
 
   return (
     <div className="flex flex-col gap-4">

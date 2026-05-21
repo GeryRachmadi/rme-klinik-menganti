@@ -38,6 +38,7 @@ export default async function AsesmenPage({
           tanggalLahir: true,
           jenisKelamin: true,
           nik: true,
+          ihs: true,
           conditionHistories: true,
           allergyIntolerances: true,
           medicationStatements: true,
@@ -47,6 +48,10 @@ export default async function AsesmenPage({
         select: { name: true },
       },
       observations: true,
+      conditionDiagnoses: { orderBy: { id: 'asc' } },
+      procedures: true,
+      medicationRequests: { take: 1 },
+      serviceRequests: { take: 1 },
     },
   });
 
@@ -68,23 +73,39 @@ export default async function AsesmenPage({
 
   const age = calculateAge(encounter.patient.tanggalLahir);
 
+  const penyakitList = encounter.patient.conditionHistories
+    ?.map((c) => c.description)
+    .filter((v): v is string => Boolean(v)) ?? [];
+  const alergiList = encounter.patient.allergyIntolerances
+    ?.map((a) => `${a.description} (${a.reactionSeverity})`)
+    .filter((v): v is string => Boolean(v)) ?? [];
+  const obatList = encounter.patient.medicationStatements
+    ?.map((m) => m.dosage ? `${m.description} (${m.dosage})` : m.description)
+    .filter((v): v is string => Boolean(v)) ?? [];
+
   const defaultValues: Record<string, any> = {
-    penyakit: encounter.patient.conditionHistories
-      ?.map((c) => c.description)
-      .filter((v): v is string => Boolean(v)) ?? [],
-    alergi: encounter.patient.allergyIntolerances
-      ?.map((a) => `${a.description} (${a.reactionSeverity})`)
-      .filter((v): v is string => Boolean(v)) ?? [],
-    obat: encounter.patient.medicationStatements
-      ?.map((m) => m.dosage ? `${m.description} (${m.dosage})` : m.description)
-      .filter((v): v is string => Boolean(v)) ?? [],
+    penyakit: penyakitList,
+    alergi: alergiList,
+    obat: obatList,
     catatanPenyakit: "",
     catatanAlergi: "",
     catatanObat: "",
   };
 
-  if (encounter.observations?.length > 0) {
-    const obs = encounter.observations[0];
+  // Infer NKA/tidak-ada booleans for DIPERIKSA/SELESAI encounters
+  // (when form was submitted, empty array means the "tidak ada" checkbox was checked)
+  if (encounter.status !== 'MENUNGGU') {
+    defaultValues.tidakAdaPenyakit = penyakitList.length === 0;
+    defaultValues.tidakAdaAlergi = alergiList.length === 0;
+    defaultValues.tidakAdaObat = obatList.length === 0;
+  }
+
+  const mainObs = encounter.observations?.find(
+    (o) => !o.notes?.startsWith('[Edukasi Pasien]:')
+  ) ?? null;
+
+  if (mainObs) {
+    const obs = mainObs;
     if (obs.systolic !== null && obs.diastolic !== null) {
       defaultValues.tekananDarah = `${obs.systolic}/${obs.diastolic}`;
     }
@@ -99,14 +120,54 @@ export default async function AsesmenPage({
   const isEditMode = encounter.status === 'DIPERIKSA';
 
   const initialAssessment = {
-    penyakit: defaultValues.penyakit ?? [],
-    alergi: defaultValues.alergi ?? [],
-    obat: defaultValues.obat ?? [],
+    penyakit: penyakitList,
+    alergi: alergiList,
+    obat: obatList,
   };
 
-  const initialPhysical = encounter.observations?.length > 0
-    ? encounter.observations[0]
-    : null;
+  const initialPhysical = mainObs;
+
+  // Parse saved clinical data for SELESAI read-only view
+  let pemeriksaanFisikTambahan = '';
+  if (mainObs?.notes) {
+    const marker = '\n\n[Catatan Dokter]: ';
+    const idx = mainObs.notes.indexOf(marker);
+    if (idx !== -1) pemeriksaanFisikTambahan = mainObs.notes.slice(idx + marker.length);
+  }
+
+  const savedHasilPeriksa = {
+    keluhanUtama: encounter.reasonCode ?? '',
+    pemeriksaanFisikTambahan,
+  };
+
+  const eduObs = encounter.observations?.find((o) =>
+    o.notes?.startsWith('[Edukasi Pasien]: ')
+  );
+  const anjuranEdukasi = eduObs?.notes
+    ? eduObs.notes.slice('[Edukasi Pasien]: '.length)
+    : '';
+
+  const savedDiagnoses = encounter.conditionDiagnoses?.map((d) => ({
+    code: d.codeIcd10,
+    display: d.display,
+    notes: d.notes ?? undefined,
+  })) ?? [];
+
+  const savedProcedures = encounter.procedures?.map((p) => ({
+    codeIcd9: p.codeIcd9 ?? 'MANUAL',
+    display: p.display,
+    notes: p.notes ?? '',
+  })) ?? [];
+
+  const firstRujukan = encounter.serviceRequests?.[0] ?? null;
+  const savedPlan = {
+    procedures: savedProcedures,
+    medicationText: encounter.medicationRequests?.[0]?.medication ?? '',
+    anjuranEdukasi,
+    rujukan: firstRujukan
+      ? { isActive: true, tujuanRujukan: firstRujukan.intent, alasanRujukan: firstRujukan.note ?? '' }
+      : { isActive: false, tujuanRujukan: '', alasanRujukan: '' },
+  };
 
   return (
     <div className="grid grid-cols-12 gap-6">
@@ -141,6 +202,7 @@ export default async function AsesmenPage({
             encounterId={encounterId}
             patient={encounter.patient}
             encounter={encounter}
+            encounterStatus={encounter.status}
             userRole={userRole}
             defaultValues={defaultValues}
             isEditMode={isEditMode}
@@ -150,11 +212,17 @@ export default async function AsesmenPage({
             encounterId={encounterId}
             patient={encounter.patient}
             encounter={encounter}
+            encounterStatus={encounter.status}
             userRole={userRole}
             defaultValues={defaultValues}
             isEditMode={isEditMode}
             initialAssessment={initialAssessment}
             initialPhysical={initialPhysical}
+            savedDiagnoses={savedDiagnoses}
+            savedHasilPeriksa={savedHasilPeriksa}
+            savedPlan={savedPlan}
+            syncStatus={encounter.syncStatus}
+            patientIhs={encounter.patient.ihs ?? null}
           />
         )}
       </div>

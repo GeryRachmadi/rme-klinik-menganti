@@ -112,7 +112,7 @@ const ObjectivePhysicalForm = forwardRef<ObjectivePhysicalFormRef, ObjectivePhys
   const bmi = watch('bmi');
   const catatan = watch('catatan') ?? '';
 
-  useAutoSaveDraft(draftKey, { tekananDarah, suhu, nadi, napas, tinggiBadan, beratBadan, bmi, catatan }, isReadOnly);
+  useAutoSaveDraft(draftKey, { tekananDarah, suhu, nadi, napas, tinggiBadan, beratBadan, bmi, catatan }, isReadOnly, formState.isDirty);
 
   useEffect(() => {
     const outOfBounds = getOutOfBoundsFields(

@@ -19,7 +19,7 @@ export async function POST(
 
     const encounter = await prisma.encounter.findUnique({
       where: { id: encounterId },
-      select: { patientId: true },
+      select: { patientId: true, status: true },
     });
 
     if (!encounter) {
@@ -62,10 +62,13 @@ export async function POST(
         });
       }
 
-      await tx.encounter.update({
-        where: { id: encounterId },
-        data: { status: 'DIPERIKSA' },
-      });
+      // Do not downgrade a SELESAI encounter; only promote MENUNGGU → DIPERIKSA
+      if (encounter.status === 'MENUNGGU') {
+        await tx.encounter.update({
+          where: { id: encounterId },
+          data: { status: 'DIPERIKSA' },
+        });
+      }
     });
 
     return NextResponse.json(

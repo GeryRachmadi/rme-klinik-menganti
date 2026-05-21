@@ -23,6 +23,11 @@ let cachedToken: TokenCache | null = null;
 export async function getSATUSEHATToken(): Promise<string> {
   const now = Date.now();
 
+  if (process.env.SATUSEHAT_MOCK_MODE === "true") {
+    console.log("🟡 [MOCK] Bypassing Token (Server API Blocked)");
+    return "MOCK_ACCESS_TOKEN_FOR_LOCAL_DEV";
+  }
+
   // Check cache: is token still valid? (with 60s buffer for safety)
   if (cachedToken && cachedToken.expiresAt > now + 60000) {
     console.log("[SATUSEHAT] Using cached token");
@@ -34,6 +39,14 @@ export async function getSATUSEHATToken(): Promise<string> {
   const clientId = process.env.SATUSEHAT_CLIENT_ID;
   const clientSecret = process.env.SATUSEHAT_CLIENT_SECRET;
   const baseUrl = process.env.SATUSEHAT_BASE_URL;
+
+// --- CCTV SUPER DETAIL CLAUDE ---
+  console.log("=== DEBUG ENV SATUSEHAT ===");
+  console.log("clientId:", JSON.stringify(clientId));
+  console.log("clientSecret:", JSON.stringify(clientSecret));
+  console.log("Ada petik literal di depan?", clientId?.startsWith('"'));
+  console.log("===========================");
+  // --------------------------------
 
   if (!clientId || !clientSecret || !baseUrl) {
     throw new Error(
@@ -102,6 +115,29 @@ export async function getPatientIHSId(
     throw new Error("NIK is required");
   }
 
+  if (process.env.SATUSEHAT_MOCK_MODE === "true") {
+    const cleanNik = nik.trim();
+    console.log(`🟡 [MOCK] Fetching fake IHS ID for NIK: ${cleanNik}`);
+    const mockPatients: Record<string, { ihsId: string; name: string }> = {
+      "9271060312000001": { ihsId: "P02478375538", name: "Ardianto Putra" },
+      "9204014804000002": { ihsId: "P03647103112", name: "Claudia Sintia" },
+      "9104224509000003": { ihsId: "P00805884304", name: "Elizabeth Dior" },
+      "9104223107000004": { ihsId: "P00912894463", name: "Dr. Alan Bagus Prasetya" },
+      "9104224606000005": { ihsId: "P01654557057", name: "Ghina Assyifa" },
+      "9104025209000006": { ihsId: "P02280547535", name: "Salsabilla Anjani Rizki" },
+      "9201076001000007": { ihsId: "P01836748436", name: "Theodore Elisjah" },
+      "9201394901000008": { ihsId: "P00883356749", name: "Sonia Herdianti" },
+      "9201076407000009": { ihsId: "P01058967035", name: "Nancy Wang" },
+      "9210060207000010": { ihsId: "P02428473601", name: "Syarif Muhammad" },
+    };
+    const match = mockPatients[cleanNik];
+    if (match) {
+      return { ihsId: match.ihsId, nik: cleanNik, name: match.name };
+    }
+    console.log(`🟡 [MOCK] No sandbox patient found for NIK: ${cleanNik}`);
+    return null;
+  }
+
   try {
     const token = await getSATUSEHATToken();
     const baseUrl = process.env.SATUSEHAT_BASE_URL;
@@ -168,6 +204,14 @@ export async function getPractitionerIHSId(
 ): Promise<IHSLookupResult | null> {
   if (!nik || nik.trim().length === 0) {
     throw new Error("NIK is required");
+  }
+
+  if (process.env.SATUSEHAT_MOCK_MODE === "true") {
+    console.log(`🟡 [MOCK] Fetching fake IHS ID for Practitioner NIK: ${nik}`);
+    if (nik === "7209061211900001") {
+      return { ihsId: "10009880728", nik: nik, name: "dr. Strange" };
+    }
+    return null;
   }
 
   try {

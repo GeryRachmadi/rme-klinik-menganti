@@ -11,7 +11,7 @@ import PlanMedicationForm, { PlanMedicationFormRef } from './PlanMedicationForm'
 import PlanEducationForm, { PlanEducationFormRef } from './PlanEducationForm';
 import PlanReferralForm, { PlanReferralFormRef } from './PlanReferralForm';
 import DraftFoundModal from './DraftFoundModal';
-import { Loader2, AlertCircle, CheckCircle2, Info } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle2, Info, AlertTriangle } from 'lucide-react';
 import { useFormToast } from '@/hooks/useFormToast';
 import { getAssessmentDraftKey, getPhysicalExamDraftKey, getHasilPeriksaDraftKey, getProcedureDraftKey, getMedicationDraftKey, getEducationDraftKey, getReferralDraftKey } from '@/lib/constants/storage-keys';
 import { PlanFormSchema } from '@/lib/schemas/plan-schema';
@@ -21,6 +21,7 @@ export interface AsesmenDokterProps {
   encounterId: string;
   patient: Record<string, any>;
   encounter: Record<string, any>;
+  encounterStatus?: string;
   userRole?: string;
   defaultValues?: Record<string, any>;
   isEditMode?: boolean;
@@ -31,17 +32,33 @@ export interface AsesmenDokterProps {
     heartRate: number | null;
     respiratoryRate: number | null;
   } | null;
+  savedDiagnoses?: Array<{ code: string; display: string; notes?: string }>;
+  savedHasilPeriksa?: { keluhanUtama: string; pemeriksaanFisikTambahan: string };
+  savedPlan?: {
+    procedures: Array<{ codeIcd9: string; display: string; notes: string }>;
+    medicationText: string;
+    anjuranEdukasi: string;
+    rujukan: { isActive: boolean; tujuanRujukan: string; alasanRujukan: string };
+  };
+  syncStatus?: string;
+  patientIhs?: string | null;
 }
 
 export default function AsesmenDokter({
   encounterId,
   patient,
   encounter,
+  encounterStatus,
   userRole,
   defaultValues,
   isEditMode = false,
   initialAssessment,
   initialPhysical,
+  savedDiagnoses,
+  savedHasilPeriksa,
+  savedPlan,
+  syncStatus,
+  patientIhs,
 }: AsesmenDokterProps) {
   const router = useRouter();
   const { toast, showSuccess, showError } = useFormToast();
@@ -73,8 +90,14 @@ export default function AsesmenDokter({
   const referralRef = useRef<PlanReferralFormRef>(null);
 
   const [isSubmittingCentral, setIsSubmittingCentral] = useState(false);
-  const [selectedDiagnoses, setSelectedDiagnoses] = useState<Array<{code: string, display: string, notes?: string}>>([]);
+  const [selectedDiagnoses, setSelectedDiagnoses] = useState<Array<{code: string, display: string, notes?: string}>>(savedDiagnoses ?? []);
   const [showDraftModal, setShowDraftModal] = useState(false);
+
+  // SATUSEHAT submission state
+  const [localSyncStatus, setLocalSyncStatus] = useState(syncStatus ?? 'UNSYNCED');
+  const [submitState, setSubmitState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [transactionId, setTransactionId] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [availableDrafts, setAvailableDrafts] = useState<{
     assessment?: any;
     physical?: any;
@@ -84,6 +107,15 @@ export default function AsesmenDokter({
   }>({});
   const [draftTypes, setDraftTypes] = useState<string[]>([]);
 
+  // Auto-show Error modal if this encounter previously failed SATUSEHAT sync
+  useEffect(() => {
+    if (syncStatus === 'FAILED_SYNC') {
+      setSubmitState('error');
+      setErrorMessage('Sinkronisasi sebelumnya gagal. Silakan kirim ulang.');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Persist selectedDiagnoses whenever they change
   useEffect(() => {
     if (selectedDiagnoses.length > 0) {
@@ -91,7 +123,23 @@ export default function AsesmenDokter({
     }
   }, [selectedDiagnoses, encounterId]);
 
+  // Clear stale draft keys for SELESAI encounters regardless of role
   useEffect(() => {
+    if (encounterStatus?.toUpperCase() !== 'SELESAI') return;
+    [
+      getAssessmentDraftKey(encounterId),
+      getPhysicalExamDraftKey(encounterId),
+      getHasilPeriksaDraftKey(encounterId),
+      `draft_diagnoses_${encounterId}`,
+      getProcedureDraftKey(encounterId),
+      getMedicationDraftKey(encounterId),
+      getEducationDraftKey(encounterId),
+      getReferralDraftKey(encounterId),
+    ].forEach(key => localStorage.removeItem(key));
+  }, [encounterId, encounterStatus]);
+
+  useEffect(() => {
+    if (encounterStatus?.toUpperCase() === 'SELESAI') return;
     if (isReadOnly) return;
     // if (isEditMode) return; // temporarily disabled for debugging
 
@@ -126,7 +174,11 @@ export default function AsesmenDokter({
       if (raw) {
         const d = JSON.parse(raw);
         if (Array.isArray(d) && d.length > 0) {
-          parsedDrafts.diagnoses = d;
+          // Migrate legacy drafts that used `codeIcd10` instead of `code`
+          parsedDrafts.diagnoses = d.map((item: Record<string, unknown>) => ({
+            ...item,
+            code: item.code ?? item.codeIcd10 ?? 'MANUAL',
+          }));
           if (!types.includes('hasil-periksa')) types.push('hasil-periksa');
         } else {
           localStorage.removeItem(`draft_diagnoses_${encounterId}`);
@@ -176,7 +228,7 @@ export default function AsesmenDokter({
       setDraftTypes(types);
       setShowDraftModal(true);
     }
-  }, [encounterId, isEditMode, isReadOnly]);
+  }, [encounterId, encounterStatus, isEditMode, isReadOnly]);
 
   const handleUseDraft = () => {
     if (availableDrafts.assessment && assessmentRef.current) {
@@ -221,6 +273,31 @@ export default function AsesmenDokter({
 
   const handleRemoveDiagnosis = (code: string, idx: number) => {
     setSelectedDiagnoses(selectedDiagnoses.filter((_, i) => i !== idx));
+  };
+
+  const handleSatuSehatSubmit = async () => {
+    setSubmitState('loading');
+    setErrorMessage(null);
+    setTransactionId(null);
+    try {
+      const response = await fetch('/api/satusehat/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ encounterId }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        setErrorMessage(result.error || 'Terjadi kesalahan sinkronisasi.');
+        setSubmitState('error');
+        return;
+      }
+      setTransactionId(result.transactionId ?? null);
+      setLocalSyncStatus('SUCCESS');
+      setSubmitState('success');
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Gagal terhubung ke server.');
+      setSubmitState('error');
+    }
   };
 
   const handleCentralSubmit = async () => {
@@ -311,7 +388,13 @@ export default function AsesmenDokter({
       ];
       keysToRemove.forEach(key => localStorage.removeItem(key));
       showSuccess('Asesmen dan rencana tindak lanjut berhasil disimpan!');
-      setTimeout(() => router.push('/rawat-jalan'), 2000);
+
+      if (patientIhs) {
+        await handleSatuSehatSubmit();
+        setIsSubmittingCentral(false);
+      } else {
+        setTimeout(() => router.push('/rawat-jalan'), 2000);
+      }
 
     } catch (error: any) {
       console.error(error);
@@ -349,6 +432,99 @@ export default function AsesmenDokter({
         onUseDraft={handleUseDraft}
         onRejectDraft={handleRejectDraft}
       />
+
+      {/* SATUSEHAT Submission Modals */}
+      {submitState !== 'idle' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 font-jakarta">
+
+            {/* LOADING */}
+            {submitState === 'loading' && (
+              <div className="flex flex-col items-center gap-5 text-center">
+                <div className="w-16 h-16 rounded-full bg-teal-50 flex items-center justify-center">
+                  <Loader2 size={32} className="animate-spin text-teal-600" />
+                </div>
+                <div>
+                  <p className="text-base font-bold text-gray-800 font-poppins">Menyimpan & Mengirim Data...</p>
+                  <p className="text-sm text-gray-500 mt-1.5">Mohon tunggu sebentar, sistem sedang memvalidasi data klinis.</p>
+                </div>
+              </div>
+            )}
+
+            {/* SUCCESS */}
+            {submitState === 'success' && (
+              <div className="flex flex-col items-center gap-5 text-center">
+                <div className="w-16 h-16 rounded-full bg-teal-50 flex items-center justify-center">
+                  <CheckCircle2 size={36} className="text-teal-600" strokeWidth={2} />
+                </div>
+                <div>
+                  <p className="text-base font-bold text-gray-800 font-poppins">Berhasil Disimpan & Dikirim!</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {patient?.namaLengkap} — <span className="font-semibold text-[#0F766E]">{patient?.noRm}</span>
+                  </p>
+                </div>
+                <div className="w-full bg-teal-50 border border-teal-100 rounded-xl px-4 py-3 text-left">
+                  <p className="text-xs font-semibold text-teal-700 uppercase tracking-wider mb-1">ID Transaksi Kemenkes</p>
+                  <p className="text-sm font-mono text-gray-700 break-all">{transactionId ?? '—'}</p>
+                </div>
+                <div className="flex gap-3 w-full mt-1">
+                  <button
+                    type="button"
+                    onClick={() => setSubmitState('idle')}
+                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors"
+                  >
+                    Tutup
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => router.push('/rawat-jalan')}
+                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 transition-colors"
+                  >
+                    Kembali ke Beranda
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ERROR */}
+            {submitState === 'error' && (
+              <div className="flex flex-col items-center gap-5 text-center">
+                <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center">
+                  <AlertTriangle size={32} className="text-red-500" strokeWidth={2} />
+                </div>
+                <div>
+                  <p className="text-base font-bold text-gray-800 font-poppins">Gagal Sinkronisasi dengan SATUSEHAT!</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {patient?.namaLengkap} — <span className="font-semibold text-[#0F766E]">{patient?.noRm}</span>
+                  </p>
+                  {errorMessage && <p className="text-sm text-red-600 mt-1.5">{errorMessage}</p>}
+                </div>
+                <div className="w-full bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-left flex flex-col gap-1">
+                  <p className="text-xs font-bold text-red-600 uppercase tracking-wider">STATUS: Gagal Sinkronisasi</p>
+                  <p className="text-xs text-gray-500">Data tersimpan di Lokal & Masuk Antrian (Retry Queue)</p>
+                </div>
+                <div className="flex gap-3 w-full mt-1">
+                  <button
+                    type="button"
+                    onClick={() => setSubmitState('idle')}
+                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors"
+                  >
+                    Tutup
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSatuSehatSubmit}
+                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors"
+                  >
+                    Kirim Ulang
+                  </button>
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
 
       {isReadOnly && (
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-3">
@@ -408,6 +584,7 @@ export default function AsesmenDokter({
             hideSubmitButton={true}
             hideWrapper={true}
             isReadOnly={isReadOnly}
+            defaultValues={savedHasilPeriksa}
           />
 
           {/* Diagnosis Utama subsection */}
@@ -467,41 +644,53 @@ export default function AsesmenDokter({
           </div>
 
           <div className="flex flex-col gap-6">
-            <PlanProcedureForm ref={procedureRef} encounterId={encounterId} isReadOnly={isReadOnly} />
-            <PlanMedicationForm ref={medicationRef} encounterId={encounterId} isReadOnly={isReadOnly} />
-            <PlanEducationForm ref={educationRef} encounterId={encounterId} isReadOnly={isReadOnly} />
-            <PlanReferralForm ref={referralRef} encounterId={encounterId} isReadOnly={isReadOnly} />
+            <PlanProcedureForm ref={procedureRef} encounterId={encounterId} isReadOnly={isReadOnly} defaultValues={savedPlan?.procedures} />
+            <PlanMedicationForm ref={medicationRef} encounterId={encounterId} isReadOnly={isReadOnly} defaultValues={{ medicationText: savedPlan?.medicationText ?? '' }} />
+            <PlanEducationForm ref={educationRef} encounterId={encounterId} isReadOnly={isReadOnly} defaultValues={{ anjuranEdukasi: savedPlan?.anjuranEdukasi ?? '' }} />
+            <PlanReferralForm ref={referralRef} encounterId={encounterId} isReadOnly={isReadOnly} defaultValues={savedPlan?.rujukan} />
           </div>
         </div>
       </div>
 
       {/* Final Orchestration Action Buttons */}
-      <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200 pb-10">
-        <button
-          type="button"
-          disabled={isSubmittingCentral}
-          onClick={() => router.push('/rawat-jalan')}
-          className="px-8 py-2.5 bg-white border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-colors shadow-sm text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Batal
-        </button>
-        <div title={isReadOnly ? 'Asesmen sudah selesai dan tidak dapat diedit.' : undefined}>
+      <div className="flex flex-col items-end gap-1 mt-8 pt-6 border-t border-gray-200 pb-10">
+        <div className="flex gap-3 items-center">
           <button
             type="button"
-            onClick={handleCentralSubmit}
-            disabled={isSubmittingCentral || isReadOnly}
-            className={`px-8 py-2.5 bg-[#0F766E] hover:bg-teal-800 text-white font-semibold rounded-xl transition-colors shadow-sm text-sm min-w-[120px] flex justify-center items-center ${isSubmittingCentral || isReadOnly ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            disabled={isSubmittingCentral}
+            onClick={() => router.push('/rawat-jalan')}
+            className="px-8 py-2.5 min-w-[120px] flex justify-center items-center bg-white border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-colors shadow-sm text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSubmittingCentral ? (
-              <>
-                <Loader2 className="animate-spin mr-2 h-4 w-4" />
-                Menyimpan...
-              </>
-            ) : (
-              'Simpan Asesmen'
-            )}
+            Batal
           </button>
+          <div title={isReadOnly ? 'Asesmen sudah selesai dan tidak dapat diedit.' : undefined}>
+            <button
+              type="button"
+              onClick={handleCentralSubmit}
+              disabled={isSubmittingCentral || isReadOnly}
+              className={`px-8 py-2.5 min-w-[120px] flex justify-center items-center bg-[#0F766E] hover:bg-teal-800 text-white font-semibold rounded-xl transition-colors shadow-sm text-sm ${isSubmittingCentral || isReadOnly ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            >
+              {isSubmittingCentral ? (
+                <>
+                  <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                  Menyimpan...
+                </>
+              ) : (
+                'Simpan Asesmen'
+              )}
+            </button>
+          </div>
         </div>
+        {/* SATUSEHAT status hint — below the button row */}
+        {localSyncStatus === 'SUCCESS' ? (
+          <p className="text-xs text-green-600 font-medium">✓ Terkirim ke SATUSEHAT · ID: {transactionId}</p>
+        ) : localSyncStatus === 'FAILED_SYNC' ? (
+          <p className="text-xs text-red-500 font-medium">⚠ Gagal dikirim ke SATUSEHAT</p>
+        ) : patientIhs ? (
+          <p className="text-xs text-teal-600 font-medium">✓ Data akan dikirim ke SATUSEHAT secara otomatis</p>
+        ) : (
+          <p className="text-xs text-gray-400">Pasien tidak terdaftar di SATUSEHAT</p>
+        )}
       </div>
     </div>
   );

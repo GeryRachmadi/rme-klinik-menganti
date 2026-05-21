@@ -67,6 +67,7 @@ export async function GET(req: Request) {
         dokter: enc.practitioner?.name ?? "Belum ditentukan",
         prioritas: formatTitleCase(enc.priority),
         status: formatTitleCase(enc.status),
+        syncStatus: enc.syncStatus,
       };
     });
 

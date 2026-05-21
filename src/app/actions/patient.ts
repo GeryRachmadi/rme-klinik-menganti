@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { getPatientIHSId } from "@/lib/satusehat";
 import type { PatientRegistrationInput } from "@/lib/validations/patient";
 
 export type CreatePatientResponse =
@@ -25,6 +26,21 @@ export async function createPatient(
       success: false,
       error: "NIK sudah terdaftar. Silakan hubungi admin.",
     };
+  }
+
+  // Non-blocking IHS ID fetch — skip if NIK is a generated dummy
+  let fetchedIhsId: string | null = null;
+  if (data.nik?.trim() && !finalNik.startsWith("NONIK-")) {
+    try {
+      const result = await getPatientIHSId(finalNik);
+      if (result?.ihsId) {
+        fetchedIhsId = result.ihsId;
+        console.log(`✅ IHS ID fetched for NIK ${finalNik}: ${fetchedIhsId}`);
+      }
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.warn(`⚠️ Failed to fetch IHS ID for NIK ${finalNik}:`, msg);
+    }
   }
 
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -51,6 +67,7 @@ export async function createPatient(
         data: {
           noRm,
           nik: finalNik,
+          ihs: fetchedIhsId,
           namaLengkap: data.namaLengkap,
           tempatLahir: data.tempatLahir,
           tanggalLahir: new Date(data.tanggalLahir),

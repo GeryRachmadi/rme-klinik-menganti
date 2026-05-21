@@ -26,14 +26,16 @@ export async function POST(
 
     const encounter = await prisma.encounter.findUnique({
       where: { id: encounterId },
-      include: { observations: true },
     });
 
     if (!encounter) {
       return Response.json({ error: "Data kunjungan tidak ditemukan" }, { status: 404 });
     }
 
-    if (!["MENUNGGU", "DIPERIKSA"].includes(encounter.status)) {
+    const allowedStatuses = userRole === 'ADMIN'
+      ? ["MENUNGGU", "DIPERIKSA", "SELESAI"]
+      : ["MENUNGGU", "DIPERIKSA"];
+    if (!allowedStatuses.includes(encounter.status)) {
       return Response.json(
         { error: "Status kunjungan tidak valid untuk input diagnosis" },
         { status: 400 }
@@ -41,62 +43,57 @@ export async function POST(
     }
 
     await prisma.$transaction(async (tx) => {
-      // Step 1: Save diagnoses
+      // Step 1: Replace diagnoses (delete existing, insert new)
+      await tx.conditionDiagnosis.deleteMany({ where: { encounterId } });
       if (selectedDiagnoses && selectedDiagnoses.length > 0) {
         await tx.conditionDiagnosis.createMany({
           data: selectedDiagnoses.map(
-            (d: { code: string; display: string; notes?: string }, idx: number) => ({
-              encounterId,
-              codeIcd10: d.code,
-              display: d.display,
-              notes: d.notes ?? null,
-              isPrimary: idx === 0,
-            })
+            (d: { code: string; display: string; notes?: string }, idx: number) => {
+              const codeIcd10 = typeof d.code === 'string' && d.code ? d.code : 'MANUAL';
+              if (codeIcd10 === 'MANUAL') {
+                console.warn('[asesmen] diagnosis code missing or stale — stored as MANUAL. display:', d.display);
+              }
+              return {
+                encounterId,
+                codeIcd10,
+                display: d.display,
+                notes: d.notes ?? null,
+                isPrimary: idx === 0,
+              };
+            }
           ),
         });
       }
 
-      // Step 2: Update or create Observation (vitals + doctor notes)
-      const existingObs = encounter.observations?.[0] ?? null;
-      const doctorNotes = hasilPeriksaData?.pemeriksaanFisikTambahan || null;
-
-      if (existingObs) {
-        const appendedNotes = doctorNotes
-          ? [existingObs.notes, `[Catatan Dokter]: ${doctorNotes}`]
-              .filter(Boolean)
-              .join("\n\n")
-          : existingObs.notes;
-        await tx.observation.update({
-          where: { id: existingObs.id },
-          data: { notes: appendedNotes },
-        });
-      } else {
-        let systolic: number | null = null;
-        let diastolic: number | null = null;
-        if (physicalData?.tekananDarah) {
-          const [sys, dias] = (physicalData.tekananDarah as string)
-            .split("/")
-            .map(Number);
-          systolic = sys || null;
-          diastolic = dias || null;
-        }
-        await tx.observation.create({
-          data: {
-            encounterId,
-            systolic,
-            diastolic,
-            temperature: physicalData?.suhu ?? null,
-            heartRate: physicalData?.nadi ?? null,
-            respiratoryRate: physicalData?.napas ?? null,
-            height: physicalData?.tinggiBadan ?? null,
-            weight: physicalData?.beratBadan ?? null,
-            bmi: physicalData?.bmi ?? null,
-            notes: doctorNotes,
-          },
-        });
+      // Step 2: Replace main Observation (vitals + doctor notes) — delete non-education obs, re-create
+      await tx.observation.deleteMany({
+        where: { encounterId, NOT: { notes: { startsWith: '[Edukasi Pasien]:' } } },
+      });
+      const doctorNotes = hasilPeriksaData?.pemeriksaanFisikTambahan?.trim() || null;
+      let systolic: number | null = null;
+      let diastolic: number | null = null;
+      if (physicalData?.tekananDarah) {
+        const [sys, dias] = (physicalData.tekananDarah as string).split("/").map(Number);
+        systolic = sys || null;
+        diastolic = dias || null;
       }
+      await tx.observation.create({
+        data: {
+          encounterId,
+          systolic,
+          diastolic,
+          temperature: physicalData?.suhu ?? null,
+          heartRate: physicalData?.nadi ?? null,
+          respiratoryRate: physicalData?.napas ?? null,
+          height: physicalData?.tinggiBadan ?? null,
+          weight: physicalData?.beratBadan ?? null,
+          bmi: physicalData?.bmi ?? null,
+          notes: doctorNotes,
+        },
+      });
 
-      // Step 3: Procedures (Tindakan Medis)
+      // Step 3: Replace procedures (delete existing, insert new)
+      await tx.procedure.deleteMany({ where: { encounterId } });
       const procedures: Array<{ codeIcd9: string; display: string; notes?: string }> =
         plan?.procedure?.procedures ?? [];
       if (procedures.length > 0) {
@@ -110,7 +107,8 @@ export async function POST(
         });
       }
 
-      // Step 4: Medication (Resep Obat)
+      // Step 4: Replace medication (delete existing, insert new if provided)
+      await tx.medicationRequest.deleteMany({ where: { encounterId } });
       const medicationText: string | undefined = plan?.medication?.medicationText?.trim();
       if (medicationText) {
         await tx.medicationRequest.create({
@@ -121,7 +119,8 @@ export async function POST(
         });
       }
 
-      // Step 5: Referral (Rujukan)
+      // Step 5: Replace referral (delete existing; create only if isActive=true)
+      await tx.serviceRequest.deleteMany({ where: { encounterId } });
       if (plan?.rujukan?.isActive === true) {
         await tx.serviceRequest.create({
           data: {
@@ -132,7 +131,10 @@ export async function POST(
         });
       }
 
-      // Step 6: Education (Edukasi / Anjuran) — stored as a separate Observation note
+      // Step 6: Replace education observation (delete existing, insert new if provided)
+      await tx.observation.deleteMany({
+        where: { encounterId, notes: { startsWith: '[Edukasi Pasien]:' } },
+      });
       const edikasiText: string | undefined = plan?.edukasi?.anjuranEdukasi?.trim();
       if (edikasiText) {
         await tx.observation.create({
