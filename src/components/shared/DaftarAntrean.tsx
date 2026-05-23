@@ -40,6 +40,16 @@ interface DaftarAntreanProps {
   userRole?: string;
 }
 
+const LIMIT = 6;
+
+function getPageNumbers(current: number, total: number): (number | "…")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  if (current <= 4) return [1, 2, 3, 4, 5, "…", total];
+  if (current >= total - 3)
+    return [1, "…", total - 4, total - 3, total - 2, total - 1, total];
+  return [1, "…", current - 1, current, current + 1, "…", total];
+}
+
 const PRIORITAS_BADGE: Record<Prioritas, string> = {
   "Stabil":         "text-[#2BB5A0] border-[#2BB5A0] bg-white",
   "Cukup Berisiko": "text-orange-500 border-orange-500 bg-white",
@@ -69,6 +79,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
   const [filterTanggal, setFilterTanggal] = useState("");
   const [filterPrioritas, setFilterPrioritas] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const isAuthorized = userRole === "PENDAFTARAN" || userRole === "ADMIN";
   const canAssess = userRole === "ADMIN" || userRole === "DOKTER" || userRole === "PERAWAT";
@@ -135,6 +146,9 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
     return matchSearch && matchTanggal && matchPrioritas && matchStatus;
   });
 
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / LIMIT));
+  const paginatedData = filteredData.slice((currentPage - 1) * LIMIT, currentPage * LIMIT);
+
   return (
     <div className="grid grid-cols-12 gap-6" style={{ fontFamily: "var(--font-jakarta)" }}>
       <div className="col-span-12 bg-white rounded-3xl px-10 py-7 flex items-center justify-between">
@@ -177,7 +191,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
                 placeholder="Cari Nama, No.RM, atau No. Antrean…"
                 autoComplete="off"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                 className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 bg-gray-50 placeholder-gray-300 outline-none focus:border-[#2BB5A0]"
               />
             </div>
@@ -191,7 +205,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
               <Calendar size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" strokeWidth={2} />
               <select
                 value={filterTanggal}
-                onChange={(e) => setFilterTanggal(e.target.value)}
+                onChange={(e) => { setFilterTanggal(e.target.value); setCurrentPage(1); }}
                 className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 bg-white outline-none appearance-none cursor-pointer focus:border-[#2BB5A0]"
               >
                 <option value="">Semua Tanggal</option>
@@ -206,7 +220,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
             </label>
             <select
               value={filterPrioritas}
-              onChange={(e) => setFilterPrioritas(e.target.value)}
+              onChange={(e) => { setFilterPrioritas(e.target.value); setCurrentPage(1); }}
               className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 bg-white outline-none appearance-none cursor-pointer focus:border-[#2BB5A0]"
             >
               <option value="">Semua</option>
@@ -223,7 +237,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
             </label>
             <select
               value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
+              onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
               className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 bg-white outline-none appearance-none cursor-pointer focus:border-[#2BB5A0]"
             >
               <option value="">Semua</option>
@@ -276,7 +290,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
                   </td>
                 </tr>
               ) : (
-                filteredData.map((row) => (
+                paginatedData.map((row) => (
                   <tr
                     key={row.id}
                     className="border-b border-gray-50 last:border-0 hover:bg-gray-50/30 transition-colors"
@@ -397,17 +411,68 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
           </table>
         </div>
 
-        {!isLoading && filteredData.length > 0 && (
-          <div className="flex items-center justify-center gap-1.5 mt-8">
-            <button type="button" className="flex items-center gap-1 px-4 py-2 rounded-xl text-sm font-bold text-[#2BB5A0] hover:bg-gray-50 transition-colors">
-              <ChevronLeft size={16} strokeWidth={3} /> Sebelum
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-1 mt-8">
+            <button
+              type="button"
+              disabled={currentPage === 1 || isLoading}
+              onClick={() => setCurrentPage((p) => p - 1)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{ fontFamily: "var(--font-jakarta)" }}
+            >
+              <ChevronLeft size={14} strokeWidth={2.5} />
+              Sebelum
             </button>
-            <button type="button" className="w-8 h-8 rounded-lg text-sm font-bold text-white bg-[#2BB5A0]">1</button>
-            <button type="button" className="flex items-center gap-1 px-4 py-2 rounded-xl text-sm font-bold text-[#2BB5A0] hover:bg-gray-50 transition-colors">
-              Selanjutnya <ChevronRight size={16} strokeWidth={3} />
+
+            {getPageNumbers(currentPage, totalPages).map((p, i) =>
+              p === "…" ? (
+                <span
+                  key={`ellipsis-${i}`}
+                  className="px-1 text-gray-300 text-sm select-none"
+                  style={{ fontFamily: "var(--font-jakarta)" }}
+                >
+                  …
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  key={p}
+                  onClick={() => setCurrentPage(p as number)}
+                  disabled={isLoading}
+                  className={`w-9 h-9 rounded-xl text-sm font-semibold transition-colors disabled:cursor-not-allowed ${
+                    p === currentPage ? "text-white" : "text-gray-500 hover:bg-gray-50"
+                  }`}
+                  style={{
+                    fontFamily: "var(--font-jakarta)",
+                    background: p === currentPage ? "#2BB5A0" : undefined,
+                  }}
+                >
+                  {p}
+                </button>
+              )
+            )}
+
+            <button
+              type="button"
+              disabled={currentPage === totalPages || isLoading}
+              onClick={() => setCurrentPage((p) => p + 1)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{ fontFamily: "var(--font-jakarta)" }}
+            >
+              Selanjutnya
+              <ChevronRight size={14} strokeWidth={2.5} />
             </button>
           </div>
         )}
+
+        <p
+          className="text-center text-xs text-gray-300 mt-4"
+          style={{ fontFamily: "var(--font-jakarta)" }}
+        >
+          {isLoading
+            ? "Memuat data…"
+            : `Menampilkan ${paginatedData.length} dari ${filteredData.length} antrean`}
+        </p>
       </div>
 
       <EncounterRegistrationDrawer

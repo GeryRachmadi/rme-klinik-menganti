@@ -1,6 +1,8 @@
 "use client";
 
-import { Search, Bell, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
+import GlobalSearch from "@/components/shared/GlobalSearch";
+import NotificationDropdown from "@/components/shared/NotificationDropdown";
 
 type Role = "ADMIN" | "PENDAFTARAN" | "PERAWAT" | "DOKTER";
 
@@ -28,7 +30,7 @@ export default function Navbar({ name, role }: NavbarProps) {
   const initials = getInitials(name);
 
   return (
-    <header className="bg-white border-b border-gray-100 h-16 flex items-center flex-shrink-0">
+    <header className="sticky top-0 z-50 bg-white border-b border-gray-100 h-16 flex items-center flex-shrink-0">
       {/* Logo — lebarnya disejajarkan dengan Sidebar */}
       <div
         className="w-72 flex-shrink-0 flex items-center gap-3 px-5"
@@ -59,27 +61,13 @@ export default function Navbar({ name, role }: NavbarProps) {
 
       {/* Search Bar */}
       <div className="flex-1 flex items-center justify-center px-6">
-        <div className="relative w-full max-w-lg">
-          <Search
-            size={15}
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-          />
-          <input
-            type="text"
-            placeholder="Cari pasien, jadwal, atau fitur…"
-            className="w-full pl-10 pr-4 py-2.5 rounded-full bg-gray-100 text-sm text-gray-700 placeholder-gray-400 outline-none focus:ring-2 focus:ring-[#2BB5A0]/30 transition"
-            style={{ fontFamily: "var(--font-jakarta)" }}
-            autoComplete="off"
-          />
-        </div>
+        <GlobalSearch userRole={role} />
       </div>
 
       {/* Kanan: Bell + Info User */}
       <div className="w-72 flex items-center gap-4 pr-6 flex-shrink-0 justify-end">
         {/* Notifikasi */}
-        <button type="button" className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
-          <Bell size={18} className="text-gray-500" />
-        </button>
+        <NotificationDropdown userRole={role} />
 
         {/* Info User */}
         <div className="flex items-center gap-3">

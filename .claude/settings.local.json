@@ -34,7 +34,8 @@
       "Bash(git stash *)",
       "Bash(PGPASSWORD=\"password\" psql *)",
       "Bash(Remove-Item *)",
-      "Bash(grep *)"
+      "Bash(grep *)",
+      "Bash(set NODE_OPTIONS=--max-old-space-size=4096)"
     ]
   }
 }

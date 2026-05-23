@@ -44,7 +44,7 @@ export default function Sidebar({ role }: SidebarProps) {
   const navItems = navItemsByRole[role];
 
   return (
-    <aside className="w-72 flex-shrink-0 bg-white border-r border-gray-100 flex flex-col">
+    <aside className="fixed inset-y-0 left-0 w-72 h-screen pt-16 bg-white border-r border-gray-100 flex flex-col justify-between z-40">
       {/* Navigasi */}
       <nav className="flex-1 p-3 pt-4">
         <ul className="space-y-1">
