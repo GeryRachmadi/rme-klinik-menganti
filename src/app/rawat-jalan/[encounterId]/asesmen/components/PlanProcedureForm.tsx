@@ -141,7 +141,7 @@ const PlanProcedureForm = forwardRef<PlanProcedureFormRef, PlanProcedureFormProp
         <div className="flex flex-wrap gap-2">
           {(procedures || []).map((proc, index) => (
             <span
-              key={index}
+              key={`${proc.codeIcd9}-${proc.display}`}
               className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1 text-sm font-bold border ${
                 proc.codeIcd9 === 'MANUAL'
                   ? 'bg-yellow-50 text-yellow-800 border-yellow-200'

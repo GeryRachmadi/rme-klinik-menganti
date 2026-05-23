@@ -11,7 +11,6 @@ export interface AssessmentDiagnosisFormProps {
 }
 
 export function AssessmentDiagnosisForm({ onSelectDiagnosis, encounterId, isReadOnly }: AssessmentDiagnosisFormProps) {
-  if (isReadOnly) return null;
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -20,6 +19,12 @@ export function AssessmentDiagnosisForm({ onSelectDiagnosis, encounterId, isRead
   const [manualNote, setManualNote] = useState('');
 
   const { results, isLoading, error } = useDiagnosisSearch(searchQuery);
+
+  useEffect(() => {
+    setSelectedIndex(-1);
+  }, [results]);
+
+  if (isReadOnly) return null;
 
   const handleBlur = () => {
     setTimeout(() => {
@@ -82,10 +87,6 @@ export function AssessmentDiagnosisForm({ onSelectDiagnosis, encounterId, isRead
     setIsManualMode(false);
   };
 
-  useEffect(() => {
-    setSelectedIndex(-1);
-  }, [results]);
-
   if (isManualMode) {
     const sanitizedLength = manualText.replace(HTML_TAG_REGEX, '').trim().length;
     const isAddDisabled = sanitizedLength < 5 || sanitizedLength > 500;
@@ -104,7 +105,7 @@ export function AssessmentDiagnosisForm({ onSelectDiagnosis, encounterId, isRead
           <textarea
             value={manualText}
             onChange={(e) => setManualText(e.target.value)}
-            placeholder="Masukkan diagnosis secara manual (min. 5 karakter)..."
+            placeholder="Masukkan diagnosis secara manual (min. 5 karakter)…"
             rows={3}
             className="w-full border border-gray-300 rounded-lg p-3 text-sm bg-white text-gray-900 placeholder-gray-400 resize-y focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] min-h-[80px] transition-colors"
           />
@@ -120,7 +121,7 @@ export function AssessmentDiagnosisForm({ onSelectDiagnosis, encounterId, isRead
           <textarea
             value={manualNote}
             onChange={(e) => setManualNote(e.target.value)}
-            placeholder="Tambahkan catatan untuk diagnosis ini..."
+            placeholder="Tambahkan catatan untuk diagnosis ini…"
             rows={2}
             className="w-full border border-gray-200 rounded-xl p-3 text-sm bg-[#F9FAFB] text-gray-900 placeholder-gray-400 resize-y focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] transition-colors"
           />
@@ -161,7 +162,7 @@ export function AssessmentDiagnosisForm({ onSelectDiagnosis, encounterId, isRead
           onFocus={handleFocus}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          placeholder="Cari kode ICD-10 atau deskripsi (min. 3 huruf)..."
+          placeholder="Cari kode ICD-10 atau deskripsi (min. 3 huruf)…"
           className="block w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg leading-5 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] text-sm transition-colors"
         />
         {searchQuery && (

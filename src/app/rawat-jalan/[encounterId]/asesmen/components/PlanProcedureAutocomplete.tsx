@@ -102,7 +102,7 @@ export function PlanProcedureAutocomplete({
           <textarea
             value={manualText}
             onChange={(e) => setManualText(e.target.value)}
-            placeholder="Masukkan nama tindakan medis secara manual (min. 3 karakter)..."
+            placeholder="Masukkan nama tindakan medis secara manual (min. 3 karakter)…"
             rows={3}
             className="w-full border border-gray-300 rounded-lg p-3 text-sm bg-white text-gray-900 placeholder-gray-400 resize-y focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] min-h-[80px] transition-colors"
             style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
@@ -119,7 +119,7 @@ export function PlanProcedureAutocomplete({
           <textarea
             value={manualNote}
             onChange={(e) => setManualNote(e.target.value)}
-            placeholder="Tambahkan catatan untuk tindakan ini..."
+            placeholder="Tambahkan catatan untuk tindakan ini…"
             rows={2}
             className="w-full border border-gray-200 rounded-xl p-3 text-sm bg-[#F9FAFB] text-gray-900 placeholder-gray-400 resize-y focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] transition-colors"
           />
@@ -161,7 +161,7 @@ export function PlanProcedureAutocomplete({
           onFocus={handleFocus}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          placeholder="Cari kode ICD-9-CM atau nama tindakan..."
+          placeholder="Cari kode ICD-9-CM atau nama tindakan…"
           className="block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg leading-5 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] text-sm transition-colors"
           autoComplete="off"
         />
@@ -176,7 +176,7 @@ export function PlanProcedureAutocomplete({
           ) : isLoading ? (
             <div className="px-4 py-3 flex items-center gap-2 text-sm text-gray-500">
               <Loader2 className="animate-spin h-4 w-4 text-[#0F766E]" />
-              Mencari...
+              Mencari…
             </div>
           ) : results.length > 0 ? (
             <>

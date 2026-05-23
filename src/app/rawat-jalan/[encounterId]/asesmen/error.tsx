@@ -38,6 +38,7 @@ export default function AsesmenError({ error, reset }: ErrorProps) {
 
         <div className="flex justify-center gap-3">
           <button
+            type="button"
             onClick={reset}
             className="inline-flex items-center justify-center px-5 py-2.5 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-full transition-colors"
             style={{ fontFamily: "var(--font-jakarta)" }}
@@ -45,6 +46,7 @@ export default function AsesmenError({ error, reset }: ErrorProps) {
             Coba Lagi
           </button>
           <button
+            type="button"
             onClick={() => router.back()}
             className="inline-flex items-center justify-center px-5 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-full transition-colors"
             style={{ fontFamily: "var(--font-jakarta)" }}

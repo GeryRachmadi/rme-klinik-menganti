@@ -81,6 +81,7 @@ export default function AsesmenDokter({
   console.log('[AsesmenDokter] Assessment missing:', missingAssessment);
   console.log('[AsesmenDokter] Vitals missing:', missingVitals);
   
+  const hasShownErrorRef = useRef(false);
   const assessmentRef = useRef<SubjectiveInitialFormRef>(null);
   const physicalRef = useRef<ObjectivePhysicalFormRef>(null);
   const hasilPeriksaRef = useRef<SubjectiveObjectiveExtendedFormRef>(null);
@@ -107,14 +108,15 @@ export default function AsesmenDokter({
   }>({});
   const [draftTypes, setDraftTypes] = useState<string[]>([]);
 
-  // Auto-show Error modal if this encounter previously failed SATUSEHAT sync
+  // Auto-show Error modal if this encounter previously failed SATUSEHAT sync (once only)
   useEffect(() => {
+    if (hasShownErrorRef.current) return;
     if (syncStatus === 'FAILED_SYNC') {
+      hasShownErrorRef.current = true;
       setSubmitState('error');
       setErrorMessage('Sinkronisasi sebelumnya gagal. Silakan kirim ulang.');
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [syncStatus]);
 
   // Persist selectedDiagnoses whenever they change
   useEffect(() => {
@@ -445,7 +447,7 @@ export default function AsesmenDokter({
                   <Loader2 size={32} className="animate-spin text-teal-600" />
                 </div>
                 <div>
-                  <p className="text-base font-bold text-gray-800 font-poppins">Menyimpan & Mengirim Data...</p>
+                  <p className="text-base font-bold text-gray-800 font-poppins">Menyimpan & Mengirim Data…</p>
                   <p className="text-sm text-gray-500 mt-1.5">Mohon tunggu sebentar, sistem sedang memvalidasi data klinis.</p>
                 </div>
               </div>

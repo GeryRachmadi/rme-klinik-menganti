@@ -189,6 +189,7 @@ export default function ClinicalSummaryTab({ data, userRole, onCreateEncounterCl
               </p>
               {canStartAssessment && (
                 <button
+                  type="button"
                   onClick={handleMulaiAsesmen}
                   disabled={isLoading}
                   className="flex items-center space-x-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-60 disabled:cursor-not-allowed text-white px-8 py-3 rounded-full font-semibold transition-all shadow-sm hover:shadow-md"
@@ -199,7 +200,7 @@ export default function ClinicalSummaryTab({ data, userRole, onCreateEncounterCl
                   ) : (
                     <Plus className="w-5 h-5" />
                   )}
-                  <span>{isLoading ? "Memeriksa..." : "Buat Asesmen Pertama"}</span>
+                  <span>{isLoading ? "Memeriksa…" : "Buat Asesmen Pertama"}</span>
                 </button>
               )}
             </div>
@@ -218,7 +219,7 @@ export default function ClinicalSummaryTab({ data, userRole, onCreateEncounterCl
               {error}
             </p>
           </div>
-          <button onClick={() => setError(null)} className="shrink-0 text-red-400 hover:text-red-600 transition-colors">
+          <button type="button" onClick={() => setError(null)} className="shrink-0 text-red-400 hover:text-red-600 transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>

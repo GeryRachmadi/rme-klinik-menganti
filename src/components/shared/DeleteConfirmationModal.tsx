@@ -58,6 +58,7 @@ export default function DeleteConfirmationModal({
           {/* Buttons */}
           <div className="flex gap-3 mt-7 w-full">
             <button
+              type="button"
               onClick={onClose}
               disabled={isLoading}
               className="flex-1 px-5 py-2.5 rounded-full text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-100 transition-colors disabled:opacity-50"
@@ -65,11 +66,12 @@ export default function DeleteConfirmationModal({
               Batal
             </button>
             <button
+              type="button"
               onClick={onConfirm}
               disabled={isLoading}
               className="flex-1 px-5 py-2.5 rounded-full text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-50"
             >
-              {isLoading ? "Menghapus..." : "Hapus"}
+              {isLoading ? "Menghapus…" : "Hapus"}
             </button>
           </div>
 

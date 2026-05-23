@@ -31,7 +31,7 @@ export default function AllergyHistoryTab({ data }: AllergyHistoryTabProps) {
             const borderColor = SEVERITY_BORDER[allergy.severity?.toLowerCase() ?? ''] ?? 'border-gray-500';
 
             return (
-              <div key={index} className={`bg-white rounded-xl border border-gray-200 p-5 shadow-sm border-l-4 ${borderColor}`}>
+              <div key={allergy.allergen} className={`bg-white rounded-xl border border-gray-200 p-5 shadow-sm border-l-4 ${borderColor}`}>
                 <h3 className="font-bold text-lg text-gray-900 mb-2" style={{ fontFamily: "var(--font-poppins)" }}>
                   {allergy.allergen}
                 </h3>

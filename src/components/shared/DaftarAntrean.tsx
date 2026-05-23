@@ -152,6 +152,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
 
         {isAuthorized && (
           <button
+            type="button"
             className="flex items-center gap-2 px-5 py-2.5 rounded-full text-white text-sm font-semibold hover:opacity-90 transition-opacity"
             style={{ background: "#2BB5A0" }}
             onClick={() => setIsAddEncounterOpen(true)}
@@ -173,7 +174,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
               <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300" strokeWidth={2} />
               <input
                 type="text"
-                placeholder="Cari Nama, No.RM, atau No. Antrean..."
+                placeholder="Cari Nama, No.RM, atau No. Antrean…"
                 autoComplete="off"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -262,7 +263,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
                 <tr>
                   <td colSpan={5 + (canAssess ? 1 : 0) + (isAuthorized ? 1 : 0)} className="py-16 text-center">
                     <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
-                      <Loader2 size={16} className="animate-spin" /> Memuat data...
+                      <Loader2 size={16} className="animate-spin" /> Memuat data…
                     </div>
                   </td>
                 </tr>
@@ -341,6 +342,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
                     {canAssess && <td className="py-4 align-top">
                       {row.status === "Selesai" ? (
                         <button
+                          type="button"
                           onClick={() => router.push(`/rawat-jalan/${row.id}/asesmen`)}
                           className="px-3 py-1.5 rounded-full text-xs font-semibold bg-[#3B82F6] hover:bg-blue-600 text-white transition-colors cursor-pointer"
                           style={{ fontFamily: "var(--font-poppins)" }}
@@ -349,6 +351,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
                         </button>
                       ) : canAssess && (row.status === "Menunggu" || row.status === "Diperiksa") ? (
                         <button
+                          type="button"
                           onClick={() => router.push(`/rawat-jalan/${row.id}/asesmen`)}
                           className="px-3 py-1.5 rounded-full text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white transition-colors cursor-pointer"
                           style={{ fontFamily: "var(--font-poppins)" }}
@@ -364,6 +367,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
                       <td className="py-4 align-top">
                         <div className="flex items-center gap-2">
                           <button
+                            type="button"
                             onClick={() => setEditEncounterId(row.id)}
                             className="p-2 bg-gray-50 rounded-lg text-gray-400 hover:bg-amber-50 hover:text-amber-500 transition-colors cursor-pointer"
                             title="Edit kunjungan"
@@ -371,6 +375,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
                             <Pencil size={15} strokeWidth={2} />
                           </button>
                           <button
+                            type="button"
                             onClick={() => (userRole === "ADMIN" || row.status === "Menunggu") && setDeleteTarget({ id: row.id, namaPasien: row.namaPasien })}
                             disabled={userRole !== "ADMIN" && row.status !== "Menunggu"}
                             title={userRole !== "ADMIN" && row.status !== "Menunggu" ? "Hanya antrean Menunggu yang dapat dihapus" : "Hapus antrean"}
@@ -394,11 +399,11 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
 
         {!isLoading && filteredData.length > 0 && (
           <div className="flex items-center justify-center gap-1.5 mt-8">
-            <button className="flex items-center gap-1 px-4 py-2 rounded-xl text-sm font-bold text-[#2BB5A0] hover:bg-gray-50 transition-colors">
+            <button type="button" className="flex items-center gap-1 px-4 py-2 rounded-xl text-sm font-bold text-[#2BB5A0] hover:bg-gray-50 transition-colors">
               <ChevronLeft size={16} strokeWidth={3} /> Sebelum
             </button>
-            <button className="w-8 h-8 rounded-lg text-sm font-bold text-white bg-[#2BB5A0]">1</button>
-            <button className="flex items-center gap-1 px-4 py-2 rounded-xl text-sm font-bold text-[#2BB5A0] hover:bg-gray-50 transition-colors">
+            <button type="button" className="w-8 h-8 rounded-lg text-sm font-bold text-white bg-[#2BB5A0]">1</button>
+            <button type="button" className="flex items-center gap-1 px-4 py-2 rounded-xl text-sm font-bold text-[#2BB5A0] hover:bg-gray-50 transition-colors">
               Selanjutnya <ChevronRight size={16} strokeWidth={3} />
             </button>
           </div>
@@ -441,6 +446,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
               </p>
               <div className="flex gap-3">
                 <button
+                  type="button"
                   onClick={() => setDeleteTarget(null)}
                   disabled={isDeleting}
                   className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-50"
@@ -448,12 +454,13 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
                   Batal
                 </button>
                 <button
+                  type="button"
                   onClick={handleDelete}
                   disabled={isDeleting}
                   className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {isDeleting ? (
-                    <><Loader2 size={14} className="animate-spin" /> Menghapus...</>
+                    <><Loader2 size={14} className="animate-spin" /> Menghapus…</>
                   ) : (
                     "Ya, Hapus"
                   )}

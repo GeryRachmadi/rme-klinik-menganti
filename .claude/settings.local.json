@@ -33,7 +33,8 @@
       "Bash(node --loader ts-node/esm -e \"\")",
       "Bash(git stash *)",
       "Bash(PGPASSWORD=\"password\" psql *)",
-      "Bash(Remove-Item *)"
+      "Bash(Remove-Item *)",
+      "Bash(grep *)"
     ]
   }
 }

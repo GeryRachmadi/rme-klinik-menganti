@@ -74,7 +74,7 @@ const PlanEducationForm = forwardRef<PlanEducationFormRef, PlanEducationFormProp
         </h3>
         <textarea
           {...register('anjuranEdukasi')}
-          placeholder="Contoh: Istirahat, hindari aktivitas berat..."
+          placeholder="Contoh: Istirahat, hindari aktivitas berat…"
           rows={3}
           disabled={isReadOnly}
           className={`w-full border rounded-xl p-4 text-sm font-sans resize-y focus:outline-none focus:ring-1 min-h-[80px] transition-colors focus:ring-[#0F766E] focus:border-[#0F766E] border-gray-200 placeholder-gray-400 ${isReadOnly ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800'}`}

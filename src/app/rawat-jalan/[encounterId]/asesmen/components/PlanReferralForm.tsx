@@ -163,7 +163,7 @@ const PlanReferralForm = forwardRef<PlanReferralFormRef, PlanReferralFormProps>(
               </label>
               <textarea
                 {...register('alasanRujukan')}
-                placeholder="Pertimbangan Medis..."
+                placeholder="Pertimbangan Medis…"
                 rows={3}
                 disabled={isReadOnly}
                 className={`w-full border border-gray-200 rounded-xl p-4 text-sm placeholder-gray-400 resize-y focus:outline-none focus:ring-1 min-h-[80px] focus:ring-[#0F766E] focus:border-[#0F766E] transition-colors ${isReadOnly ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800'}`}

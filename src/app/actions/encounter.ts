@@ -1,5 +1,6 @@
 "use server";
 
+import { auth } from "@/lib/auth";
 import { generateQueueNumber, type PolicyType } from "@/lib/queue-utils";
 
 export type GenerateQueueResult =
@@ -9,6 +10,14 @@ export type GenerateQueueResult =
 export async function generateQueueAction(
   policyType: PolicyType
 ): Promise<GenerateQueueResult> {
+  const session = await auth();
+  if (!session?.user) {
+    return { success: false, error: "Unauthorized" };
+  }
+  if (!["ADMIN", "PENDAFTARAN"].includes(session.user.role ?? "")) {
+    return { success: false, error: "Forbidden: insufficient role" };
+  }
+
   try {
     const queueNumber = await generateQueueNumber(policyType);
     return { success: true, queueNumber };

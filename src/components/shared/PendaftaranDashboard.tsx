@@ -259,6 +259,7 @@ export default function PendaftaranDashboard({
           </div>
           <div className="flex items-center gap-2">
             <button
+              type="button"
               className="px-4 py-1.5 rounded-full border border-gray-200 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
               style={{ fontFamily: "var(--font-jakarta)" }}
             >

@@ -107,7 +107,7 @@ export default function LoginPage() {
               </label>
               <input
                 type="text"
-                placeholder="Masukkan username anda..."
+                placeholder="Masukkan username anda…"
                 autoComplete="off"
                 value={username}
                 onChange={(e) => {
@@ -139,7 +139,7 @@ export default function LoginPage() {
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
-                  placeholder="Masukkan password anda..."
+                  placeholder="Masukkan password anda…"
                   autoComplete="new-password"
                   value={password}
                   onChange={(e) => {
@@ -191,7 +191,7 @@ export default function LoginPage() {
                 fontFamily: "var(--font-poppins)",
               }}
             >
-              {loading ? "Memproses..." : "Masuk"}
+              {loading ? "Memproses…" : "Masuk"}
             </button>
           </form>
         </div>

@@ -22,7 +22,7 @@ export default function ConditionTab({ data }: ConditionTabProps) {
       ) : (
         <div className="space-y-4">
           {data.map((condition, index) => (
-            <div key={index} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+            <div key={condition.icd10 || condition.name} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
               <div className="flex justify-between items-start mb-2">
                 <h3 className="font-bold text-lg text-gray-900" style={{ fontFamily: "var(--font-poppins)" }}>
                   {condition.name} {condition.icd10 && <span className="text-gray-500 text-sm font-normal">({condition.icd10})</span>}

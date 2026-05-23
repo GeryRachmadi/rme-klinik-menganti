@@ -88,7 +88,7 @@ const SubjectiveObjectiveExtendedForm = forwardRef<SubjectiveObjectiveExtendedFo
         <textarea
           id="keluhanUtama"
           rows={4}
-          placeholder="Masukkan keluhan utama pasien..."
+          placeholder="Masukkan keluhan utama pasien…"
           disabled={isReadOnly}
           className={`w-full border rounded-xl p-4 text-sm font-sans resize-y focus:outline-none focus:ring-1 min-h-[100px] transition-colors placeholder-gray-400
             ${errors.keluhanUtama ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#0F766E] focus:border-[#0F766E]'}
@@ -116,7 +116,7 @@ const SubjectiveObjectiveExtendedForm = forwardRef<SubjectiveObjectiveExtendedFo
         <textarea
           id="pemeriksaanFisikTambahan"
           rows={4}
-          placeholder="Masukkan hasil pemeriksaan fisik tambahan..."
+          placeholder="Masukkan hasil pemeriksaan fisik tambahan…"
           disabled={isReadOnly}
           className={`w-full border rounded-xl p-4 text-sm font-sans resize-y focus:outline-none focus:ring-1 min-h-[100px] transition-colors placeholder-gray-400
             ${errors.pemeriksaanFisikTambahan ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#0F766E] focus:border-[#0F766E]'}

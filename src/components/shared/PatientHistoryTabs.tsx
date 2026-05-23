@@ -31,6 +31,14 @@ interface PatientHistoryTabsProps {
   encounters?: MappedEncounter[];
 }
 
+function EmptyBadge() {
+  return (
+    <span className="text-[10px] px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full font-bold uppercase tracking-wide">
+      Kosong
+    </span>
+  );
+}
+
 export default function PatientHistoryTabs({
   patient,
   hasMedicalRecord = false,
@@ -55,12 +63,6 @@ export default function PatientHistoryTabs({
       );
     }
   }
-
-  const EmptyBadge = () => (
-    <span className="text-[10px] px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full font-bold uppercase tracking-wide">
-      Kosong
-    </span>
-  );
 
   const TABS: TabItem[] = [
     { id: "ringkasan",         label: "Ringkasan",         badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },

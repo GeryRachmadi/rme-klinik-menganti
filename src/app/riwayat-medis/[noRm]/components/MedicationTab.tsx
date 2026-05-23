@@ -22,7 +22,7 @@ export default function MedicationTab({ data = [] }: MedicationTabProps) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {data.map((med, index) => (
-            <div key={index} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm flex items-start space-x-4">
+            <div key={med.name} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm flex items-start space-x-4">
               <div className="bg-blue-50 p-3 rounded-full flex-shrink-0">
                 <Pill className="w-6 h-6 text-blue-500" />
               </div>

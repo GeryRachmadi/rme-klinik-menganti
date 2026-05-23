@@ -291,12 +291,14 @@ export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
               </p>
               <div className="flex gap-3 mt-7 w-full">
                 <button
+                  type="button"
                   onClick={() => setUserToDeactivate(null)}
                   className="flex-1 px-5 py-2.5 rounded-full text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-100 transition-colors"
                 >
                   Batal
                 </button>
                 <button
+                  type="button"
                   onClick={handleDeactivateConfirm}
                   className="flex-1 px-5 py-2.5 rounded-full text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 transition-colors"
                 >
@@ -336,6 +338,7 @@ export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
         </div>
         {isAdmin && (
           <button
+            type="button"
             onClick={() => setIsAddModalOpen(true)}
             className="flex items-center gap-2 px-5 py-2.5 rounded-full text-white text-sm font-semibold hover:opacity-90 transition-opacity"
             style={{ background: "#2BB5A0", fontFamily: "var(--font-jakarta)" }}
@@ -359,7 +362,7 @@ export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
               <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300" strokeWidth={2.5} />
               <input
                 type="text"
-                placeholder="Cari Nama atau Username..."
+                placeholder="Cari Nama atau Username…"
                 autoComplete="off"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -421,7 +424,7 @@ export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
                 <td colSpan={6} className="py-16 text-center" style={{ fontFamily: "var(--font-jakarta)" }}>
                   <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
                     <Loader2 size={16} className="animate-spin" />
-                    Memuat data...
+                    Memuat data…
                   </div>
                 </td>
               </tr>
@@ -478,6 +481,7 @@ export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
                   <td className="py-4">
                     {isAdmin ? (
                       <button
+                        type="button"
                         onClick={() => !isToggling && handleToggle(account)}
                         disabled={isToggling}
                         className="flex items-center gap-2 cursor-pointer group disabled:opacity-60 disabled:cursor-not-allowed"
@@ -496,7 +500,7 @@ export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
                           className="text-sm font-medium text-gray-600 group-hover:text-gray-800 transition-colors"
                           style={{ fontFamily: "var(--font-jakarta)" }}
                         >
-                          {isToggling ? "..." : account.isActive ? "Aktif" : "Nonaktif"}
+                          {isToggling ? "…" : account.isActive ? "Aktif" : "Nonaktif"}
                         </span>
                       </button>
                     ) : (
@@ -513,6 +517,7 @@ export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
                   <td className="py-4">
                     <div className="flex items-center gap-1">
                       <button
+                        type="button"
                         onClick={() => console.log("View user - coming soon")}
                         className="cursor-pointer p-2 rounded-lg text-gray-400 hover:bg-blue-50 hover:text-blue-500 transition-colors"
                         title="Lihat detail"
@@ -522,6 +527,7 @@ export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
                       {isAdmin && (
                         <>
                           <button
+                            type="button"
                             onClick={() => setUserToEdit(account)}
                             className="cursor-pointer p-2 rounded-lg text-gray-400 hover:bg-amber-50 hover:text-amber-500 transition-colors"
                             title="Edit akun"
@@ -529,6 +535,7 @@ export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
                             <Pencil size={15} strokeWidth={2} />
                           </button>
                           <button
+                            type="button"
                             onClick={() => { setUserToDelete(account); setIsDeleteModalOpen(true); }}
                             className="cursor-pointer p-2 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
                             title="Hapus akun"
@@ -550,6 +557,7 @@ export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
         {!isLoading && pagination.totalPages > 1 && (
           <div className="flex items-center justify-center gap-1 mt-8">
             <button
+              type="button"
               disabled={currentPage === 1}
               onClick={() => setCurrentPage((p) => p - 1)}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
@@ -566,6 +574,7 @@ export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
                 </span>
               ) : (
                 <button
+                  type="button"
                   key={p}
                   onClick={() => setCurrentPage(p as number)}
                   className={`w-9 h-9 rounded-xl text-sm font-semibold transition-colors ${
@@ -579,6 +588,7 @@ export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
             )}
 
             <button
+              type="button"
               disabled={currentPage === pagination.totalPages}
               onClick={() => setCurrentPage((p) => p + 1)}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"

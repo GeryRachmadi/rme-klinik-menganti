@@ -57,6 +57,7 @@ export default function EmptyMedicalRecord({
 
         {canStartAssessment && (
           <button
+            type="button"
             onClick={handleClick}
             disabled={isLoading}
             className="bg-teal-600 hover:bg-teal-700 disabled:opacity-60 disabled:cursor-not-allowed text-white px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 font-medium transition-colors mx-auto"
@@ -67,7 +68,7 @@ export default function EmptyMedicalRecord({
             ) : (
               <Plus className="w-5 h-5" />
             )}
-            {isLoading ? "Memeriksa..." : "Mulai Asesmen Pertama"}
+            {isLoading ? "Memeriksa…" : "Mulai Asesmen Pertama"}
           </button>
         )}
       </div>
@@ -83,7 +84,7 @@ export default function EmptyMedicalRecord({
               {error}
             </p>
           </div>
-          <button onClick={() => setError(null)} className="shrink-0 text-red-400 hover:text-red-600 transition-colors">
+          <button type="button" onClick={() => setError(null)} className="shrink-0 text-red-400 hover:text-red-600 transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>

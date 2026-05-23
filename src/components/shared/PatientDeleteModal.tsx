@@ -134,7 +134,7 @@ export default function PatientDeleteModal({
               {isDeleting ? (
                 <>
                   <Loader2 size={16} strokeWidth={2} className="animate-spin" />
-                  Menghapus...
+                  Menghapus…
                 </>
               ) : (
                 "Hapus"

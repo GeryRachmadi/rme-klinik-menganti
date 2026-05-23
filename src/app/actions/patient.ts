@@ -1,5 +1,6 @@
 "use server";
 
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getPatientIHSId } from "@/lib/satusehat";
@@ -12,6 +13,14 @@ export type CreatePatientResponse =
 export async function createPatient(
   data: PatientRegistrationInput
 ): Promise<CreatePatientResponse> {
+  const session = await auth();
+  if (!session?.user) {
+    return { success: false, error: "Unauthorized" };
+  }
+  if (!["ADMIN", "PENDAFTARAN"].includes(session.user.role ?? "")) {
+    return { success: false, error: "Forbidden: insufficient role" };
+  }
+
   let finalNik = data.nik?.trim() || "";
   if (!finalNik) {
     finalNik = `NONIK-${Date.now()}`;

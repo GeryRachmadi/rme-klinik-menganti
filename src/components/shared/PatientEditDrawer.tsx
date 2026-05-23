@@ -291,7 +291,7 @@ export default function PatientEditDrawer({ isOpen, onClose, patient, onSuccess 
                 </label>
                 <div className="relative">
                   <select {...register("jenisKelamin")} className={selCls(errors.jenisKelamin)}>
-                    <option value="" disabled>Pilih jenis kelamin...</option>
+                    <option value="" disabled>Pilih jenis kelamin…</option>
                     <option value="LAKI_LAKI">Laki-laki</option>
                     <option value="PEREMPUAN">Perempuan</option>
                   </select>
@@ -305,7 +305,7 @@ export default function PatientEditDrawer({ isOpen, onClose, patient, onSuccess 
                 </label>
                 <div className="relative">
                   <select {...register("jenisPasien")} className={selCls(errors.jenisPasien)}>
-                    <option value="" disabled>Pilih jenis pasien...</option>
+                    <option value="" disabled>Pilih jenis pasien…</option>
                     <option value="UMUM">Umum</option>
                     <option value="BPJS">BPJS</option>
                   </select>
@@ -352,7 +352,7 @@ export default function PatientEditDrawer({ isOpen, onClose, patient, onSuccess 
                 </label>
                 <div className="relative">
                   <select {...register("agama")} className={selCls(errors.agama)}>
-                    <option value="" disabled>Pilih agama...</option>
+                    <option value="" disabled>Pilih agama…</option>
                     <option value="ISLAM">Islam</option>
                     <option value="KRISTEN">Kristen</option>
                     <option value="KATOLIK">Katolik</option>
@@ -370,7 +370,7 @@ export default function PatientEditDrawer({ isOpen, onClose, patient, onSuccess 
                 </label>
                 <div className="relative">
                   <select {...register("statusPernikahan")} className={selCls(errors.statusPernikahan)}>
-                    <option value="" disabled>Pilih status...</option>
+                    <option value="" disabled>Pilih status…</option>
                     <option value="BELUM_MENIKAH">Belum Menikah</option>
                     <option value="MENIKAH">Menikah</option>
                     <option value="CERAI_HIDUP">Cerai Hidup</option>
@@ -392,7 +392,7 @@ export default function PatientEditDrawer({ isOpen, onClose, patient, onSuccess 
                 Alamat KTP <span className="text-red-500">*</span>
               </label>
               <textarea
-                placeholder="Jl. Nama Jalan, No. XX, RT/RW..."
+                placeholder="Jl. Nama Jalan, No. XX, RT/RW…"
                 autoComplete="off"
                 rows={3}
                 {...register("alamatKtp")}
@@ -409,7 +409,7 @@ export default function PatientEditDrawer({ isOpen, onClose, patient, onSuccess 
                 </label>
                 <div className="relative">
                   <select {...register("provinsi")} className={selCls(errors.provinsi)}>
-                    <option value="" disabled>Pilih provinsi...</option>
+                    <option value="" disabled>Pilih provinsi…</option>
                     <option value="Jawa Timur">Jawa Timur</option>
                     <option value="Jawa Tengah">Jawa Tengah</option>
                     <option value="Jawa Barat">Jawa Barat</option>
@@ -428,7 +428,7 @@ export default function PatientEditDrawer({ isOpen, onClose, patient, onSuccess 
                 </label>
                 <div className="relative">
                   <select {...register("kabupatenKota")} className={selCls(errors.kabupatenKota)}>
-                    <option value="" disabled>Pilih kab/kota...</option>
+                    <option value="" disabled>Pilih kab/kota…</option>
                     <option value="Kabupaten Gresik">Kabupaten Gresik</option>
                     <option value="Kota Surabaya">Kota Surabaya</option>
                     <option value="Kabupaten Sidoarjo">Kabupaten Sidoarjo</option>
@@ -448,7 +448,7 @@ export default function PatientEditDrawer({ isOpen, onClose, patient, onSuccess 
                 </label>
                 <div className="relative">
                   <select {...register("kecamatan")} className={selCls(errors.kecamatan)}>
-                    <option value="" disabled>Pilih kecamatan...</option>
+                    <option value="" disabled>Pilih kecamatan…</option>
                     <option value="Menganti">Menganti</option>
                     <option value="Kedamean">Kedamean</option>
                     <option value="Benjeng">Benjeng</option>
@@ -464,7 +464,7 @@ export default function PatientEditDrawer({ isOpen, onClose, patient, onSuccess 
                 </label>
                 <div className="relative">
                   <select {...register("desa")} className={selCls(errors.desa)}>
-                    <option value="" disabled>Pilih desa...</option>
+                    <option value="" disabled>Pilih desa…</option>
                     <option value="Menganti">Menganti</option>
                     <option value="Sidowungu">Sidowungu</option>
                     <option value="Hulaan">Hulaan</option>

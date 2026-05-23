@@ -189,12 +189,14 @@ export default function AdminDashboard({
           </div>
           <div className="flex items-center gap-2">
             <button
+              type="button"
               className="px-4 py-1.5 rounded-full border border-gray-200 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
               style={{ fontFamily: "var(--font-jakarta)" }}
             >
               Filter
             </button>
             <button
+              type="button"
               className="px-4 py-1.5 rounded-full text-sm text-white transition-colors hover:opacity-90"
               style={{ background: "#2BB5A0", fontFamily: "var(--font-jakarta)" }}
             >

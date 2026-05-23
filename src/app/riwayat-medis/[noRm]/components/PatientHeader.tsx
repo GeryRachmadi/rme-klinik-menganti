@@ -80,6 +80,7 @@ export default function PatientHeader({
       {/* Right Section */}
       {canStartAssessment && (
         <button
+          type="button"
           className="bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 font-medium shrink-0"
           style={{ fontFamily: "var(--font-poppins)" }}
         >

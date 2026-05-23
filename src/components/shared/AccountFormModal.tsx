@@ -163,6 +163,7 @@ export default function AccountFormModal({ isOpen, onClose, onSave, user }: Acco
             </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors mt-0.5"
           >
@@ -222,7 +223,7 @@ export default function AccountFormModal({ isOpen, onClose, onSave, user }: Acco
                   onChange={(e) => setRole(e.target.value)}
                   className={`appearance-none cursor-pointer ${errors.role ? inputError : inputNormal} ${!role ? "text-gray-300" : "text-gray-700"}`}
                 >
-                  <option value="" disabled>Pilih role...</option>
+                  <option value="" disabled>Pilih role…</option>
                   <option value="ADMIN">Admin</option>
                   <option value="PENDAFTARAN">Pendaftaran</option>
                   <option value="PERAWAT">Perawat</option>
@@ -277,7 +278,7 @@ export default function AccountFormModal({ isOpen, onClose, onSave, user }: Acco
                   onChange={(e) => setSpesialisasi(e.target.value)}
                   className={`appearance-none cursor-pointer ${errors.spesialisasi ? inputError : inputNormal} ${!spesialisasi ? "text-gray-300" : "text-gray-700"}`}
                 >
-                  <option value="" disabled>Pilih poli...</option>
+                  <option value="" disabled>Pilih poli…</option>
                   <option value="Umum">Umum</option>
                   <option value="Gigi">Gigi</option>
                 </select>
@@ -308,6 +309,7 @@ export default function AccountFormModal({ isOpen, onClose, onSave, user }: Acco
         {/* Footer */}
         <div className="px-8 py-5 border-t border-gray-100 flex items-center gap-3 flex-shrink-0">
           <button
+            type="button"
             onClick={onClose}
             disabled={isSaving}
             className="flex-1 px-5 py-2.5 rounded-full text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-50"
@@ -315,12 +317,13 @@ export default function AccountFormModal({ isOpen, onClose, onSave, user }: Acco
             Batal
           </button>
           <button
+            type="button"
             onClick={handleSimpan}
             disabled={isSaving}
             className="flex-1 px-5 py-2.5 rounded-full text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-70 cursor-pointer"
             style={{ background: "#2BB5A0" }}
           >
-            {isSaving ? "Menyimpan..." : "Simpan"}
+            {isSaving ? "Menyimpan…" : "Simpan"}
           </button>
         </div>
       </div>

@@ -98,8 +98,8 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 ## Jira Project
 - Project: Tugas Akhir - RME Klinik Pratama Menganti Gresik
 - Key: TR
-- Current progress: TR-82 Done (SATUSEHAT full epic complete — bundle builder, submit API, merged UI, UX revisions)
-- Next: Full blackbox regression testing (UC-01 → UC-12)
+- Current progress: React Doctor v0.2.3 audit complete (69/100, 0 critical issues). UC-13 (TR-101→TR-107) confirmed complete.
+- Next: Full blackbox regression testing (UC-01 → UC-13)
 - Backlog: Real credentials testing when Kemenkes resolves 401, thesis writeup
 
 ## LATEST CHANGES (TR-13 SATUSEHAT Phase 1)
@@ -117,7 +117,7 @@ ICD10Reference, ICD9Reference, ActivityLog, SyncQueue
 - Draft detection: `useEffect` in `AsesmenDokter` uses flexible `checkLegacyDraft` helper that handles both `{data:{...}}` and raw `{...}` localStorage structures.
 - All Plan forms expose `getValues()` on their ref (no internal validation triggered) for safe payload extraction.
 
-**Status:** TR-77 through TR-82 complete. SATUSEHAT epic done. TR-82 UX revised (merged button, auto-sync, static chip in queue, 10-patient mock). Ready for blackbox regression testing.
+**Status:** TR-77 through TR-82 complete. SATUSEHAT epic done. TR-82 UX revised (merged button, auto-sync, static chip in queue, 10-patient mock). UC-13 complete. Next: Full blackbox regression testing (UC-01 → UC-13).
 
 ### TR-1 [SETUP] Project Infrastructure
 - TR-14 ✅ Setup Next.js project dengan TypeScript dan Tailwind CSS

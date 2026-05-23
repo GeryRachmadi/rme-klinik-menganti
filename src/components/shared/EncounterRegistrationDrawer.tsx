@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import {
   CheckCircle2,
   ChevronDown,
@@ -17,25 +16,7 @@ import {
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import PatientRegistrationDrawer from "@/components/shared/PatientRegistrationDrawer";
 import { usePatientSearch } from "@/hooks/usePatientSearch";
-
-export const encounterRegistrationSchema = z.object({
-  policyType: z.enum(["UMUM", "GIGI"], {
-    error: "Poli Tujuan wajib dipilih."
-  }),
-  practitionerId: z.string().min(1, "Dokter wajib dipilih."),
-  priority: z.enum(["STABIL", "CUKUP_BERISIKO", "BERISIKO", "BERISIKO_TINGGI"], {
-    error: "Prioritas wajib dipilih."
-  }),
-  patientType: z.enum(["UMUM", "BPJS"], {
-    error: "Jenis Pasien wajib dipilih."
-  }),
-  reasonCode: z.string()
-    .trim()
-    .min(1, "Keluhan Utama wajib diisi.")
-    .max(500, "Keluhan Utama maksimal 500 karakter."),
-}).strict();
-
-export type EncounterRegistrationFormData = z.infer<typeof encounterRegistrationSchema>;
+import { encounterRegistrationSchema, type EncounterRegistrationFormData } from "@/lib/validations/encounter";
 
 interface EncounterRegistrationDrawerProps {
   isOpen: boolean;
@@ -315,7 +296,7 @@ export default function EncounterRegistrationDrawer({
                           value={search.advRm}
                           onChange={(e) => search.onAdvFieldChange("rm", e.target.value)}
                           autoComplete="off"
-                          placeholder="Contoh: RM-2024..."
+                          placeholder="Contoh: RM-2024…"
                           className={inputBase}
                         />
                       </div>
@@ -368,7 +349,7 @@ export default function EncounterRegistrationDrawer({
                           onChange={(e) => search.onSearchQueryChange(e.target.value)}
                           onKeyDown={search.handleSearch}
                           autoComplete="off"
-                          placeholder="Ketik lalu tekan Enter untuk mencari..."
+                          placeholder="Ketik lalu tekan Enter untuk mencari…"
                           className={`${inputBase} pl-10`}
                         />
                       </div>
@@ -442,7 +423,7 @@ export default function EncounterRegistrationDrawer({
                                 value={field.value || ""}
                                 className={`${inputBase} appearance-none cursor-pointer ${errors.priority ? "border-red-500" : "border-gray-200 focus:border-[#2BB5A0]"}`}
                               >
-                                <option value="" disabled>Pilih prioritas...</option>
+                                <option value="" disabled>Pilih prioritas…</option>
                                 <option value="STABIL">Stabil</option>
                                 <option value="CUKUP_BERISIKO">Cukup Berisiko</option>
                                 <option value="BERISIKO">Berisiko</option>
@@ -476,7 +457,7 @@ export default function EncounterRegistrationDrawer({
                                 value={field.value || ""}
                                 className={`${inputBase} appearance-none cursor-pointer ${errors.policyType ? "border-red-500" : "border-gray-200 focus:border-[#2BB5A0]"}`}
                               >
-                                <option value="" disabled>Pilih poli...</option>
+                                <option value="" disabled>Pilih poli…</option>
                                 <option value="UMUM">Poli Umum</option>
                                 <option value="GIGI">Poli Gigi</option>
                               </select>
@@ -516,10 +497,10 @@ export default function EncounterRegistrationDrawer({
                             >
                               <option value="" disabled>
                                 {isLoadingDoctors
-                                  ? "Memuat dokter..."
+                                  ? "Memuat dokter…"
                                   : practitioners.length === 0
                                     ? "Tidak ada dokter tersedia"
-                                    : "Pilih Dokter..."}
+                                    : "Pilih Dokter…"}
                               </option>
                               {practitioners.map((p) => (
                                 <option key={p.id} value={p.id}>{p.name}</option>
@@ -550,7 +531,7 @@ export default function EncounterRegistrationDrawer({
                           <textarea
                             {...field}
                             value={field.value || ""}
-                            placeholder="Deskripsikan keluhan utama pasien..."
+                            placeholder="Deskripsikan keluhan utama pasien…"
                             rows={3}
                             className={`${inputBase} resize-none ${errors.reasonCode ? "border-red-500" : "border-gray-200 focus:border-[#2BB5A0]"}`}
                           />

@@ -202,7 +202,7 @@ export default function EncounterEditDrawer({
         <div className="flex-1 overflow-y-auto p-6">
           {isLoadingDetail ? (
             <div className="flex items-center justify-center py-20 gap-2 text-sm text-gray-400">
-              <Loader2 size={18} className="animate-spin" /> Memuat data kunjungan...
+              <Loader2 size={18} className="animate-spin" /> Memuat data kunjungan…
             </div>
           ) : (
             <form id="encounter-edit-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8">
@@ -254,7 +254,7 @@ export default function EncounterEditDrawer({
                                 errors.priority ? "border-red-500" : ""
                               }`}
                             >
-                              <option value="" disabled>Pilih prioritas...</option>
+                              <option value="" disabled>Pilih prioritas…</option>
                               <option value="STABIL">Stabil</option>
                               <option value="CUKUP_BERISIKO">Cukup Berisiko</option>
                               <option value="BERISIKO">Berisiko</option>
@@ -335,10 +335,10 @@ export default function EncounterEditDrawer({
                           >
                             <option value="" disabled>
                               {isLoadingDoctors
-                                ? "Memuat dokter..."
+                                ? "Memuat dokter…"
                                 : practitioners.length === 0
                                 ? "Tidak ada dokter tersedia"
-                                : "Pilih Dokter..."}
+                                : "Pilih Dokter…"}
                             </option>
                             {practitioners.map((p) => (
                               <option key={p.id} value={p.id}>
@@ -375,7 +375,7 @@ export default function EncounterEditDrawer({
                         <textarea
                           {...field}
                           value={field.value || ""}
-                          placeholder="Deskripsikan keluhan utama pasien..."
+                          placeholder="Deskripsikan keluhan utama pasien…"
                           rows={3}
                           autoComplete="off"
                           className={`${inputBase} resize-none ${

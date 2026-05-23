@@ -529,7 +529,7 @@ export default function PatientRegistrationDrawer({
                 Alamat KTP <span className="text-red-500">*</span>
               </label>
               <textarea
-                placeholder="Jl. Nama Jalan, No. XX, RT/RW..."
+                placeholder="Jl. Nama Jalan, No. XX, RT/RW…"
                 autoComplete="off"
                 rows={3}
                 {...register("alamatKtp")}
@@ -816,7 +816,7 @@ export default function PatientRegistrationDrawer({
             style={{ background: "#2BB5A0" }}
           >
             {isLoading && <Loader2 size={14} strokeWidth={2.5} className="animate-spin" />}
-            {isLoading ? "Menyimpan..." : "Simpan"}
+            {isLoading ? "Menyimpan…" : "Simpan"}
           </button>
         </div>
       </div>

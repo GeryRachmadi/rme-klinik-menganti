@@ -19,6 +19,7 @@ export const EncounterCard = ({ encounter, index, defaultExpanded = false }: { e
 
       <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
         <button
+          type="button"
           onClick={() => setIsExpanded(!isExpanded)}
           className="w-full text-left p-5 focus:outline-none"
           aria-expanded={isExpanded}
@@ -100,6 +101,7 @@ export default function EncounterHistoryTab({ data }: EncounterHistoryTabProps) 
 
         <div className="flex items-center gap-3">
           <button
+            type="button"
             disabled
             title="Available in upcoming update"
             className="opacity-50 cursor-not-allowed inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 h-[44px] min-w-[44px]"
@@ -108,6 +110,7 @@ export default function EncounterHistoryTab({ data }: EncounterHistoryTabProps) 
             Filter by Year
           </button>
           <button
+            type="button"
             disabled
             title="Available in upcoming update"
             className="opacity-50 cursor-not-allowed inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 h-[44px] min-w-[44px]"
@@ -130,7 +133,7 @@ export default function EncounterHistoryTab({ data }: EncounterHistoryTabProps) 
 
           <div className="space-y-6">
             {data.map((encounter, index) => (
-              <EncounterCard key={index} encounter={encounter} index={index} />
+              <EncounterCard key={String(encounter.date)} encounter={encounter} index={index} />
             ))}
           </div>
         </div>

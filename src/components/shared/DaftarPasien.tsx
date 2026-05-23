@@ -152,6 +152,7 @@ export default function DaftarPasien() {
           </p>
         </div>
         <button
+          type="button"
           onClick={() => setIsDrawerOpen(true)}
           className="flex items-center gap-2 px-5 py-2.5 rounded-full text-white text-sm font-semibold hover:opacity-90 transition-opacity"
           style={{ background: "#2BB5A0", fontFamily: "var(--font-jakarta)" }}
@@ -181,7 +182,7 @@ export default function DaftarPasien() {
               />
               <input
                 type="text"
-                placeholder="Cari Nama, NIK, IHS, atau No.RM..."
+                placeholder="Cari Nama, NIK, IHS, atau No.RM…"
                 autoComplete="off"
                 value={searchQuery}
                 onChange={handleSearchChange}
@@ -345,6 +346,7 @@ export default function DaftarPasien() {
                   <td className="py-4">
                     <div className="flex items-center gap-1">
                       <button
+                        type="button"
                         onClick={() => router.push(`/riwayat-medis/${patient.noRm}`)}
                         className="cursor-pointer p-2 bg-gray-50 rounded-lg text-gray-400 hover:bg-blue-50 hover:text-blue-500 transition-colors"
                         title="Lihat rekam medis"
@@ -352,6 +354,7 @@ export default function DaftarPasien() {
                         <Eye size={15} strokeWidth={2} />
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleEditOpen(patient)}
                         className="cursor-pointer p-2 bg-gray-50 rounded-lg text-gray-400 hover:bg-amber-50 hover:text-amber-500 transition-colors"
                         title="Edit data pasien"
@@ -359,6 +362,7 @@ export default function DaftarPasien() {
                         <Pencil size={15} strokeWidth={2} />
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleDeleteOpen(patient)}
                         className="cursor-pointer p-2 bg-gray-50 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
                         title="Hapus data pasien"
@@ -377,6 +381,7 @@ export default function DaftarPasien() {
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-1 mt-8">
             <button
+              type="button"
               disabled={currentPage === 1 || isLoading}
               onClick={() => setCurrentPage((p) => p - 1)}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
@@ -397,6 +402,7 @@ export default function DaftarPasien() {
                 </span>
               ) : (
                 <button
+                  type="button"
                   key={p}
                   onClick={() => setCurrentPage(p as number)}
                   disabled={isLoading}
@@ -416,6 +422,7 @@ export default function DaftarPasien() {
             )}
 
             <button
+              type="button"
               disabled={currentPage === totalPages || isLoading}
               onClick={() => setCurrentPage((p) => p + 1)}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
@@ -433,7 +440,7 @@ export default function DaftarPasien() {
           style={{ fontFamily: "var(--font-jakarta)" }}
         >
           {isLoading
-            ? "Memuat data..."
+            ? "Memuat data…"
             : `Menampilkan ${patients.length} dari ${total} pasien`}
         </p>
       </div>
