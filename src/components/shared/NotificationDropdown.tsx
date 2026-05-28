@@ -40,7 +40,16 @@ export default function NotificationDropdown({ userRole }: NotificationDropdownP
     }
   }, []);
 
-  // Fetch every time dropdown opens
+  // Fetch on mount so badge count is visible immediately (before first open)
+  useEffect(() => {
+    let cancelled = false;
+    getRoleBasedNotifications(userRole).then((data) => {
+      if (!cancelled) setNotifications(data);
+    });
+    return () => { cancelled = true; };
+  }, [userRole]);
+
+  // Re-fetch with loading state every time dropdown opens
   useEffect(() => {
     if (!isOpen) return;
     let cancelled = false;

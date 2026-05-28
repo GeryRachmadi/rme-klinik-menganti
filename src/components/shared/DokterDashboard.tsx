@@ -8,6 +8,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import type { Prisma } from "@/generated/prisma";
+import DashboardQueueTable, { type QueueEncounterItem } from "@/components/shared/DashboardQueueTable";
 
 type EncounterForDokter = Prisma.EncounterGetPayload<{
   include: {
@@ -55,14 +56,6 @@ function formatDateWIB(): string {
   return `HARI INI, ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 }
 
-function calcAge(birthdate: Date): number {
-  const now = new Date();
-  let age = now.getFullYear() - birthdate.getFullYear();
-  const m = now.getMonth() - birthdate.getMonth();
-  if (m < 0 || (m === 0 && now.getDate() < birthdate.getDate())) age--;
-  return age;
-}
-
 function getInitials(name: string): string {
   return name
     .split(" ")
@@ -84,32 +77,6 @@ function getAvatarColor(name: string) {
   const idx = name.charCodeAt(0) % AVATAR_COLORS.length;
   return AVATAR_COLORS[idx];
 }
-
-const genderLabel: Record<string, string> = {
-  LAKI_LAKI: "Laki-laki",
-  PEREMPUAN: "Perempuan",
-};
-
-const encounterStatusConfig: Record<
-  string,
-  { label: string; bgClass: string; textClass: string }
-> = {
-  MENUNGGU: {
-    label: "Menunggu",
-    bgClass: "bg-orange-50",
-    textClass: "text-orange-500",
-  },
-  DIPERIKSA: {
-    label: "Sedang Diperiksa",
-    bgClass: "bg-teal-50",
-    textClass: "text-teal-600",
-  },
-  SELESAI: {
-    label: "Selesai",
-    bgClass: "bg-gray-100",
-    textClass: "text-gray-500",
-  },
-};
 
 export default function DokterDashboard({
   name,
@@ -262,135 +229,12 @@ export default function DokterDashboard({
       </div>
 
       {/* ── Row 3 Left: Tabel Pemeriksaan Pasien ── */}
-      <div className="col-span-8 bg-white rounded-3xl p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-1 h-5 rounded-full bg-[#2BB5A0]" />
-            <h2
-              className="text-sm font-bold text-gray-800 tracking-widest"
-              style={{ fontFamily: "var(--font-poppins)" }}
-            >
-              DAFTAR PEMERIKSAAN PASIEN
-            </h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="px-4 py-1.5 rounded-full border border-gray-200 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
-              style={{ fontFamily: "var(--font-jakarta)" }}
-            >
-              Filter
-            </button>
-            <Link
-              href="/rawat-jalan"
-              className="px-4 py-1.5 rounded-full text-sm text-white transition-colors hover:opacity-90"
-              style={{
-                background: "#2BB5A0",
-                fontFamily: "var(--font-jakarta)",
-              }}
-            >
-              Selengkapnya
-            </Link>
-          </div>
-        </div>
-
-        {encounters.length === 0 ? (
-          <div
-            className="text-center py-16 text-gray-300 text-sm"
-            style={{ fontFamily: "var(--font-jakarta)" }}
-          >
-            Belum ada pasien terdaftar hari ini.
-          </div>
-        ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="text-left border-b border-gray-100">
-                {["NO.ANTREAN", "NAMA", "KELUHAN AWAL", "STATUS", "ACTION"].map(
-                  (col) => (
-                    <th
-                      key={col}
-                      className="pb-3 text-xs font-semibold text-gray-400 tracking-wider"
-                      style={{ fontFamily: "var(--font-jakarta)" }}
-                    >
-                      {col}
-                    </th>
-                  )
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {encounters.map((enc) => {
-                const statusCfg =
-                  encounterStatusConfig[enc.status] ??
-                  encounterStatusConfig["MENUNGGU"];
-                const age = calcAge(enc.patient.tanggalLahir);
-                const gender =
-                  genderLabel[enc.patient.jenisKelamin] ?? enc.patient.jenisKelamin;
-
-                return (
-                  <tr
-                    key={enc.id}
-                    className="border-b border-gray-50 last:border-0"
-                  >
-                    <td
-                      className="py-3 text-sm font-bold"
-                      style={{
-                        fontFamily: "var(--font-poppins)",
-                        color: "#2BB5A0",
-                      }}
-                    >
-                      {enc.queueNumber}
-                    </td>
-                    <td className="py-3">
-                      <p
-                        className="text-sm font-semibold text-gray-800 leading-snug"
-                        style={{ fontFamily: "var(--font-jakarta)" }}
-                      >
-                        {enc.patient.namaLengkap}
-                      </p>
-                      <p
-                        className="text-xs text-gray-400 mt-0.5"
-                        style={{ fontFamily: "var(--font-jakarta)" }}
-                      >
-                        {gender} &bull; {age} tahun
-                      </p>
-                    </td>
-                    <td className="py-3 max-w-[180px]">
-                      <p
-                        className="text-sm text-gray-600 line-clamp-2"
-                        style={{ fontFamily: "var(--font-jakarta)" }}
-                      >
-                        {enc.reasonCode ?? "-"}
-                      </p>
-                    </td>
-                    <td className="py-3">
-                      <span
-                        className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${statusCfg.bgClass} ${statusCfg.textClass}`}
-                        style={{ fontFamily: "var(--font-jakarta)" }}
-                      >
-                        {statusCfg.label}
-                      </span>
-                    </td>
-                    <td className="py-3">
-                      <Link
-                        href={`/asesmen/${enc.id}`}
-                        className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold text-white hover:opacity-90 transition-opacity"
-                        style={{
-                          background: "#2BB5A0",
-                          fontFamily: "var(--font-jakarta)",
-                        }}
-                      >
-                        Periksa
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <DashboardQueueTable
+        title="DAFTAR PEMERIKSAAN PASIEN"
+        encounters={encounters as QueueEncounterItem[]}
+        variant="dokter"
+        emptyMessage="Belum ada pasien terdaftar hari ini."
+      />
 
       {/* ── Row 3 Right: Riwayat Pemeriksaan ── */}
       <div className="col-span-4 bg-white rounded-3xl p-6 flex flex-col">

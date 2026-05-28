@@ -3,11 +3,12 @@ import {
   Users,
   ClipboardCheck,
   UserSearch,
-  MapPin,
+  Activity,
   Stethoscope,
   CheckCircle,
 } from "lucide-react";
 import type { Prisma } from "@/generated/prisma";
+import DashboardQueueTable, { type QueueEncounterItem } from "@/components/shared/DashboardQueueTable";
 
 type EncounterWithPatientDetail = Prisma.EncounterGetPayload<{
   include: {
@@ -31,7 +32,7 @@ interface PerawatDashboardProps {
   name: string;
   antreanMenunggu: number;
   selesaiAsesmen: number;
-  ruangPenugasan: string;
+  menungguTriage: number;
   encounters: EncounterWithPatientDetail[];
   partnerDokter: PractitionerItem[];
   selesaiList: EncounterSelesaiItem[];
@@ -50,14 +51,6 @@ function formatWIB(date: Date): string {
   const hh = String(d.getUTCHours()).padStart(2, "0");
   const mm = String(d.getUTCMinutes()).padStart(2, "0");
   return `${hh}:${mm}`;
-}
-
-function calcAge(birthdate: Date): number {
-  const now = new Date();
-  let age = now.getFullYear() - birthdate.getFullYear();
-  const m = now.getMonth() - birthdate.getMonth();
-  if (m < 0 || (m === 0 && now.getDate() < birthdate.getDate())) age--;
-  return age;
 }
 
 function getInitials(name: string): string {
@@ -89,37 +82,11 @@ function getAvatarColor(name: string) {
   return AVATAR_COLORS[idx];
 }
 
-const genderLabel: Record<string, string> = {
-  LAKI_LAKI: "Laki-laki",
-  PEREMPUAN: "Perempuan",
-};
-
-const encounterStatusConfig: Record<
-  string,
-  { label: string; bgClass: string; textClass: string }
-> = {
-  MENUNGGU: {
-    label: "Menunggu Asesmen",
-    bgClass: "bg-orange-50",
-    textClass: "text-orange-500",
-  },
-  DIPERIKSA: {
-    label: "Siap Diperiksa",
-    bgClass: "bg-teal-50",
-    textClass: "text-teal-600",
-  },
-  SELESAI: {
-    label: "Selesai",
-    bgClass: "bg-gray-100",
-    textClass: "text-gray-500",
-  },
-};
-
 export default function PerawatDashboard({
   name,
   antreanMenunggu,
   selesaiAsesmen,
-  ruangPenugasan,
+  menungguTriage,
   encounters,
   partnerDokter,
   selesaiList,
@@ -237,157 +204,37 @@ export default function PerawatDashboard({
         </div>
       </Link>
 
-      {/* Card 4 – Info: Ruang Penugasan */}
+      {/* Card 4 – Menunggu Triage */}
       <div className="col-span-3 bg-white rounded-3xl p-6 flex items-center gap-4">
         <div
           className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
           style={{ backgroundColor: "#FFF7ED" }}
         >
-          <MapPin size={22} strokeWidth={2} style={{ color: "#F97316" }} />
+          <Activity size={22} strokeWidth={2} style={{ color: "#F97316" }} />
         </div>
         <div>
           <p
             className="text-xs text-gray-400 mb-1 leading-snug"
             style={{ fontFamily: "var(--font-jakarta)" }}
           >
-            Ruang Penugasan
+            Menunggu Triage
           </p>
           <p
-            className="text-sm font-bold uppercase"
-            style={{ fontFamily: "var(--font-poppins)", color: "#2BB5A0" }}
+            className="text-2xl font-bold text-gray-800"
+            style={{ fontFamily: "var(--font-poppins)" }}
           >
-            Poli {ruangPenugasan}
+            {menungguTriage}
           </p>
         </div>
       </div>
 
       {/* ── Row 3 Left: Tabel Antrean ── */}
-      <div className="col-span-8 bg-white rounded-3xl p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-1 h-5 rounded-full bg-[#2BB5A0]" />
-            <h2
-              className="text-sm font-bold text-gray-800 tracking-widest"
-              style={{ fontFamily: "var(--font-poppins)" }}
-            >
-              ANTREAN RAWAT JALAN AKTIF
-            </h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="px-4 py-1.5 rounded-full border border-gray-200 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
-              style={{ fontFamily: "var(--font-jakarta)" }}
-            >
-              Filter
-            </button>
-            <Link
-              href="/rawat-jalan"
-              className="px-4 py-1.5 rounded-full text-sm text-white transition-colors hover:opacity-90"
-              style={{
-                background: "#2BB5A0",
-                fontFamily: "var(--font-jakarta)",
-              }}
-            >
-              Selengkapnya
-            </Link>
-          </div>
-        </div>
-
-        {encounters.length === 0 ? (
-          <div
-            className="text-center py-16 text-gray-300 text-sm"
-            style={{ fontFamily: "var(--font-jakarta)" }}
-          >
-            Belum ada antrean aktif hari ini.
-          </div>
-        ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="text-left border-b border-gray-100">
-                {["NO.ANTREAN", "WAKTU", "NAMA", "STATUS", "ACTION"].map(
-                  (col) => (
-                    <th
-                      key={col}
-                      className="pb-3 text-xs font-semibold text-gray-400 tracking-wider"
-                      style={{ fontFamily: "var(--font-jakarta)" }}
-                    >
-                      {col}
-                    </th>
-                  )
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {encounters.map((enc) => {
-                const statusCfg =
-                  encounterStatusConfig[enc.status] ??
-                  encounterStatusConfig["MENUNGGU"];
-                const age = calcAge(enc.patient.tanggalLahir);
-                const gender = genderLabel[enc.patient.jenisKelamin] ?? enc.patient.jenisKelamin;
-
-                return (
-                  <tr
-                    key={enc.id}
-                    className="border-b border-gray-50 last:border-0"
-                  >
-                    <td
-                      className="py-3 text-sm font-bold"
-                      style={{
-                        fontFamily: "var(--font-poppins)",
-                        color: "#2BB5A0",
-                      }}
-                    >
-                      {enc.queueNumber}
-                    </td>
-                    <td
-                      className="py-3 text-sm text-gray-500"
-                      style={{ fontFamily: "var(--font-jakarta)" }}
-                    >
-                      {formatWIB(enc.periodStart)}
-                    </td>
-                    <td className="py-3">
-                      <p
-                        className="text-sm font-semibold text-gray-800 leading-snug"
-                        style={{ fontFamily: "var(--font-jakarta)" }}
-                      >
-                        {enc.patient.namaLengkap}
-                      </p>
-                      <p
-                        className="text-xs text-gray-400 mt-0.5"
-                        style={{ fontFamily: "var(--font-jakarta)" }}
-                      >
-                        {gender} &bull; {age} tahun
-                      </p>
-                    </td>
-                    <td className="py-3">
-                      <span
-                        className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${statusCfg.bgClass} ${statusCfg.textClass}`}
-                        style={{ fontFamily: "var(--font-jakarta)" }}
-                      >
-                        {statusCfg.label}
-                      </span>
-                    </td>
-                    <td className="py-3">
-                      <Link
-                        href={`/asesmen/${enc.id}`}
-                        className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold text-white hover:opacity-90 transition-opacity"
-                        style={{
-                          background: "#2BB5A0",
-                          fontFamily: "var(--font-jakarta)",
-                        }}
-                      >
-                        Asesmen
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <DashboardQueueTable
+        title="ANTREAN RAWAT JALAN AKTIF"
+        encounters={encounters as QueueEncounterItem[]}
+        variant="perawat"
+        emptyMessage="Belum ada antrean aktif hari ini."
+      />
 
       {/* ── Row 3 Right: Partner Dokter + Baru Saja Selesai ── */}
       <div className="col-span-4 bg-white rounded-3xl p-6 flex flex-col gap-5">
