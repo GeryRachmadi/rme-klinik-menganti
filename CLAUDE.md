@@ -40,6 +40,9 @@ src/
 │   ├── ui/                              → Reusable UI components
 │   ├── layout/                          → Sidebar, Navbar, DashboardLayout
 │   └── shared/                          → Shared page-level components
+│       ├── ActivityLogTable.tsx         → Admin activity log feed, reads ActivityLog model
+│       ├── QueueFilterDropdown.tsx      → Single-select filter panel for queue tables
+│       └── UnauthorizedToast.tsx        → Client toast fired on proxy.ts redirect
 ├── generated/prisma/                    → Prisma generated client
 ├── hooks/                               → Custom React hooks
 ├── lib/
@@ -55,6 +58,8 @@ src/
 - **Gender Badges:** #3B82F6 (Laki-laki), #EC4899 (Perempuan)
 - **Jenis Pasien:** #06B6D4 (UMUM), #3B82F6 (BPJS)
 - **UI Elements:** #64748B (Inactive text), #A0AEC0 (Placeholder), #E2E8F0 (Border), #F8FAFC (Bg subtle)
+- **Filter Selected:** bg-[#2DD4BF]/10, border-[#2DD4BF]/30, text-[#006B5F]
+- **Filter Hover:** bg-[#F4F4F4], text-[#50555C]
 - **Border radius:** rounded-xl (inputs), rounded-full (buttons), rounded-3xl (cards)
 - **Grid layout:** 12-column (grid-cols-12 gap-6) for all dashboards
 - **Dashboard layout:** Welcome Card (col-span-12) → 4 KPI Cards (col-span-3) → Main Table (col-span-8) + Widget (col-span-4)
@@ -75,6 +80,10 @@ src/
 - Never use English in user-facing text except for technical terms
 - Route protection via layout.tsx using auth() from next-auth
 - All form inputs use autoComplete="off"
+- **Route Protection:** middleware.ts was DELETED. Project uses `src/proxy.ts` for route protection (Next.js 16 convention). Non-ADMIN accessing /manajemen-pengguna redirects to /beranda?error=unauthorized.
+- **ActivityLog Rule:** EVERY encounter CREATE, UPDATE, DELETE must write an ActivityLog entry. For DELETE: capture encounter data BEFORE the delete transaction runs. Use `session.user.id` as actor.
+- **createdByAccountId:** Encounter model has `createdByAccountId String?` linking to Account. Populated on encounter creation. Used by ActivityLogTable "Oleh" column.
+- **Prisma Client Regeneration:** After any schema change run `npx prisma db push` then `npx prisma generate`. If runtime "Unknown field" errors appear: DELETE `src/generated/prisma` entirely then regenerate.
 
 ## Critical Architectural Decisions (Guardrails)
 - **Database Schema:** Address fields are kept "flat" in the Prisma schema to avoid complex joins (MVP phase). No soft deletes currently to respect P2003 constraints (Medical history privacy).

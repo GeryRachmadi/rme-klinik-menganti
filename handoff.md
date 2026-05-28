@@ -1,9 +1,9 @@
 # 📋 Project Handoff & State: TR-82 UX Revisions Complete — Blackbox Testing Phase
 
-**Date:** May 21, 2026 | **Session:** TR-82 UX Revisions + React Doctor Audit + Blackbox Testing Prep
+**Date:** May 29, 2026 | **Session:** Blackbox Testing — UC-01 + UC-02 BB-02.1 Complete, BB-02.2/03/04 Implemented
 **Branch:** `claude`
 **System:** Electronic Medical Record (RME) for Klinik Pratama Menganti
-**Status:** ✅ ALL TASKS COMPLETE. React Doctor v0.2.3 audit done (69/100, 0 critical issues). UC-13 confirmed complete. Ready for full blackbox regression testing UC-01 → UC-13.
+**Status:** ✅ UC-01 PASS. ✅ UC-02 BB-02.1 PASS. BB-02.2/03/04 implemented, pending final browser verification. UC-03 → UC-13 pending.
 
 ---
 
@@ -159,6 +159,60 @@ Error modal now shows patient identity above the error message:
 ### 7. FAILED_SYNC Chip Text Format
 
 Changed from `"⚠ Gagal Dikirim"` → `"⚠ Gagal: Sinkronisasi SATUSEHAT"` following the `"Gagal: (reason)"` pattern to allow future failure types to use the same format.
+
+---
+
+## ✅ Completed This Session — UI/UX Polish
+
+### Rawat Jalan Pagination
+
+- **File:** `src/components/shared/DaftarAntrean.tsx`
+- Copied exact pagination logic from `DaftarPasien` (rekam-medis) — identical `LIMIT`, `getPageNumbers`, and UI components
+- Client-side slicing of `filteredData` — no API changes, existing fetch strategy preserved
+- `LIMIT = 6` rows per page
+- `currentPage` resets to 1 on any filter change (search, date, priority, status)
+- Full pagination UI: Prev/Next + smart page numbers with ellipsis (teal styling matching rekam-medis)
+- Record count footer: "Menampilkan X dari Y antrean"
+
+### Functional Navbar Global Search
+
+- **New file:** `src/lib/nav-items.ts` — plain TS constants (no JSX/icons). `NavItem[]` with `label`, `href`, `description` (keyword-rich string), `roles[]`
+- **New file:** `src/components/shared/GlobalSearch.tsx` — Client Component:
+  - Filters routes by `userRole` (role-aware: ADMIN sees Manajemen Pengguna, others do not)
+  - Matches query against both `label` AND `description` (e.g. typing "antrean" finds "Rawat Jalan")
+  - Full autocomplete keyboard nav: ArrowDown/Up moves `selectedIndex`, Enter navigates, Escape clears
+  - Highlighted item: `bg-[#E6F5F4] text-[#0F766E]` (matches existing assessment autocomplete pattern)
+  - `handleBlur` with `setTimeout(150)` — same pattern as `AssessmentDiagnosisForm`
+  - `useRef` + `mousedown` for click-outside detection
+  - Empty state: "Tidak ada hasil untuk …"
+  - `z-50` dropdown, `ArrowRight` icon on each result
+- **Updated:** `Navbar.tsx` — dummy `<input>` replaced with `<GlobalSearch userRole={role} />` (`role` prop already existed, no new prop drilling)
+
+### Role-Based Notification Bell
+
+- **New file:** `src/app/actions/notification.ts` — Server Action (`"use server"`):
+  - WIB-aware today boundaries (`+07:00` offset, consistent with dashboard pattern)
+  - Role-based queries using correct Encounter statuses:
+    - `PERAWAT`     → `status = "MENUNGGU"` (all pending, any date)
+    - `DOKTER`      → `status = "DIPERIKSA"` (nurse done, waiting for doctor)
+    - `PENDAFTARAN` → `status = "MENUNGGU"` today only
+    - `ADMIN`       → all encounters today regardless of status
+  - Joins `patient.namaLengkap` for display
+  - Returns max 10, ordered by `createdAt DESC`
+  - Result shape: `{ id, title, message, createdAt, href, isRead: false }`
+  - `href` → `/rawat-jalan/${encounterId}/asesmen` for all roles
+  - **No `schema.prisma` changes** — derived from existing `Encounter` data only
+- **New file:** `src/components/shared/NotificationDropdown.tsx` — Client Component:
+  - Red badge on bell icon (hidden when count = 0, capped at "9+")
+  - **Lazy fetch:** fires only when dropdown opens, re-fetches on every open (no stale data)
+  - `isRead` persistence via `sessionStorage('notif_read_ids')` — survives navigation within session, clears on tab close
+  - Unread items: full opacity + teal left accent bar (`bg-[#2BB5A0]`)
+  - Read items: `opacity-50` + gray bar
+  - Scrollable list capped at `max-h-[360px]`
+  - `useRef` + `mousedown` for click-outside, `z-50` on dropdown
+  - Empty state: "Tidak ada notifikasi baru."
+  - On click: marks as read in `sessionStorage`, then `router.push(href)`
+- **Updated:** `Navbar.tsx` — static bell `<button>` replaced with `<NotificationDropdown userRole={role} />` (`role` already a prop)
 
 ---
 
@@ -337,6 +391,9 @@ const isReadOnly = encounter?.status?.toUpperCase() === 'SELESAI'
 - ✅ TR-82: "Simpan & Kirim" UI + syncStatus flip + auto Error modal on FAILED_SYNC
 - ✅ TR-82 UX Revisions: Merged button, footer restructure, static chip in queue, 10-patient mock data
 - ✅ UC-13: Kelola Rekam Medis — View/Edit/Delete patient (TR-101 → TR-107)
+- ✅ Rawat Jalan pagination (client-side, LIMIT=6, matches rekam-medis pattern)
+- ✅ Functional Navbar global search (role-aware autocomplete, label + keyword matching)
+- ✅ Role-based notification bell (derived from Encounter, no DB migration)
 - ⏳ **Full blackbox regression testing (UC-01 → UC-13)**
 - ⏳ Real credentials testing (when Kemenkes resolves 401)
 - ⏳ Thesis writeup
@@ -440,4 +497,110 @@ All existing TC 1.x through TC 3.x test cases must be re-run after TR-82 UX chan
 
 ---
 
-**Last Updated:** May 21, 2026 | **Next Review:** Blackbox regression testing UC-01 → UC-13 + thesis writeup
+## 🧪 Blackbox Testing Status (May 28, 2026)
+
+| UC | Description | Status |
+|---|---|---|
+| UC-01 | Login | ✅ PASS — 17/17 scenarios |
+| UC-02 BB-02.1 | Log Aktivitas (all roles, pagination, rich detail) | ✅ PASS — fully working |
+| UC-02 BB-02.2 | Pendaftaran dashboard filter | ⏳ Implemented, pending browser verification |
+| UC-02 BB-02.3 | Perawat dashboard filter | ⏳ Implemented, pending browser verification |
+| UC-02 BB-02.4 | Dokter dashboard filter | ⏳ Implemented, pending browser verification |
+| UC-03 | Kelola Pengguna | ⏳ Pending |
+| UC-04 | Daftar Pasien Baru | ⏳ Pending |
+| UC-05 | Daftar Kunjungan | ⏳ Pending |
+| UC-06 | Lihat Daftar Antrean | ⏳ Pending |
+| UC-07 | Lihat Riwayat Medis | ⏳ Pending |
+| UC-08 | Catat Kajian Awal | ⏳ Pending |
+| UC-09 | Catat Pemeriksaan Fisik | ⏳ Pending |
+| UC-10 | Input Diagnosis | ⏳ Pending |
+| UC-11 | Catat Tindak Lanjut | ⏳ Pending |
+| UC-12 | Kirim Resume Medis | ⏳ Pending |
+| UC-13 | Kelola Rekam Medis | ⏳ Pending |
+
+---
+
+## 🐛 Bugs Found & Fixed (Blackbox Session May 28, 2026)
+
+| ID | UC | Severity | Description | Status |
+|---|---|---|---|---|
+| BUG-001 | UC-01 | Minor | Silent middleware redirect, no toast shown to user | ✅ Fixed |
+| BB-02.4 | UC-02 | Critical | Doctor dashboard data isolation leak (showing other doctor's patients) | ✅ Fixed |
+| BB-02.2/3/4 | UC-02 | Major | Filter buttons decorative only (no effect); Prioritas column missing from queue table | ✅ Fixed |
+| BB-02.1 | UC-02 | Moderate | Admin KPI metrics hardcoded (fake server/backup data, not from DB) | ✅ Fixed |
+| BB-02.1 | UC-02 | Moderate | Log Aktivitas empty on Admin dashboard, not synced with notification events | ✅ Fixed |
+| BB-02.1 | UC-02 | Moderate | Log only showed Admin/Pendaftaran actions — Nurse/Doctor clinical actions not logged | ✅ Fixed — writeActivityLog added to assessment, physical-exam, rawat-jalan/asesmen routes |
+| BB-02.1 | UC-02 | Moderate | ENCOUNTER_CREATED log detail missing practitioner info | ✅ Fixed — rich format now includes "Ditugaskan ke" segment |
+| BB-02.1 | UC-02 | Moderate | ENCOUNTER_UPDATED/DELETED log detail using old short format | ✅ Fixed — all 3 encounter log types use rich format |
+| BB-02.1 | UC-02 | Moderate | Log Aktivitas had no pagination — flat list becomes unusable at scale | ✅ Fixed — client-side pagination (5/page) matching DaftarPasien pattern |
+| BB-02.2/03/04 | UC-02 | Major | Filter button disabled placeholder — QueueFilterDropdown did not exist | ✅ Implemented — created QueueFilterDropdown.tsx, live client-side filtering |
+| BB-02.1 | UC-02 | Minor | "Oleh" column in Log Aktivitas showed wrong person (not creator) | ✅ Fixed |
+| BB-02.1 | UC-02 | Minor | Notification bell badge only appears after first click (not on page load) | ✅ Fixed |
+| BB-02.3 | UC-02 | Minor | Nurse dashboard "Ruang Penugasan" card showed inaccurate/hardcoded data | ✅ Fixed |
+
+---
+
+## 📁 New Files Created (May 29, 2026)
+
+| File | Purpose |
+|---|---|
+| `src/lib/activity-log.ts` | `writeActivityLog()` fire-and-forget utility — writes to ActivityLog table; never throws |
+| `src/components/shared/QueueFilterDropdown.tsx` | Single-select 2-column filter panel (Prioritas + Status) for Pendaftaran/Perawat/Dokter queue tables |
+| `src/app/beranda/error.tsx` | Error boundary for `/beranda` route |
+
+---
+
+## 📋 ActivityLog Write Coverage
+
+All routes that write to ActivityLog (as of May 29, 2026):
+
+| Route | Method | Action Type |
+|---|---|---|
+| `encounters/route.ts` | POST | `ENCOUNTER_CREATED` |
+| `encounters/[encounterId]/route.ts` | PUT | `ENCOUNTER_UPDATED` |
+| `encounters/[encounterId]/route.ts` | DELETE | `ENCOUNTER_DELETED` |
+| `encounters/[encounterId]/assessment/route.ts` | POST | `ASSESSMENT_SAVED` |
+| `encounters/[encounterId]/physical-exam/route.ts` | POST | `PHYSICAL_EXAM_SAVED` |
+| `rawat-jalan/[encounterId]/asesmen/route.ts` | POST | `SOAP_COMPLETED` |
+| `patients/route.ts` | POST | `PATIENT_CREATED` |
+| `patients/[id]/route.ts` | PUT | `PATIENT_UPDATED` |
+| `patients/[id]/route.ts` | DELETE | `PATIENT_DELETED` |
+
+Detail string format for all encounter logs:
+```
+Pasien {namaLengkap} ({queueNumber}) · {priority} · {status} [· Ditugaskan ke {name} ({speciality})]
+```
+Practitioner segment omitted if no practitioner assigned.
+
+---
+
+## 🗄️ Schema Changes (May 28, 2026)
+
+- **Encounter model:** Added `createdByAccountId String?` and `createdByAccount Account? @relation("EncounterCreatedBy")`
+- **Account model:** Added back-relation `createdEncounters Encounter[] @relation("EncounterCreatedBy")`
+- Ran `npx prisma db push` + `npx prisma generate` after changes
+
+---
+
+## ⏳ Pending (as of May 29, 2026)
+
+- ⏳ **Verify BB-02.2/03/04** — QueueFilterDropdown in browser for all 3 roles (Pendaftaran, Perawat, Dokter)
+- ⏳ Continue Blackbox Testing UC-03 → UC-13
+- ⏳ UAT with clinic staff on June 2nd, 2026
+- ⏳ Heuristic Evaluation (internal)
+- ⏳ SATUSEHAT real credentials (pending Kemenkes ticket resolution)
+- ⏳ Thesis writeup BAB 4
+
+---
+
+## ❌ DO NOT DO
+
+- ❌ Do NOT create `middleware.ts` — project uses `src/proxy.ts` (Next.js 16 convention)
+- ❌ Do NOT write encounter CREATE/UPDATE/DELETE operations without also writing an ActivityLog entry
+- ❌ Do NOT skip `npx prisma generate` after any schema change
+- ❌ Do NOT use `useSession()` — SessionProvider is not set up in this project
+- ❌ Do NOT use `ts-node` — use `tsx` for all TypeScript scripts
+
+---
+
+**Last Updated:** May 29, 2026 | **Next Review:** Verify BB-02.2/03/04 filters → Blackbox testing UC-03 → UC-13 + UAT prep (June 2, 2026)

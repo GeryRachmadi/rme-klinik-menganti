@@ -35,7 +35,11 @@
       "Bash(PGPASSWORD=\"password\" psql *)",
       "Bash(Remove-Item *)",
       "Bash(grep *)",
-      "Bash(set NODE_OPTIONS=--max-old-space-size=4096)"
+      "Bash(set NODE_OPTIONS=--max-old-space-size=4096)",
+      "Bash(cat next.config.ts)",
+      "Bash(cat next.config.js)",
+      "Bash(dir /b \"C:\\\\Users\\\\Gery Rachmadi\\\\Documents\\\\akademik\\\\kuliah\\\\MataKuliah\\\\Semester8\\\\TA\\\\rme-klinik-menganti\")",
+      "Bash(Test-Path *)"
     ]
   }
 }
