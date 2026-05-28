@@ -58,8 +58,9 @@ model Account {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  practitioner Practitioner?
-  activityLogs ActivityLog[]
+  practitioner     Practitioner?
+  activityLogs     ActivityLog[]
+  createdEncounters Encounter[] @relation("EncounterCreatedBy")
 }
 
 model Practitioner {
@@ -130,10 +131,12 @@ model Encounter {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  patientId       String
-  patient         Patient       @relation(fields: [patientId], references: [id])
-  practitionerId  String?
-  practitioner    Practitioner? @relation(fields: [practitionerId], references: [id])
+  patientId          String
+  patient            Patient       @relation(fields: [patientId], references: [id])
+  practitionerId     String?
+  practitioner       Practitioner? @relation(fields: [practitionerId], references: [id])
+  createdByAccountId String?
+  createdByAccount   Account?      @relation("EncounterCreatedBy", fields: [createdByAccountId], references: [id])
 
   observations        Observation[]
   conditionDiagnoses  ConditionDiagnosis[]
