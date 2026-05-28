@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma";
 import { generateQueueNumber, type PolicyType } from "@/lib/queue-utils";
+import { writeActivityLog } from "@/lib/activity-log";
 
 function formatTitleCase(str: string): string {
   return str
@@ -177,12 +178,12 @@ export async function POST(req: Request) {
           queueNumber,
           queueDate,
           status:     "MENUNGGU",
-          // class:   "AMB",     // Required for future SATUSEHAT compliance (not yet in Prisma schema)
           priority:   typeof priority    === "string" ? priority    : "STABIL",
           reasonCode: typeof reasonCode  === "string" ? reasonCode  : null,
           patientType: typeof patientType === "string" ? patientType : "UMUM",
           patientId,
           practitionerId: typeof practitionerId === "string" ? practitionerId : null,
+          createdByAccountId: session.user.id,
         },
         select: {
           id:          true,
@@ -199,6 +200,36 @@ export async function POST(req: Request) {
           },
         },
       });
+
+      const PRIORITY_LABELS: Record<string, string> = {
+        STABIL: "Stabil",
+        CUKUP_BERISIKO: "Cukup Berisiko",
+        BERISIKO: "Berisiko",
+        BERISIKO_TINGGI: "Berisiko Tinggi",
+      };
+      const STATUS_LABELS: Record<string, string> = {
+        MENUNGGU: "Menunggu",
+        DIPERIKSA: "Diperiksa",
+        SELESAI: "Selesai",
+        BATAL: "Batal",
+      };
+      const logParts = [
+        `Pasien ${newEncounter.patient.namaLengkap} (${newEncounter.queueNumber})`,
+        PRIORITY_LABELS[newEncounter.priority] ?? newEncounter.priority,
+        STATUS_LABELS[newEncounter.status] ?? newEncounter.status,
+      ];
+      if (newEncounter.practitioner) {
+        const poli = newEncounter.practitioner.speciality
+          ? ` (${newEncounter.practitioner.speciality})`
+          : "";
+        logParts.push(`Ditugaskan ke ${newEncounter.practitioner.name}${poli}`);
+      }
+      writeActivityLog(
+        session.user.id,
+        "ENCOUNTER_CREATED",
+        "Antrean kunjungan baru ditambahkan",
+        logParts.join(" · ")
+      );
 
       return NextResponse.json(
         {

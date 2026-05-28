@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { writeActivityLog } from "@/lib/activity-log";
 import { PhysicalExamSchema } from "@/lib/schemas/physical-exam-schema";
 import { parsePhysicalExamData } from "@/lib/utils/observation-parser";
 
@@ -92,6 +93,13 @@ export async function POST(
         observationCount: 1, // Only 1 Observation record covers all standard fields now
       };
     });
+
+    writeActivityLog(
+      session.user.id,
+      "PHYSICAL_EXAM_SAVED",
+      "Pemeriksaan fisik dicatat",
+      `Pasien ${encounter.patient.namaLengkap} (${encounter.queueNumber}) · ${encounter.patient.noRm}`
+    );
 
     return Response.json(
       {

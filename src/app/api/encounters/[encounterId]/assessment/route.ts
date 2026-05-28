@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
+import { writeActivityLog } from '@/lib/activity-log';
 
 export async function POST(
   request: Request,
@@ -19,7 +20,12 @@ export async function POST(
 
     const encounter = await prisma.encounter.findUnique({
       where: { id: encounterId },
-      select: { patientId: true, status: true },
+      select: {
+        patientId: true,
+        status: true,
+        queueNumber: true,
+        patient: { select: { namaLengkap: true, noRm: true } },
+      },
     });
 
     if (!encounter) {
@@ -70,6 +76,13 @@ export async function POST(
         });
       }
     });
+
+    writeActivityLog(
+      session.user.id,
+      "ASSESSMENT_SAVED",
+      "Kajian awal klinis dicatat",
+      `Pasien ${encounter.patient.namaLengkap} (${encounter.queueNumber}) · ${encounter.patient.noRm}`
+    );
 
     return NextResponse.json(
       { success: true, message: 'Asesmen keperawatan berhasil disimpan.' },

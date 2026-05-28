@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import { patientUpdateSchema } from "@/lib/validations/patient";
 import { okResponse, errResponse } from "@/lib/api-response";
 import { handlePrismaError, handleZodError } from "@/lib/api-errors";
-import { auth } from "@/lib/auth";
+import { writeActivityLog } from "@/lib/activity-log";
 import type { ApiResponse } from "@/types/api";
 import type { Patient } from "@/generated/prisma";
 
@@ -110,6 +111,13 @@ export async function PUT(
       },
     });
 
+    writeActivityLog(
+      session.user.id,
+      "PATIENT_UPDATED",
+      "Data pasien diperbarui",
+      `${patient.namaLengkap} · ${patient.noRm}`
+    );
+
     revalidatePath("/", "layout");
     return okResponse(patient, "Pasien berhasil diperbarui.");
   } catch (err) {
@@ -125,11 +133,15 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse<ApiResponse<null>>> {
+  const session = await auth().catch(() => null);
   const { id } = await params;
 
-  let existing: { id: string } | null;
+  let existing: { id: string; namaLengkap: string; noRm: string } | null;
   try {
-    existing = await prisma.patient.findUnique({ where: { noRm: id }, select: { id: true } });
+    existing = await prisma.patient.findUnique({
+      where: { noRm: id },
+      select: { id: true, namaLengkap: true, noRm: true },
+    });
   } catch (err) {
     console.error("[DELETE /api/patients/[id]] existence check", err);
     return errResponse("Gagal memeriksa data pasien.", 500);
@@ -138,6 +150,16 @@ export async function DELETE(
 
   try {
     await prisma.patient.delete({ where: { noRm: id } });
+
+    if (session?.user?.id) {
+      writeActivityLog(
+        session.user.id,
+        "PATIENT_DELETED",
+        "Pasien dihapus",
+        `${existing.namaLengkap} · ${existing.noRm}`
+      );
+    }
+
     revalidatePath("/rekam-medis");
     return okResponse(null, "Pasien berhasil dihapus.");
   } catch (err: unknown) {

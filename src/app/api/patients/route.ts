@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import { patientRegistrationSchema } from "@/lib/validations/patient";
 import { okResponse, errResponse } from "@/lib/api-response";
 import { handleZodError } from "@/lib/api-errors";
+import { writeActivityLog } from "@/lib/activity-log";
 import type { ApiResponse, PaginatedData } from "@/types/api";
 import type { Patient } from "@/generated/prisma";
 
@@ -67,6 +69,8 @@ export async function GET(
 export async function POST(
   request: NextRequest
 ): Promise<NextResponse<ApiResponse<Patient>>> {
+  const session = await auth().catch(() => null);
+
   let body: unknown;
   try {
     body = await request.json();
@@ -139,6 +143,15 @@ export async function POST(
           noHpWali: data.noHpWali?.trim() || null,
         },
       });
+
+      if (session?.user?.id) {
+        writeActivityLog(
+          session.user.id,
+          "PATIENT_CREATED",
+          "Pasien baru didaftarkan",
+          `${patient.namaLengkap} · ${patient.noRm}`
+        );
+      }
 
       revalidatePath("/rekam-medis");
       return okResponse(patient, `Pasien berhasil didaftar. No. RM: ${patient.noRm}`);

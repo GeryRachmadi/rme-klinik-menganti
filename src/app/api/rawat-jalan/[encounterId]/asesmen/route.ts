@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { writeActivityLog } from "@/lib/activity-log";
 
 export async function POST(
   request: Request,
@@ -26,6 +27,7 @@ export async function POST(
 
     const encounter = await prisma.encounter.findUnique({
       where: { id: encounterId },
+      include: { patient: { select: { namaLengkap: true, noRm: true } } },
     });
 
     if (!encounter) {
@@ -155,6 +157,13 @@ export async function POST(
         },
       });
     });
+
+    writeActivityLog(
+      session.user.id,
+      "SOAP_COMPLETED",
+      "Asesmen SOAP diselesaikan",
+      `Pasien ${encounter.patient.namaLengkap} (${encounter.queueNumber}) · ${encounter.patient.noRm}`
+    );
 
     return Response.json(
       { success: true, message: "Asesmen dan rencana tindak lanjut berhasil disimpan." },
