@@ -12,5 +12,9 @@ export default async function ManajemenPenggunaLayout({
     redirect("/login");
   }
 
+  if (session.user.role !== "ADMIN") {
+    redirect("/beranda?error=unauthorized");
+  }
+
   return <>{children}</>;
 }

@@ -13,9 +13,9 @@ export default auth(function proxy(req) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  // Authenticated but not ADMIN → silent redirect to beranda
+  // Authenticated but not ADMIN → redirect to beranda with error flag
   if (req.auth.user.role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/beranda", req.url));
+    return NextResponse.redirect(new URL("/beranda?error=unauthorized", req.url));
   }
 
   return NextResponse.next();
