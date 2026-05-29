@@ -138,6 +138,10 @@ export async function DELETE(
 
   const { id } = await params;
 
+  if (id === authResult.session.user.id) {
+    return errResponse("Tidak dapat menghapus akun Anda sendiri.", 403);
+  }
+
   const existing = await prisma.account.findUnique({
     where: { id },
     select: { id: true },

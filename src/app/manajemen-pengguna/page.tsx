@@ -7,7 +7,7 @@ export default async function ManajemenPenggunaPage() {
 
   return (
     <DashboardLayout>
-      <ManajemenPengguna role={session?.user?.role} />
+      <ManajemenPengguna role={session?.user?.role} currentUserId={session?.user?.id} />
     </DashboardLayout>
   );
 }

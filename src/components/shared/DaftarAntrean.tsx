@@ -40,7 +40,7 @@ interface DaftarAntreanProps {
   userRole?: string;
 }
 
-const LIMIT = 6;
+const LIMIT = 4;
 
 function getPageNumbers(current: number, total: number): (number | "…")[] {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);

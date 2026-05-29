@@ -29,13 +29,6 @@ interface Account {
   practitioner: Practitioner | null;
 }
 
-interface Pagination {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
-
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 const roleBadge: Record<Role, { label: string; className: string }> = {
@@ -60,19 +53,18 @@ function getPageNumbers(current: number, total: number): (number | "…")[] {
 
 interface ManajemenPenggunaProps {
   role?: string;
+  currentUserId?: string;
 }
 
-export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
+export default function ManajemenPengguna({ role, currentUserId }: ManajemenPenggunaProps) {
   const isAdmin = role === "ADMIN";
 
   // ── Server data ───────────────────────────────────────────────────────────
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 10, total: 0, totalPages: 1 });
   const [isLoading, setIsLoading] = useState(true);
 
   // ── Filter / search ───────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("Semua");
   const [statusFilter, setStatusFilter] = useState("Semua");
   const [currentPage, setCurrentPage] = useState(1);
@@ -100,26 +92,14 @@ export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
 
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
 
-  // ── Debounce search ───────────────────────────────────────────────────────
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchQuery);
-      setCurrentPage(1);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  // ── Fetch accounts ────────────────────────────────────────────────────────
-  const fetchAccounts = useCallback(async (page: number, search: string) => {
+  // ── Fetch all accounts once (client-side filtering for instant search) ────
+  const fetchAccounts = useCallback(async () => {
     setIsLoading(true);
     try {
-      const params = new URLSearchParams({ page: String(page), limit: "10" });
-      if (search) params.set("search", search);
-      const res = await fetch(`/api/accounts?${params}`);
+      const res = await fetch(`/api/accounts?limit=100`);
       const json = await res.json();
       if (json.success) {
         setAccounts(json.data.accounts);
-        setPagination(json.data.pagination);
       } else {
         showToast(json.error ?? "Gagal memuat data pengguna.", "error");
       }
@@ -131,18 +111,32 @@ export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
   }, []);
 
   useEffect(() => {
-    fetchAccounts(currentPage, debouncedSearch);
-  }, [currentPage, debouncedSearch, fetchAccounts]);
+    fetchAccounts();
+  }, [fetchAccounts]);
 
-  // ── Client-side role / status filter ─────────────────────────────────────
+  // ── Reset page when filters/search change ────────────────────────────────
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, roleFilter, statusFilter]);
+
+  // ── Client-side filter (search + role + status) ───────────────────────────
   const filteredAccounts = useMemo(() => {
+    const q = searchQuery.toLowerCase();
     return accounts.filter((a) => {
+      if (q && !a.username.toLowerCase().includes(q) && !(a.practitioner?.name ?? "").toLowerCase().includes(q)) return false;
       if (roleFilter !== "Semua" && a.role !== roleFilter) return false;
       if (statusFilter === "aktif" && !a.isActive) return false;
       if (statusFilter === "nonaktif" && a.isActive) return false;
       return true;
     });
-  }, [accounts, roleFilter, statusFilter]);
+  }, [accounts, searchQuery, roleFilter, statusFilter]);
+
+  // ── Client-side pagination ────────────────────────────────────────────────
+  const LIMIT = 6;
+  const totalPages = Math.max(1, Math.ceil(filteredAccounts.length / LIMIT));
+  const paginatedAccounts = filteredAccounts.slice((currentPage - 1) * LIMIT, currentPage * LIMIT);
+  const rangeStart = filteredAccounts.length === 0 ? 0 : (currentPage - 1) * LIMIT + 1;
+  const rangeEnd = Math.min(currentPage * LIMIT, filteredAccounts.length);
 
   // ── Save (create or update) ───────────────────────────────────────────────
   async function handleSaveAccount(payload: AccountSavePayload): Promise<string | null> {
@@ -163,7 +157,7 @@ export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
       if (!json.success) {
         return json.error ?? "Terjadi kesalahan saat menyimpan data.";
       }
-      await fetchAccounts(isEdit ? currentPage : 1, debouncedSearch);
+      await fetchAccounts();
       if (!isEdit) setCurrentPage(1);
       showToast(json.message ?? (isEdit ? "Akun berhasil diperbarui." : "Akun berhasil dibuat."));
       return null;
@@ -182,9 +176,8 @@ export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
       if (!json.success) {
         showToast(json.error ?? "Gagal menghapus akun.", "error");
       } else {
-        const newPage = accounts.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage;
-        await fetchAccounts(newPage, debouncedSearch);
-        setCurrentPage(newPage);
+        await fetchAccounts();
+        if (paginatedAccounts.length === 1 && currentPage > 1) setCurrentPage((p) => p - 1);
         showToast(`Akun ${displayName(userToDelete)} berhasil dihapus.`);
       }
     } catch {
@@ -434,7 +427,7 @@ export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
                   Tidak ada data pengguna yang sesuai dengan pencarian.
                 </td>
               </tr>
-            ) : filteredAccounts.map((account) => {
+            ) : paginatedAccounts.map((account) => {
               const badge = roleBadge[account.role];
               const isToggling = isTogglingId === account.id;
               return (
@@ -446,7 +439,17 @@ export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
                       {account.practitioner?.name ?? account.username}
                     </p>
                     <p className="text-xs text-gray-400 mt-0.5" style={{ fontFamily: "var(--font-jakarta)" }}>
-                      {account.practitioner?.speciality ?? "-"}
+                      {account.role === "DOKTER"
+                        ? account.practitioner?.speciality
+                          ? account.practitioner.speciality.startsWith("Poli")
+                            ? account.practitioner.speciality
+                            : `Poli ${account.practitioner.speciality}`
+                          : "Dokter"
+                        : account.role === "ADMIN"
+                        ? "Administrator"
+                        : account.role === "PENDAFTARAN"
+                        ? "Petugas Pendaftaran"
+                        : "Perawat"}
                     </p>
                   </td>
 
@@ -482,10 +485,10 @@ export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
                     {isAdmin ? (
                       <button
                         type="button"
-                        onClick={() => !isToggling && handleToggle(account)}
-                        disabled={isToggling}
-                        className="flex items-center gap-2 cursor-pointer group disabled:opacity-60 disabled:cursor-not-allowed"
-                        title={account.isActive ? "Klik untuk menonaktifkan" : "Klik untuk mengaktifkan"}
+                        onClick={() => !isToggling && account.id !== currentUserId && handleToggle(account)}
+                        disabled={isToggling || account.id === currentUserId}
+                        className="flex items-center gap-2 cursor-pointer group disabled:opacity-40 disabled:cursor-not-allowed"
+                        title={account.id === currentUserId ? "Tidak dapat menonaktifkan akun sendiri" : account.isActive ? "Klik untuk menonaktifkan" : "Klik untuk mengaktifkan"}
                       >
                         <div
                           className="relative w-10 h-5 rounded-full flex-shrink-0 transition-colors duration-200"
@@ -536,9 +539,10 @@ export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
                           </button>
                           <button
                             type="button"
-                            onClick={() => { setUserToDelete(account); setIsDeleteModalOpen(true); }}
-                            className="cursor-pointer p-2 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
-                            title="Hapus akun"
+                            onClick={() => { if (account.id !== currentUserId) { setUserToDelete(account); setIsDeleteModalOpen(true); } }}
+                            disabled={account.id === currentUserId}
+                            className="cursor-pointer p-2 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-400"
+                            title={account.id === currentUserId ? "Tidak dapat menghapus akun sendiri" : "Hapus akun"}
                           >
                             <Trash2 size={15} strokeWidth={2} />
                           </button>
@@ -554,7 +558,7 @@ export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
         </table>
 
         {/* Pagination */}
-        {!isLoading && pagination.totalPages > 1 && (
+        {!isLoading && totalPages > 1 && (
           <div className="flex items-center justify-center gap-1 mt-8">
             <button
               type="button"
@@ -567,7 +571,7 @@ export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
               Sebelum
             </button>
 
-            {getPageNumbers(currentPage, pagination.totalPages).map((p, i) =>
+            {getPageNumbers(currentPage, totalPages).map((p, i) =>
               p === "…" ? (
                 <span key={`ellipsis-${i}`} className="px-1 text-gray-300 text-sm select-none" style={{ fontFamily: "var(--font-jakarta)" }}>
                   …
@@ -589,7 +593,7 @@ export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
 
             <button
               type="button"
-              disabled={currentPage === pagination.totalPages}
+              disabled={currentPage === totalPages}
               onClick={() => setCurrentPage((p) => p + 1)}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               style={{ fontFamily: "var(--font-jakarta)" }}
@@ -603,7 +607,7 @@ export default function ManajemenPengguna({ role }: ManajemenPenggunaProps) {
         {/* Record count */}
         {!isLoading && (
           <p className="text-center text-xs text-gray-300 mt-4" style={{ fontFamily: "var(--font-jakarta)" }}>
-            Menampilkan {filteredAccounts.length} dari {pagination.total} akun
+            {`Menampilkan ${rangeStart}–${rangeEnd} dari ${filteredAccounts.length} akun`}
           </p>
         )}
 

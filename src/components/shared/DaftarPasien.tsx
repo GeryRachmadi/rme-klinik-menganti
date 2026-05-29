@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -41,14 +41,13 @@ export default function DaftarPasien() {
 
   // ── Data state ──────────────────────────────────────────────────────────────
   const [patients, setPatients] = useState<Patient[]>([]);
-  const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   // ── Filter + pagination state ───────────────────────────────────────────────
-  const [searchQuery, setSearchQuery]           = useState("");
+  const [searchQuery, setSearchQuery]               = useState("");
   const [jenisKelaminFilter, setJenisKelaminFilter] = useState("");
   const [jenisPasienFilter, setJenisPasienFilter]   = useState("");
-  const [currentPage, setCurrentPage]           = useState(1);
+  const [currentPage, setCurrentPage]               = useState(1);
 
   // ── Modal / drawer state ────────────────────────────────────────────────────
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -57,57 +56,54 @@ export default function DaftarPasien() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deletePatient, setDeletePatient] = useState<Patient | null>(null);
 
-  // ── Derived ─────────────────────────────────────────────────────────────────
-  const totalPages = Math.max(1, Math.ceil(total / LIMIT));
-
-  // ── Fetch from API ──────────────────────────────────────────────────────────
-  const fetchPatients = useCallback(async (
-    page: number,
-    search: string,
-    jenisKelamin: string,
-    jenisPasien: string,
-  ) => {
+  // ── Fetch all patients once (client-side filtering for instant search) ───────
+  const fetchPatients = useCallback(async () => {
     setIsLoading(true);
     try {
-      const params = new URLSearchParams({
-        page:  String(page),
-        limit: String(LIMIT),
-        ...(search       && { search }),
-        ...(jenisKelamin && { jenisKelamin }),
-        ...(jenisPasien  && { jenisPasien  }),
-      });
-      const res  = await fetch(`/api/patients?${params}`);
+      const res  = await fetch(`/api/patients?limit=200`);
       const json: ApiResponse<PaginatedData<Patient>> = await res.json();
       if (json.success) {
         setPatients(json.data.data);
-        setTotal(json.data.total);
       }
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  // Debounce search — fire immediately for non-search changes
-  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   useEffect(() => {
-    if (searchTimer.current) clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => {
-      fetchPatients(currentPage, searchQuery, jenisKelaminFilter, jenisPasienFilter);
-    }, searchQuery ? 300 : 0);
-    return () => { if (searchTimer.current) clearTimeout(searchTimer.current); };
-  }, [currentPage, searchQuery, jenisKelaminFilter, jenisPasienFilter, fetchPatients]);
+    fetchPatients();
+  }, [fetchPatients]);
+
+  // ── Reset page on filter/search change ───────────────────────────────────────
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, jenisKelaminFilter, jenisPasienFilter]);
+
+  // ── Client-side filtering ────────────────────────────────────────────────────
+  const filteredPatients = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return patients.filter((p) => {
+      if (q && !p.namaLengkap?.toLowerCase().includes(q) && !p.nik?.toLowerCase().includes(q) && !p.noRm?.toLowerCase().includes(q) && !(p.ihs ?? "").toLowerCase().includes(q)) return false;
+      if (jenisKelaminFilter && p.jenisKelamin !== jenisKelaminFilter) return false;
+      if (jenisPasienFilter  && p.jenisPasien  !== jenisPasienFilter)  return false;
+      return true;
+    });
+  }, [patients, searchQuery, jenisKelaminFilter, jenisPasienFilter]);
+
+  // ── Derived pagination ───────────────────────────────────────────────────────
+  const totalPages = Math.max(1, Math.ceil(filteredPatients.length / LIMIT));
+  const paginatedPatients = filteredPatients.slice((currentPage - 1) * LIMIT, currentPage * LIMIT);
+  const rangeStart = filteredPatients.length === 0 ? 0 : (currentPage - 1) * LIMIT + 1;
+  const rangeEnd = Math.min(currentPage * LIMIT, filteredPatients.length);
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
   function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
     setSearchQuery(e.target.value);
-    setCurrentPage(1);
   }
 
   function handleFilterChange(setter: (v: string) => void) {
     return (e: React.ChangeEvent<HTMLSelectElement>) => {
       setter(e.target.value);
-      setCurrentPage(1);
     };
   }
 
@@ -260,7 +256,7 @@ export default function DaftarPasien() {
                   <Loader2 size={20} strokeWidth={2} className="inline-block animate-spin text-gray-300" />
                 </td>
               </tr>
-            ) : patients.length === 0 ? (
+            ) : filteredPatients.length === 0 ? (
               <tr>
                 <td
                   colSpan={6}
@@ -271,7 +267,7 @@ export default function DaftarPasien() {
                 </td>
               </tr>
             ) : (
-              patients.map((patient) => (
+              paginatedPatients.map((patient) => (
                 <tr
                   key={patient.id}
                   className="border-b border-gray-50 last:border-0"
@@ -382,7 +378,7 @@ export default function DaftarPasien() {
           <div className="flex items-center justify-center gap-1 mt-8">
             <button
               type="button"
-              disabled={currentPage === 1 || isLoading}
+              disabled={currentPage === 1}
               onClick={() => setCurrentPage((p) => p - 1)}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               style={{ fontFamily: "var(--font-jakarta)" }}
@@ -405,8 +401,7 @@ export default function DaftarPasien() {
                   type="button"
                   key={p}
                   onClick={() => setCurrentPage(p as number)}
-                  disabled={isLoading}
-                  className={`w-9 h-9 rounded-xl text-sm font-semibold transition-colors disabled:cursor-not-allowed ${
+                  className={`w-9 h-9 rounded-xl text-sm font-semibold transition-colors ${
                     p === currentPage
                       ? "text-white"
                       : "text-gray-500 hover:bg-gray-50"
@@ -423,7 +418,7 @@ export default function DaftarPasien() {
 
             <button
               type="button"
-              disabled={currentPage === totalPages || isLoading}
+              disabled={currentPage === totalPages}
               onClick={() => setCurrentPage((p) => p + 1)}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               style={{ fontFamily: "var(--font-jakarta)" }}
@@ -441,14 +436,14 @@ export default function DaftarPasien() {
         >
           {isLoading
             ? "Memuat data…"
-            : `Menampilkan ${patients.length} dari ${total} pasien`}
+            : `Menampilkan ${rangeStart}–${rangeEnd} dari ${filteredPatients.length} pasien`}
         </p>
       </div>
 
       <PatientRegistrationDrawer
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
-        onSuccess={() => fetchPatients(currentPage, searchQuery, jenisKelaminFilter, jenisPasienFilter)}
+        onSuccess={() => fetchPatients()}
         mode="manual"
       />
 
@@ -456,14 +451,14 @@ export default function DaftarPasien() {
         isOpen={isEditOpen}
         onClose={handleEditClose}
         patient={editPatient}
-        onSuccess={() => fetchPatients(currentPage, searchQuery, jenisKelaminFilter, jenisPasienFilter)}
+        onSuccess={() => fetchPatients()}
       />
 
       <PatientDeleteModal
         isOpen={isDeleteOpen}
         onClose={handleDeleteClose}
         patient={deletePatient}
-        onSuccess={() => fetchPatients(currentPage, searchQuery, jenisKelaminFilter, jenisPasienFilter)}
+        onSuccess={() => fetchPatients()}
       />
     </div>
   );

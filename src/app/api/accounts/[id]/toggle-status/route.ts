@@ -33,6 +33,10 @@ export async function PATCH(
 
   const { id } = await params;
 
+  if (id === authResult.session.user.id) {
+    return errResponse("Tidak dapat menonaktifkan akun Anda sendiri.", 403);
+  }
+
   const existing = await prisma.account.findUnique({
     where: { id },
     select: { id: true, isActive: true },
