@@ -3,7 +3,7 @@ import {
   Users,
   ClipboardCheck,
   UserSearch,
-  Activity,
+  ClipboardList,
   Stethoscope,
   CheckCircle,
 } from "lucide-react";
@@ -32,7 +32,6 @@ interface PerawatDashboardProps {
   name: string;
   antreanMenunggu: number;
   selesaiAsesmen: number;
-  menungguTriage: number;
   encounters: EncounterWithPatientDetail[];
   partnerDokter: PractitionerItem[];
   selesaiList: EncounterSelesaiItem[];
@@ -86,7 +85,6 @@ export default function PerawatDashboard({
   name,
   antreanMenunggu,
   selesaiAsesmen,
-  menungguTriage,
   encounters,
   partnerDokter,
   selesaiList,
@@ -204,29 +202,32 @@ export default function PerawatDashboard({
         </div>
       </Link>
 
-      {/* Card 4 – Menunggu Triage */}
-      <div className="col-span-3 bg-white rounded-3xl p-6 flex items-center gap-4">
+      {/* Card 4 – Action: Lihat Daftar Antrean */}
+      <Link
+        href="/rawat-jalan"
+        className="col-span-3 bg-white rounded-3xl p-6 flex items-center gap-4 hover:bg-gray-50 transition-colors"
+      >
         <div
           className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
           style={{ backgroundColor: "#FFF7ED" }}
         >
-          <Activity size={22} strokeWidth={2} style={{ color: "#F97316" }} />
+          <ClipboardList size={22} strokeWidth={2} style={{ color: "#F97316" }} />
         </div>
         <div>
           <p
-            className="text-xs text-gray-400 mb-1 leading-snug"
-            style={{ fontFamily: "var(--font-jakarta)" }}
-          >
-            Menunggu Triage
-          </p>
-          <p
-            className="text-2xl font-bold text-gray-800"
+            className="text-sm font-bold text-gray-800 leading-snug"
             style={{ fontFamily: "var(--font-poppins)" }}
           >
-            {menungguTriage}
+            Lihat Daftar Antrean
+          </p>
+          <p
+            className="text-xs text-gray-400 mt-0.5"
+            style={{ fontFamily: "var(--font-jakarta)" }}
+          >
+            Buka daftar antrean rawat jalan
           </p>
         </div>
-      </div>
+      </Link>
 
       {/* ── Row 3 Left: Tabel Antrean ── */}
       <DashboardQueueTable

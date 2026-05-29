@@ -325,7 +325,7 @@ export default function DokterDashboard({
                       </span>
                     </div>
                     <Link
-                      href={`/asesmen/${enc.id}`}
+                      href={`/rawat-jalan/${enc.id}/asesmen`}
                       className="text-xs font-semibold hover:underline"
                       style={{
                         color: "#2BB5A0",

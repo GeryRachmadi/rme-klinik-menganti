@@ -108,7 +108,6 @@ export default async function BerandaPage({
       encounters,
       partnerDokter,
       selesaiList,
-      menungguTriage,
     ] = await Promise.all([
       prisma.encounter.count({
         where: { status: "MENUNGGU", createdAt: { gte: todayStart, lt: todayEnd } },
@@ -140,9 +139,6 @@ export default async function BerandaPage({
         orderBy: { updatedAt: "desc" },
         include: { patient: { select: { namaLengkap: true } } },
       }),
-      prisma.encounter.count({
-        where: { status: "MENUNGGU", observations: { none: {} } },
-      }),
     ]);
 
     content = (
@@ -150,7 +146,6 @@ export default async function BerandaPage({
         name={name}
         antreanMenunggu={antreanMenunggu}
         selesaiAsesmen={selesaiAsesmen}
-        menungguTriage={menungguTriage}
         encounters={encounters}
         partnerDokter={partnerDokter}
         selesaiList={selesaiList}

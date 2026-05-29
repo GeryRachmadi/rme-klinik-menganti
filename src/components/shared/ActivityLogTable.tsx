@@ -66,7 +66,7 @@ function formatDateWIB(date: Date): string {
   return `${dd}/${mm}/${d.getUTCFullYear()}`;
 }
 
-const LIMIT = 5;
+const LIMIT = 4;
 
 function getPageNumbers(current: number, total: number): (number | "…")[] {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);

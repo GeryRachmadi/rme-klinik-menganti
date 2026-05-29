@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import QueueFilterDropdown from "./QueueFilterDropdown";
 
 interface QueuePatient {
@@ -81,6 +82,16 @@ function getPoliLabel(q: string): string {
   return "-";
 }
 
+const LIMIT = 4;
+
+function getPageNumbers(current: number, total: number): (number | "…")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  if (current <= 4) return [1, 2, 3, 4, 5, "…", total];
+  if (current >= total - 3)
+    return [1, "…", total - 4, total - 3, total - 2, total - 1, total];
+  return [1, "…", current - 1, current, current + 1, "…", total];
+}
+
 const PRIORITY_LABEL_TO_DB: Record<string, string> = {
   "Stabil":         "STABIL",
   "Cukup Berisiko": "CUKUP_BERISIKO",
@@ -102,11 +113,22 @@ export default function DashboardQueueTable({
   emptyMessage = "Belum ada antrean hari ini.",
 }: DashboardQueueTableProps) {
   const [filters, setFilters] = useState({ prioritas: "Semua", status: "Semua" });
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const handleFilterChange = (newFilters: { prioritas: string; status: string }) => {
+    setFilters(newFilters);
+    setCurrentPage(1);
+  };
 
   const filtered = encounters.filter((e) =>
     (filters.prioritas === "Semua" || e.priority === PRIORITY_LABEL_TO_DB[filters.prioritas]) &&
     (filters.status === "Semua" || e.status === STATUS_LABEL_TO_DB[filters.status])
   );
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / LIMIT));
+  const paginated = filtered.slice((currentPage - 1) * LIMIT, currentPage * LIMIT);
+  const rangeStart = filtered.length === 0 ? 0 : (currentPage - 1) * LIMIT + 1;
+  const rangeEnd = Math.min(currentPage * LIMIT, filtered.length);
 
   const showWaktu   = variant !== "dokter";
   const showPoli    = variant === "pendaftaran";
@@ -128,7 +150,7 @@ export default function DashboardQueueTable({
           </h2>
         </div>
         <div className="flex items-center gap-2">
-          <QueueFilterDropdown onFilterChange={setFilters} />
+          <QueueFilterDropdown onFilterChange={handleFilterChange} />
           <Link
             href="/rawat-jalan"
             className="px-4 py-1.5 rounded-full text-sm text-white transition-colors hover:opacity-90"
@@ -147,6 +169,7 @@ export default function DashboardQueueTable({
           {encounters.length === 0 ? emptyMessage : "Tidak ada antrean dengan filter ini."}
         </div>
       ) : (
+        <>
         <table className="w-full">
           <thead>
             <tr className="text-left border-b border-gray-100">
@@ -171,7 +194,7 @@ export default function DashboardQueueTable({
             </tr>
           </thead>
           <tbody>
-            {filtered.map((enc) => {
+            {paginated.map((enc) => {
               const statusStyle  = STATUS_STYLE[enc.status] ?? STATUS_STYLE["MENUNGGU"];
               const statusLabel  = statusLabels[enc.status] ?? enc.status;
               const prioritasCfg = PRIORITAS_CONFIG[enc.priority] ?? {
@@ -261,7 +284,7 @@ export default function DashboardQueueTable({
                   {showAction && (
                     <td className="py-3">
                       <Link
-                        href={`/asesmen/${enc.id}`}
+                        href={`/rawat-jalan/${enc.id}/asesmen`}
                         className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold text-white hover:opacity-90 transition-opacity"
                         style={{ background: "#2BB5A0", fontFamily: "var(--font-jakarta)" }}
                       >
@@ -274,6 +297,71 @@ export default function DashboardQueueTable({
             })}
           </tbody>
         </table>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-1 mt-6">
+            <button
+              type="button"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => p - 1)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{ fontFamily: "var(--font-jakarta)" }}
+            >
+              <ChevronLeft size={14} strokeWidth={2.5} />
+              Sebelum
+            </button>
+
+            {getPageNumbers(currentPage, totalPages).map((p, i) =>
+              p === "…" ? (
+                <span
+                  key={`ellipsis-${i}`}
+                  className="px-1 text-gray-300 text-sm select-none"
+                  style={{ fontFamily: "var(--font-jakarta)" }}
+                >
+                  …
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  key={p}
+                  onClick={() => setCurrentPage(p as number)}
+                  className={`w-9 h-9 rounded-xl text-sm font-semibold transition-colors ${
+                    p === currentPage
+                      ? "text-white"
+                      : "text-gray-500 hover:bg-gray-50"
+                  }`}
+                  style={{
+                    fontFamily: "var(--font-jakarta)",
+                    background: p === currentPage ? "#2BB5A0" : undefined,
+                  }}
+                >
+                  {p}
+                </button>
+              )
+            )}
+
+            <button
+              type="button"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => p + 1)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{ fontFamily: "var(--font-jakarta)" }}
+            >
+              Selanjutnya
+              <ChevronRight size={14} strokeWidth={2.5} />
+            </button>
+          </div>
+        )}
+
+        {/* Record count */}
+        <p
+          className="text-center text-xs text-gray-300 mt-4"
+          style={{ fontFamily: "var(--font-jakarta)" }}
+        >
+          {`Menampilkan ${rangeStart}–${rangeEnd} dari ${filtered.length} antrean`}
+        </p>
+        </>
       )}
     </div>
   );
