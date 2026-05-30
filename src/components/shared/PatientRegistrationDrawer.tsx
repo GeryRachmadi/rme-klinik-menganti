@@ -55,18 +55,6 @@ export default function PatientRegistrationDrawer({
   });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Mount/unmount with slide animation; reset internal mode on each open
-  useEffect(() => {
-    if (isOpen) {
-      setRendered(true);
-      setActiveMode(mode);
-      setIsWithoutNik(defaultWithoutNik);
-    } else {
-      const t = setTimeout(() => setRendered(false), 300);
-      return () => clearTimeout(t);
-    }
-  }, [isOpen, mode]);
-
   // `as unknown as` bridges the "" string to enum literal types so RHF can
   // keep selects controlled (avoids uncontrolled→controlled React warning)
   // while Zod still rejects "" as invalid and shows the correct error message.
@@ -75,6 +63,7 @@ export default function PatientRegistrationDrawer({
     handleSubmit,
     reset,
     setError,
+    watch,
     formState: { errors, isValid },
   } = useForm<PatientRegistrationInput, any, PatientRegistrationOutput>({
     resolver: zodResolver(patientRegistrationSchema),
@@ -101,6 +90,19 @@ export default function PatientRegistrationDrawer({
       noHpWali: "",
     },
   });
+
+  // Mount/unmount with slide animation; reset form and internal mode on each open
+  useEffect(() => {
+    if (isOpen) {
+      setRendered(true);
+      setActiveMode(mode);
+      setIsWithoutNik(defaultWithoutNik);
+      reset();
+    } else {
+      const t = setTimeout(() => setRendered(false), 300);
+      return () => clearTimeout(t);
+    }
+  }, [isOpen, mode, reset]);
 
   function handleNiklessToggle() {
     if (!isWithoutNik) reset({ nik: "" });
@@ -162,6 +164,19 @@ export default function PatientRegistrationDrawer({
       setIsLoading(false);
     }
   }
+
+  function calculateAge(dob: Date): number {
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+      age--;
+    }
+    return age;
+  }
+
+  const watchedDOB = watch("tanggalLahir");
+  const isMinor = watchedDOB ? calculateAge(new Date(watchedDOB)) < 17 : false;
 
   if (!rendered) return null;
 
@@ -715,14 +730,19 @@ export default function PatientRegistrationDrawer({
             </div>
           </div>
 
-          {/* ── Section 4: DATA WALI (OPSIONAL) ───────────────────────────── */}
+          {/* ── Section 4: DATA WALI ──────────────────────────────────────── */}
           <div className="space-y-4">
-            <SectionTitle suffix="(Opsional)">Data Wali</SectionTitle>
+            <SectionTitle suffix={isMinor ? undefined : "(Opsional)"}>Data Wali</SectionTitle>
+            {isMinor && (
+              <p className="mt-1 text-sm text-red-500">
+                * Wajib diisi untuk pasien di bawah 17 tahun
+              </p>
+            )}
 
             {/* Nama Lengkap Wali */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Nama Lengkap Wali
+                Nama Lengkap Wali {isMinor && <span className="text-red-500">*</span>}
               </label>
               <input
                 type="text"
@@ -738,7 +758,7 @@ export default function PatientRegistrationDrawer({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Hubungan
+                  Hubungan {isMinor && <span className="text-red-500">*</span>}
                 </label>
                 <div className="relative">
                   <select
@@ -770,7 +790,7 @@ export default function PatientRegistrationDrawer({
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  No. HP Wali
+                  No. HP Wali {isMinor && <span className="text-red-500">*</span>}
                 </label>
                 <input
                   type="text"

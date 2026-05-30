@@ -71,11 +71,34 @@ const patientBaseObject = z.object({
                   .refine(val => val === null || /^08\d{8,11}$/.test(val), "No. HP Wali tidak valid (harus diawali 08 dan 10-13 digit)"),
 });
 
-// Reusable guardian superRefine: if ANY wali field is present, ALL must be present.
+function calculateAge(dob: Date): number {
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const monthDiff = today.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+  return age;
+}
+
+// Guardian superRefine: mandatory for minors (<17); all-or-nothing for adults.
 function guardianRefine(
-  data: { namaWali?: string | null; hubunganWali?: string | null; noHpWali?: string | null },
+  data: { tanggalLahir?: Date; namaWali?: string | null; hubunganWali?: string | null; noHpWali?: string | null },
   ctx: z.RefinementCtx
 ) {
+  const isMinor = data.tanggalLahir ? calculateAge(data.tanggalLahir) < 17 : false;
+
+  if (isMinor) {
+    const msg = "Wajib diisi untuk pasien di bawah 17 tahun.";
+    if (!data.namaWali)
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: msg, path: ["namaWali"] });
+    if (!data.hubunganWali)
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: msg, path: ["hubunganWali"] });
+    if (!data.noHpWali)
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: msg, path: ["noHpWali"] });
+    return;
+  }
+
   const hasAny = data.namaWali || data.hubunganWali || data.noHpWali;
   const hasAll = data.namaWali && data.hubunganWali && data.noHpWali;
   if (hasAny && !hasAll) {

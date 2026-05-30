@@ -1,9 +1,11 @@
 # 📋 Project Handoff & State: TR-82 UX Revisions Complete — Blackbox Testing Phase
 
-**Date:** May 29, 2026 | **Session:** Blackbox Testing — UC-01 + UC-02 BB-02.1 Complete, BB-02.2/03/04 Implemented
+**Date:** May 30, 2026 | **Session:** Blackbox Testing — UC-01 + UC-02 + UC-03 Complete, UC-04 In Progress
 **Branch:** `claude`
 **System:** Electronic Medical Record (RME) for Klinik Pratama Menganti
-**Status:** ✅ UC-01 PASS. ✅ UC-02 BB-02.1 PASS. BB-02.2/03/04 implemented, pending final browser verification. UC-03 → UC-13 pending.
+**Status:** ✅ UC-01 PASS. ✅ UC-02 PASS. ✅ UC-03 PASS.
+UC-04 in progress — BB-04.7 pending fix.
+UC-05 → UC-13 pending.
 
 ---
 
@@ -502,12 +504,9 @@ All existing TC 1.x through TC 3.x test cases must be re-run after TR-82 UX chan
 | UC | Description | Status |
 |---|---|---|
 | UC-01 | Login | ✅ PASS — 17/17 scenarios |
-| UC-02 BB-02.1 | Log Aktivitas (all roles, pagination, rich detail) | ✅ PASS — fully working |
-| UC-02 BB-02.2 | Pendaftaran dashboard filter | ⏳ Implemented, pending browser verification |
-| UC-02 BB-02.3 | Perawat dashboard filter | ⏳ Implemented, pending browser verification |
-| UC-02 BB-02.4 | Dokter dashboard filter | ⏳ Implemented, pending browser verification |
-| UC-03 | Kelola Pengguna | ⏳ Pending |
-| UC-04 | Daftar Pasien Baru | ⏳ Pending |
+| UC-02 | Lihat Dashboard | ✅ PASS — all 8 scenarios (multiple bugs fixed) |
+| UC-03 | Kelola Pengguna | ✅ PASS — 13/13 scenarios (multiple bugs fixed) |
+| UC-04 | Daftar Pasien Baru | ⏳ In Progress — 11/13 Pass, 1 Fail (BB-04.7), 1 re-classified |
 | UC-05 | Daftar Kunjungan | ⏳ Pending |
 | UC-06 | Lihat Daftar Antrean | ⏳ Pending |
 | UC-07 | Lihat Riwayat Medis | ⏳ Pending |
@@ -537,6 +536,39 @@ All existing TC 1.x through TC 3.x test cases must be re-run after TR-82 UX chan
 | BB-02.1 | UC-02 | Minor | "Oleh" column in Log Aktivitas showed wrong person (not creator) | ✅ Fixed |
 | BB-02.1 | UC-02 | Minor | Notification bell badge only appears after first click (not on page load) | ✅ Fixed |
 | BB-02.3 | UC-02 | Minor | Nurse dashboard "Ruang Penugasan" card showed inaccurate/hardcoded data | ✅ Fixed |
+
+---
+
+## 🐛 Bugs Found & Fixed (Blackbox Session May 29–30, 2026 — UC-03)
+
+| ID | Description | Status |
+|---|---|---|
+| BB-03.11 | Admin could deactivate own account | ✅ Fixed — Self-guard added to toggle API (403) + UI button disabled |
+| BB-03.13 | Admin could delete own account | ✅ Fixed — Self-guard added to delete API (403) + UI button disabled |
+| BB-03.7 | Duplicate NIK not validated on create | ✅ Fixed — NIK uniqueness check added to account create handler |
+| BB-03.5 | Speciality subtitle shown for non-Doctor roles | ✅ Fixed — Subtitle now role-aware per role type |
+| BB-03.3 | Search loading flash in ManajemenPengguna | ✅ Fixed — Switched to client-side filtering via useMemo |
+| BB-03.3 | Same search flash in DaftarPasien (/rekam-medis) | ✅ Fixed — Same client-side fix applied to DaftarPasien.tsx |
+
+---
+
+## 🧪 UC-04 Blackbox Testing Results (May 30, 2026)
+
+| ID | Scenario | Result |
+|---|---|---|
+| BB-04.1 | Authorization & UI Load | ✅ Pass |
+| BB-04.2 | Search & Filter Data Pasien | ✅ Pass |
+| BB-04.3 | Register Patient Manual Success | ✅ Pass |
+| BB-04.4 | NIK Length Validation | ✅ Pass |
+| BB-04.5 | Empty Mandatory Fields | ✅ Pass |
+| BB-04.6 | Duplicate NIK P2002 | ✅ Pass |
+| BB-04.7 | Guardian Logic - Under 17 | ❌ Fail — System allows submission without guardian for minors. Fix: enforce guardian fields mandatory when age < 17 using Zod `.superRefine()` + react-hook-form `watch('tanggalLahir')` |
+| BB-04.8 | Guardian Logic - Over 60 | ✅ Re-classified as Pass — Per Indonesian medical law, guardian NOT mandatory for competent elderly patients. System behavior is correct. |
+| BB-04.9 | No-NIK NONIK fallback | ✅ Pass |
+| BB-04.10 | Tambah Pasien button hidden for non-Pendaftaran | ✅ Pass |
+| BB-04.11 | NIK non-numeric validation | ✅ Pass |
+| BB-04.12 | Boundary age exactly 17 | ✅ Pass |
+| BB-04.13 | Boundary age exactly 60 | ✅ Pass |
 
 ---
 
@@ -582,10 +614,10 @@ Practitioner segment omitted if no practitioner assigned.
 
 ---
 
-## ⏳ Pending (as of May 29, 2026)
+## ⏳ Pending (as of May 30, 2026)
 
-- ⏳ **Verify BB-02.2/03/04** — QueueFilterDropdown in browser for all 3 roles (Pendaftaran, Perawat, Dokter)
-- ⏳ Continue Blackbox Testing UC-03 → UC-13
+- ⏳ **Fix BB-04.7** — Guardian fields mandatory for patients under 17 (prompt ready, not yet run). Fix: Zod `.superRefine()` + react-hook-form `watch('tanggalLahir')`
+- ⏳ Continue Blackbox Testing UC-04 (after BB-04.7 fix) → UC-13
 - ⏳ UAT with clinic staff on June 2nd, 2026
 - ⏳ Heuristic Evaluation (internal)
 - ⏳ SATUSEHAT real credentials (pending Kemenkes ticket resolution)
@@ -600,7 +632,9 @@ Practitioner segment omitted if no practitioner assigned.
 - ❌ Do NOT skip `npx prisma generate` after any schema change
 - ❌ Do NOT use `useSession()` — SessionProvider is not set up in this project
 - ❌ Do NOT use `ts-node` — use `tsx` for all TypeScript scripts
+- ❌ Do NOT write patient operations without ActivityLog entries
+- ❌ Do NOT use millisecond division for age calculation — use `getFullYear`/`getMonth`/`getDate` comparison or `date-fns` `differenceInYears`
 
 ---
 
-**Last Updated:** May 29, 2026 | **Next Review:** Verify BB-02.2/03/04 filters → Blackbox testing UC-03 → UC-13 + UAT prep (June 2, 2026)
+**Last Updated:** May 30, 2026 | **Next Review:** Fix BB-04.7 → Continue Blackbox Testing UC-04 → UC-13 + UAT prep (June 2, 2026)
