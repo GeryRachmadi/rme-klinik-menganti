@@ -20,6 +20,7 @@ function extractPatients(json: any): any[] {
 export function usePatientSearch(showToast: ToastFn) {
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [results, setResults] = useState<any[]>([]);
   const [isSearchEmpty, setIsSearchEmpty] = useState(false);
   const [isAdvancedSearch, setIsAdvancedSearch] = useState(false);
   const [advName, setAdvName] = useState("");
@@ -29,12 +30,17 @@ export function usePatientSearch(showToast: ToastFn) {
   const reset = useCallback(() => {
     setSelectedPatient(null);
     setSearchQuery("");
+    setResults([]);
     setIsSearchEmpty(false);
     setIsAdvancedSearch(false);
     setAdvName("");
     setAdvRm("");
     setAdvDob("");
   }, []);
+
+  function clearResults() {
+    setResults([]);
+  }
 
   function onSearchQueryChange(value: string) {
     setSearchQuery(value);
@@ -56,16 +62,42 @@ export function usePatientSearch(showToast: ToastFn) {
       const json = await res.json();
       const patients = extractPatients(json);
       if (res.ok && patients.length > 0) {
-        setSelectedPatient(patients[0]);
+        setResults(patients);
         setIsSearchEmpty(false);
       } else {
+        setResults([]);
         showToast("Pasien tidak ditemukan.", "error");
         setSelectedPatient(null);
         setIsSearchEmpty(true);
       }
     } catch {
+      setResults([]);
       showToast("Gagal mencari pasien.", "error");
       setSelectedPatient(null);
+      setIsSearchEmpty(true);
+    }
+  }
+
+  // Programmatic trigger for debounced autocomplete — no toast, minimum 2 chars.
+  async function triggerSearch(query: string) {
+    if (query.trim().length < 2) {
+      setResults([]);
+      setIsSearchEmpty(false);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/patients?search=${encodeURIComponent(query.trim())}`);
+      const json = await res.json();
+      const patients = extractPatients(json);
+      if (res.ok && patients.length > 0) {
+        setResults(patients);
+        setIsSearchEmpty(false);
+      } else {
+        setResults([]);
+        setIsSearchEmpty(true);
+      }
+    } catch {
+      setResults([]);
       setIsSearchEmpty(true);
     }
   }
@@ -115,5 +147,8 @@ export function usePatientSearch(showToast: ToastFn) {
     onAdvFieldChange,
     handleSearch,
     handleAdvancedSearch,
+    triggerSearch,
+    results,
+    clearResults,
   };
 }

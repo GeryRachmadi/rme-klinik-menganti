@@ -167,6 +167,29 @@ export async function POST(req: Request) {
     // Midnight UTC — consistent with the @db.Date storage and query in queue-utils
     const queueDate = new Date(new Date().toISOString().split("T")[0]);
 
+    // ── Duplicate guard ──────────────────────────────────────────────────────
+    // Block if patient already has an active encounter in the same poli today.
+    // Poli is not stored as a field — distinguished by queueNumber prefix (U-/G-).
+    const queuePrefix = policyType === "GIGI" ? "G-" : "U-";
+    const activeEncounter = await prisma.encounter.findFirst({
+      where: {
+        patientId: patientId as string,
+        queueDate,
+        queueNumber: { startsWith: queuePrefix },
+        status: { in: ["MENUNGGU", "DIPERIKSA"] },
+      },
+      select: { id: true, queueNumber: true, status: true },
+    });
+    if (activeEncounter) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Registrasi ditolak: Pasien masih memiliki antrean aktif di poli ini (${activeEncounter.queueNumber} - ${activeEncounter.status}).`,
+        },
+        { status: 409 }
+      );
+    }
+
     // ── Create encounter ─────────────────────────────────────────────────────
     // Two concurrent requests each resolve a distinct counter in their own
     // $transaction snapshots. P2002 here means an extremely rare same-counter

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -81,6 +82,7 @@ export default function EncounterRegistrationDrawer({
   onClose,
   onEncounterCreated,
 }: EncounterRegistrationDrawerProps) {
+  const router = useRouter();
   const [rendered, setRendered] = useState(false);
   const [practitioners, setPractitioners] = useState<any[]>([]);
   const [isLoadingDoctors, setIsLoadingDoctors] = useState(false);
@@ -92,6 +94,7 @@ export default function EncounterRegistrationDrawer({
     type: "success" | "error";
   }>({ visible: false, message: "", type: "success" });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function showToast(message: string, type: "success" | "error" = "success") {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -107,10 +110,11 @@ export default function EncounterRegistrationDrawer({
   const {
     control,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isValid },
     reset,
   } = useForm<EncounterRegistrationFormData>({
     resolver: zodResolver(encounterRegistrationSchema),
+    mode: "onChange",
     defaultValues: {
       patientType: "UMUM",
       reasonCode: "",
@@ -157,8 +161,11 @@ export default function EncounterRegistrationDrawer({
     }
   }, [isOpen, reset, search.reset]);
 
-  // Cleanup toast timer on unmount
-  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
+  // Cleanup timers on unmount
+  useEffect(() => () => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+  }, []);
 
   if (!rendered) return null;
 
@@ -271,131 +278,228 @@ export default function EncounterRegistrationDrawer({
               <div className="space-y-4">
                 <SectionTitle>CARI PASIEN</SectionTitle>
 
-                {search.isAdvancedSearch ? (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                          Nama Pasien
-                        </label>
-                        <input
-                          type="text"
-                          value={search.advName}
-                          onChange={(e) => search.onAdvFieldChange("name", e.target.value)}
-                          autoComplete="off"
-                          placeholder="Masukkan nama pasien"
-                          className={inputBase}
-                        />
+                {/* ── Selected patient card (replaces search input) ── */}
+                {search.selectedPatient ? (
+                  <div className="flex items-start gap-3 p-4 rounded-xl border bg-[#E6F5F4] border-[#4DD9C0]/50">
+                    <div className="w-10 h-10 rounded-full bg-[#2BB5A0] text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
+                      {search.selectedPatient.namaLengkap?.charAt(0).toUpperCase() ?? "?"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-bold text-[#009E95] truncate">{search.selectedPatient.namaLengkap}</p>
+                        <CheckCircle2 size={14} className="text-[#2BB5A0] flex-shrink-0" />
                       </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                          No. Rekam Medis
-                        </label>
-                        <input
-                          type="text"
-                          value={search.advRm}
-                          onChange={(e) => search.onAdvFieldChange("rm", e.target.value)}
-                          autoComplete="off"
-                          placeholder="Contoh: RM-2024…"
-                          className={inputBase}
-                        />
+                      <p className="text-xs text-[#2BB5A0] mt-0.5">
+                        {search.selectedPatient.jenisKelamin === "LAKI_LAKI" ? "Laki-laki" : "Perempuan"}{" "}
+                        •{" "}
+                        {search.selectedPatient.tanggalLahir
+                          ? Math.floor((Date.now() - new Date(search.selectedPatient.tanggalLahir).getTime()) / 3.15576e10)
+                          : "?"}{" "}
+                        thn
+                      </p>
+                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                        <span className="text-xs px-2 py-0.5 rounded-md font-medium bg-white text-[#2BB5A0] border border-[#2BB5A0]/20">
+                          {search.selectedPatient.noRm}
+                        </span>
+                        <span className="text-xs text-[#2BB5A0]">NIK: {search.selectedPatient.nik}</span>
                       </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                        Tanggal Lahir
-                      </label>
-                      <input
-                        type="date"
-                        value={search.advDob}
-                        onChange={(e) => search.onAdvFieldChange("dob", e.target.value)}
-                        autoComplete="off"
-                        className={inputBase}
-                      />
-                    </div>
-                    <div className="flex items-center gap-3 mt-2">
-                      <button
-                        type="button"
-                        onClick={search.handleAdvancedSearch}
-                        className="px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity"
-                        style={{ background: "#2BB5A0" }}
-                      >
-                        Cari Pasien
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => search.setIsAdvancedSearch(false)}
-                        className="text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
-                      >
-                        Kembali ke Pencarian NIK
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                        NIK atau Nama Lengkap Pasien
-                      </label>
-                      <div className="relative">
-                        <Search
-                          size={18}
-                          className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
-                          strokeWidth={2}
-                        />
-                        <input
-                          type="text"
-                          value={search.searchQuery}
-                          onChange={(e) => search.onSearchQueryChange(e.target.value)}
-                          onKeyDown={search.handleSearch}
-                          autoComplete="off"
-                          placeholder="Ketik lalu tekan Enter untuk mencari…"
-                          className={`${inputBase} pl-10`}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between mt-2">
-                      <button
-                        type="button"
-                        onClick={() => search.setIsAdvancedSearch(true)}
-                        className="text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors cursor-pointer"
-                      >
-                        Pencarian Spesifik (Nama / No. RM)?
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsPatientDrawerOpen(true)}
-                        className="text-sm font-semibold text-[#2BB5A0] hover:text-[#009E95] transition-colors cursor-pointer"
-                      >
-                        + Tambah Pasien Baru
-                      </button>
-                    </div>
-                  </>
-                )}
-
-                {search.showEmptyState && (
-                  <div className="flex flex-col items-center justify-center p-6 mt-4 rounded-xl border border-red-100 bg-red-50 text-center">
-                    <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm mb-3">
-                      <UserX size={24} className="text-red-400" />
-                    </div>
-                    <h3 className="text-sm font-bold text-red-800 mb-1">Pasien Tidak Ditemukan</h3>
-                    <p className="text-xs text-red-600 mb-4 max-w-[80%]">
-                      Data pasien tidak ditemukan di sistem. Silakan periksa kembali kata kunci pencarian atau daftarkan pasien baru.
-                    </p>
                     <button
                       type="button"
-                      onClick={() => setIsPatientDrawerOpen(true)}
-                      className="px-5 py-2 rounded-full text-xs font-semibold text-white transition-opacity"
-                      style={{ background: "#2BB5A0" }}
+                      onClick={() => search.setSelectedPatient(null)}
+                      className="p-1.5 rounded-lg text-[#2BB5A0] hover:bg-[#2BB5A0]/10 transition-colors flex-shrink-0"
+                      title="Ganti pasien"
                     >
-                      Daftarkan Pasien Baru
+                      <X size={16} strokeWidth={2} />
                     </button>
                   </div>
-                )}
+                ) : (
+                  /* ── Search input + dropdown + advanced search ── */
+                  <>
+                    {search.isAdvancedSearch ? (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                              Nama Pasien
+                            </label>
+                            <input
+                              type="text"
+                              value={search.advName}
+                              onChange={(e) => search.onAdvFieldChange("name", e.target.value)}
+                              autoComplete="off"
+                              placeholder="Masukkan nama pasien"
+                              className={inputBase}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                              No. Rekam Medis
+                            </label>
+                            <input
+                              type="text"
+                              value={search.advRm}
+                              onChange={(e) => search.onAdvFieldChange("rm", e.target.value)}
+                              autoComplete="off"
+                              placeholder="Contoh: RM-2024…"
+                              className={inputBase}
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                            Tanggal Lahir
+                          </label>
+                          <input
+                            type="date"
+                            value={search.advDob}
+                            onChange={(e) => search.onAdvFieldChange("dob", e.target.value)}
+                            autoComplete="off"
+                            className={inputBase}
+                          />
+                        </div>
+                        <div className="flex items-center gap-3 mt-2">
+                          <button
+                            type="button"
+                            onClick={search.handleAdvancedSearch}
+                            className="px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity"
+                            style={{ background: "#2BB5A0" }}
+                          >
+                            Cari Pasien
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => search.setIsAdvancedSearch(false)}
+                            className="text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
+                          >
+                            Kembali ke Pencarian NIK
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                            NIK / No. RM / Nama Pasien
+                          </label>
+                          <div className="relative">
+                            <Search
+                              size={18}
+                              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 z-10"
+                              strokeWidth={2}
+                            />
+                            <input
+                              type="text"
+                              value={search.searchQuery}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                search.onSearchQueryChange(value);
+                                if (debounceRef.current) clearTimeout(debounceRef.current);
+                                debounceRef.current = setTimeout(() => {
+                                  search.triggerSearch(value);
+                                }, 300);
+                              }}
+                              onKeyDown={search.handleSearch}
+                              onBlur={() => setTimeout(() => search.clearResults(), 200)}
+                              autoComplete="off"
+                              placeholder="Ketik NIK, No. RM, atau nama pasien…"
+                              className={`${inputBase} pl-10 pr-9`}
+                            />
+                            {search.searchQuery && (
+                              <button
+                                type="button"
+                                onClick={() => search.reset()}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors z-10"
+                                title="Hapus pencarian"
+                              >
+                                <X size={15} strokeWidth={2} />
+                              </button>
+                            )}
 
-                {search.selectedPatient && (
-                  <PatientSummaryCard variant="success" patient={search.selectedPatient} />
+                            {/* Floating dropdown */}
+                            {search.results.length > 0 && (
+                              <div
+                                className="absolute z-50 w-full mt-1 bg-white shadow-lg rounded-xl border border-gray-100 max-h-60 overflow-y-auto"
+                                style={{ fontFamily: "var(--font-jakarta)" }}
+                              >
+                                {search.results.map((patient) => {
+                                  const age = patient.tanggalLahir
+                                    ? Math.floor((Date.now() - new Date(patient.tanggalLahir).getTime()) / 3.15576e10)
+                                    : "?";
+                                  const gender = patient.jenisKelamin === "LAKI_LAKI" ? "Laki-laki" : "Perempuan";
+                                  return (
+                                    <button
+                                      key={patient.id}
+                                      type="button"
+                                      onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        search.setSelectedPatient(patient);
+                                        search.clearResults();
+                                        search.onSearchQueryChange("");
+                                        if (debounceRef.current) clearTimeout(debounceRef.current);
+                                      }}
+                                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#E6F5F4] transition-colors text-left border-b border-gray-50 last:border-0"
+                                    >
+                                      <div className="w-9 h-9 rounded-full bg-[#2BB5A0] text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
+                                        {patient.namaLengkap?.charAt(0).toUpperCase() ?? "?"}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-semibold text-gray-800 truncate">{patient.namaLengkap}</p>
+                                        <p className="text-xs text-gray-400 mt-0.5">{gender} • {age} thn</p>
+                                        <div className="flex items-center gap-2 mt-1">
+                                          <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-medium">
+                                            {patient.noRm}
+                                          </span>
+                                          <span className="text-xs text-gray-400 truncate">NIK: {patient.nik}</span>
+                                        </div>
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between mt-2">
+                          <button
+                            type="button"
+                            onClick={() => search.setIsAdvancedSearch(true)}
+                            className="text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors cursor-pointer"
+                          >
+                            Pencarian Spesifik (Nama / No. RM)?
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setIsPatientDrawerOpen(true)}
+                            className="text-sm font-semibold text-[#2BB5A0] hover:text-[#009E95] transition-colors cursor-pointer"
+                          >
+                            + Tambah Pasien Baru
+                          </button>
+                        </div>
+                      </>
+                    )}
+
+                    {search.showEmptyState && (
+                      <div className="flex flex-col items-center justify-center p-6 mt-4 rounded-xl border border-red-100 bg-red-50 text-center">
+                        <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm mb-3">
+                          <UserX size={24} className="text-red-400" />
+                        </div>
+                        <h3 className="text-sm font-bold text-red-800 mb-1">Pasien Tidak Ditemukan</h3>
+                        <p className="text-xs text-red-600 mb-4 max-w-[80%]">
+                          Data pasien tidak ditemukan di sistem. Silakan periksa kembali kata kunci pencarian atau daftarkan pasien baru.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => router.push("/rekam-medis")}
+                          className="px-5 py-2 rounded-full text-xs font-semibold text-white hover:opacity-90 transition-opacity"
+                          style={{ background: "#2BB5A0" }}
+                        >
+                          Tambah Pasien Baru
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -403,8 +507,6 @@ export default function EncounterRegistrationDrawer({
               {search.selectedPatient && (
                 <div className="space-y-6 pt-4 border-t border-gray-100">
                   <SectionTitle>DETAIL ENCOUNTER PASIEN</SectionTitle>
-
-                  <PatientSummaryCard variant="disabled" patient={search.selectedPatient} />
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Prioritas */}
@@ -608,7 +710,7 @@ export default function EncounterRegistrationDrawer({
               <button
                 type="submit"
                 form="encounter-form"
-                disabled={isSubmitting || !search.selectedPatient}
+                disabled={isSubmitting || !search.selectedPatient || !isValid}
                 className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ background: "#2BB5A0" }}
               >
