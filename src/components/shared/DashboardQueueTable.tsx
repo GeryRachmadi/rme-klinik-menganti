@@ -112,18 +112,51 @@ export default function DashboardQueueTable({
   variant,
   emptyMessage = "Belum ada antrean hari ini.",
 }: DashboardQueueTableProps) {
-  const [filters, setFilters] = useState({ prioritas: "Semua", status: "Semua" });
+  const [filters, setFilters] = useState({ prioritas: "Semua", status: "Semua", tanggal: "semua" });
   const [currentPage, setCurrentPage] = useState(1);
 
-  const handleFilterChange = (newFilters: { prioritas: string; status: string }) => {
+  const handleFilterChange = (newFilters: { prioritas: string; status: string; tanggal: string }) => {
     setFilters(newFilters);
     setCurrentPage(1);
   };
 
-  const filtered = encounters.filter((e) =>
-    (filters.prioritas === "Semua" || e.priority === PRIORITY_LABEL_TO_DB[filters.prioritas]) &&
-    (filters.status === "Semua" || e.status === STATUS_LABEL_TO_DB[filters.status])
-  );
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayTime = today.getTime();
+
+  const filtered = encounters.filter((e) => {
+    const matchPrioritas = filters.prioritas === "Semua" || e.priority === PRIORITY_LABEL_TO_DB[filters.prioritas];
+    const matchStatus    = filters.status === "Semua"    || e.status   === STATUS_LABEL_TO_DB[filters.status];
+
+    let matchTanggal = true;
+    if (filters.tanggal !== "semua") {
+      const d = new Date(e.periodStart);
+      d.setHours(0, 0, 0, 0);
+      const dTime = d.getTime();
+
+      if (filters.tanggal === "hari-ini") {
+        matchTanggal = dTime === todayTime;
+      } else if (filters.tanggal === "minggu-lalu") {
+        const from = new Date(today);
+        from.setDate(today.getDate() - 7);
+        matchTanggal = dTime >= from.getTime() && dTime <= todayTime;
+      } else if (filters.tanggal === "bulan-lalu") {
+        const from = new Date(today);
+        from.setDate(today.getDate() - 30);
+        matchTanggal = dTime >= from.getTime() && dTime <= todayTime;
+      } else if (filters.tanggal === "tahun-lalu") {
+        const from = new Date(today);
+        from.setFullYear(today.getFullYear() - 1);
+        matchTanggal = dTime >= from.getTime() && dTime <= todayTime;
+      } else {
+        // YYYY-MM-DD specific date
+        const [y, m, day] = filters.tanggal.split("-").map(Number);
+        matchTanggal = dTime === new Date(y, m - 1, day).getTime();
+      }
+    }
+
+    return matchPrioritas && matchStatus && matchTanggal;
+  });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / LIMIT));
   const paginated = filtered.slice((currentPage - 1) * LIMIT, currentPage * LIMIT);

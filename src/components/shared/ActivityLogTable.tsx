@@ -33,9 +33,10 @@ function parseAction(raw: string): ParsedAction {
 }
 
 const ACTION_TITLES: Record<string, string> = {
-  ENCOUNTER_CREATED: "Antrean Kunjungan Ditambahkan",
-  ENCOUNTER_UPDATED: "Data Kunjungan Diperbarui",
-  ENCOUNTER_DELETED: "Kunjungan Dihapus",
+  ENCOUNTER_CREATED:    "Antrean Kunjungan Ditambahkan",
+  ENCOUNTER_UPDATED:    "Data Kunjungan Diperbarui",
+  ENCOUNTER_CANCELLED:  "Antrean Kunjungan Dibatalkan",
+  ENCOUNTER_DELETED:    "Kunjungan Dihapus",
   PATIENT_CREATED:   "Pasien Baru Didaftarkan",
   PATIENT_UPDATED:   "Data Pasien Diperbarui",
   PATIENT_DELETED:   "Pasien Dihapus",

@@ -58,8 +58,50 @@ export async function PUT(
     return NextResponse.json({ success: false, error: "Body tidak valid" }, { status: 400 });
   }
 
-  const { priority, reasonCode, patientType, practitionerId } = body as Record<string, unknown>;
+  const { status: bodyStatus, priority, reasonCode, patientType, practitionerId } = body as Record<string, unknown>;
+  const role = session.user.role;
 
+  // --- Cancel (BATAL) path ---
+  if (bodyStatus === "BATAL") {
+    const encounter = await prisma.encounter.findUnique({
+      where: { id: encounterId },
+      include: {
+        patient: { select: { namaLengkap: true, noRm: true } },
+        practitioner: { select: { name: true, speciality: true } },
+      },
+    });
+    if (!encounter) {
+      return NextResponse.json({ success: false, error: "Kunjungan tidak ditemukan" }, { status: 404 });
+    }
+
+    if (role === "PENDAFTARAN" && encounter.status !== "MENUNGGU") {
+      return NextResponse.json(
+        { success: false, error: "Hanya antrean berstatus Menunggu yang dapat dibatalkan." },
+        { status: 403 }
+      );
+    }
+
+    const STATUS_LABELS_CANCEL: Record<string, string> = {
+      MENUNGGU: "Menunggu", DIPERIKSA: "Diperiksa", SELESAI: "Selesai", BATAL: "Batal",
+    };
+    const oldStatusLabel = STATUS_LABELS_CANCEL[encounter.status] ?? encounter.status;
+
+    const updated = await prisma.encounter.update({
+      where: { id: encounterId },
+      data: { status: "BATAL" },
+    });
+
+    writeActivityLog(
+      session.user.id,
+      "ENCOUNTER_CANCELLED",
+      "Antrean kunjungan dibatalkan",
+      `Pasien ${encounter.patient.namaLengkap} (${encounter.queueNumber}) · Status sebelumnya: ${oldStatusLabel}`
+    );
+
+    return NextResponse.json({ success: true, data: updated });
+  }
+
+  // --- Regular edit path ---
   if (!priority || !patientType || !practitionerId || reasonCode === undefined) {
     return NextResponse.json({ success: false, error: "Field tidak lengkap." }, { status: 400 });
   }

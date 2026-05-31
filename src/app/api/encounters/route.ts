@@ -63,7 +63,7 @@ export async function GET(req: Request) {
         jenisKelamin: enc.patient.jenisKelamin === "LAKI_LAKI" ? "Laki-laki" : "Perempuan",
         umur: age,
         noRm: enc.patient.noRm,
-        jenisPasien: enc.patient.jenisPasien,
+        jenisPasien: enc.patientType as "UMUM" | "BPJS",
         poli: enc.practitioner?.speciality ?? "-",
         dokter: enc.practitioner?.name ?? "Belum ditentukan",
         prioritas: formatTitleCase(enc.priority),

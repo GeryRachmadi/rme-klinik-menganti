@@ -2,7 +2,7 @@
 
 import ErrorState from "@/components/shared/ErrorState";
 
-export default function BerandaError({
+export default function RawatJalanError({
   reset,
 }: {
   error: Error & { digest?: string };
@@ -10,7 +10,7 @@ export default function BerandaError({
 }) {
   return (
     <ErrorState
-      message="Gagal memuat data. Silakan coba lagi."
+      message="Gagal memuat antrean. Silakan muat ulang halaman."
       onRetry={reset}
     />
   );

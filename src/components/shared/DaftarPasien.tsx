@@ -236,7 +236,6 @@ export default function DaftarPasien() {
                 "NIK / IHS",
                 "NOMOR REKAM MEDIS",
                 "NO.HP / KONTAK",
-                "JENIS PASIEN",
                 "ACTION",
               ].map((h) => (
                 <th
@@ -252,14 +251,14 @@ export default function DaftarPasien() {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={6} className="py-16 text-center">
+                <td colSpan={5} className="py-16 text-center">
                   <Loader2 size={20} strokeWidth={2} className="inline-block animate-spin text-gray-300" />
                 </td>
               </tr>
             ) : filteredPatients.length === 0 ? (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={5}
                   className="py-16 text-center text-sm text-gray-300"
                   style={{ fontFamily: "var(--font-jakarta)" }}
                 >
@@ -321,20 +320,6 @@ export default function DaftarPasien() {
                       style={{ fontFamily: "var(--font-jakarta)" }}
                     >
                       {patient.noHp}
-                    </span>
-                  </td>
-
-                  {/* JENIS PASIEN Badge */}
-                  <td className="py-4">
-                    <span
-                      className={`inline-block px-3 py-0.5 rounded-md text-[10px] font-bold tracking-wide border ${
-                        patient.jenisPasien === "UMUM"
-                          ? "bg-green-50 text-[#2BB5A0] border-[#2BB5A0]"
-                          : "bg-blue-50 text-blue-500 border-blue-500"
-                      }`}
-                      style={{ fontFamily: "var(--font-jakarta)" }}
-                    >
-                      {patient.jenisPasien}
                     </span>
                   </td>
 
