@@ -9,12 +9,13 @@ import {
   MappedCondition,
   MappedAllergy,
   MappedMedication,
-  MappedEncounter
+  MappedEncounter,
+  RingkasanData
 } from "@/lib/mappers/medical-records-mapper";
 
 import PatientProfileTab from "@/app/riwayat-medis/[noRm]/components/PatientProfileTab";
 import EncounterHistoryTab from "@/app/riwayat-medis/[noRm]/components/EncounterHistoryTab";
-import ClinicalSummaryTab from "@/app/riwayat-medis/[noRm]/components/ClinicalSummaryTab";
+import RingkasanTab from "@/app/riwayat-medis/[noRm]/components/RingkasanTab";
 import ConditionTab from "@/app/riwayat-medis/[noRm]/components/ConditionTab";
 import AllergyHistoryTab from "@/app/riwayat-medis/[noRm]/components/AllergyHistoryTab";
 import MedicationTab from "@/app/riwayat-medis/[noRm]/components/MedicationTab";
@@ -29,6 +30,7 @@ interface PatientHistoryTabsProps {
   allergies?: MappedAllergy[];
   medications?: MappedMedication[];
   encounters?: MappedEncounter[];
+  ringkasan?: RingkasanData;
 }
 
 function EmptyBadge() {
@@ -47,7 +49,8 @@ export default function PatientHistoryTabs({
   conditions,
   allergies,
   medications,
-  encounters
+  encounters,
+  ringkasan
 }: PatientHistoryTabsProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("ringkasan");
@@ -91,12 +94,8 @@ export default function PatientHistoryTabs({
           />
         )}
 
-        {activeTab === "ringkasan" && hasMedicalRecord && (
-          <ClinicalSummaryTab
-            data={clinicalSummary}
-            userRole={userRole}
-            onCreateEncounterClick={handleMulaiAsesmen}
-          />
+        {activeTab === "ringkasan" && hasMedicalRecord && ringkasan && (
+          <RingkasanTab data={ringkasan} />
         )}
 
         {activeTab === "riwayat-kunjungan" && (

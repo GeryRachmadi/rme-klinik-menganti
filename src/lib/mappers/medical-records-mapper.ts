@@ -32,6 +32,171 @@ export interface MappedEncounter {
   status: string;
 }
 
+// ── Ringkasan tab (2-column episodic + longitudinal) ──
+export interface EpisodicVitals {
+  systolic: number | null;
+  diastolic: number | null;
+  heartRate: number | null;
+  temperature: number | null;
+  respiratoryRate: number | null;
+  weight: number | null;
+  height: number | null;
+  bmi: number | null;
+}
+
+export interface EpisodicDiagnosis {
+  code: string;
+  display: string;
+  isPrimary: boolean;
+}
+
+export interface EpisodicProcedure {
+  code: string | null;
+  display: string;
+}
+
+export interface EpisodicMedication {
+  name: string;
+  dosage: string | null;
+}
+
+export interface EpisodicData {
+  encounterDate: Date | string | null;
+  diagnoses: EpisodicDiagnosis[];
+  vitals: EpisodicVitals | null;
+  clinicalNote: string | null;
+  practitionerName: string | null;
+  procedures: EpisodicProcedure[];   // Tindakan from latest encounter
+  medications: EpisodicMedication[]; // Resep Obat from latest encounter
+  education: string | null;          // Edukasi/Anjuran free text
+}
+
+export interface RingkasanData {
+  episodic: EpisodicData | null; // last SELESAI visit snapshot
+  pastConditions: string[];      // longitudinal, deduplicated
+  allergies: string[];           // longitudinal, deduplicated
+  medications: string[];         // longitudinal, deduplicated
+}
+
+const EDUKASI_PREFIX = "[Edukasi Pasien]";
+const EDUKASI_STRIP = "[Edukasi Pasien]: ";
+
+function hasAnyVital(o: any): boolean {
+  return (
+    o.systolic != null ||
+    o.diastolic != null ||
+    o.heartRate != null ||
+    o.temperature != null ||
+    o.respiratoryRate != null ||
+    o.weight != null ||
+    o.height != null ||
+    o.bmi != null
+  );
+}
+
+function dedupeStrings(values: (string | null | undefined)[]): string[] {
+  const cleaned = values
+    .map((v) => (v ?? "").trim())
+    .filter((v) => v.length > 0);
+  return cleaned.filter((v, i, arr) => arr.indexOf(v) === i);
+}
+
+/**
+ * Builds the Ringkasan tab payload.
+ * EPISODIC: snapshot of the most recent SELESAI encounter only.
+ * LONGITUDINAL: deduplicated patient-scoped history (ConditionHistory,
+ * AllergyIntolerance, MedicationStatement) — NOT aggregated per-encounter,
+ * because those tables carry patientId, not encounterId.
+ */
+export function mapRingkasanData(prismaPatient: any): RingkasanData {
+  const encounters: any[] = prismaPatient?.encounters || [];
+
+  // encounters arrive ordered periodStart desc; preserve order after filter.
+  const selesai = encounters.filter((e) => e.status === "SELESAI");
+  const latest = selesai[0] || null;
+
+  let episodic: EpisodicData | null = null;
+  if (latest) {
+    const observations: any[] = latest.observations || [];
+    const vitalsObs = observations.find(hasAnyVital) || null;
+    const noteObs =
+      observations.find(
+        (o) => o.notes && !String(o.notes).startsWith(EDUKASI_PREFIX)
+      ) || null;
+
+    let vitals: EpisodicVitals | null = null;
+    if (vitalsObs) {
+      let bmi: number | null = vitalsObs.bmi ?? null;
+      if (bmi == null && vitalsObs.weight && vitalsObs.height) {
+        const meters = Number(vitalsObs.height) / 100;
+        bmi = Number((Number(vitalsObs.weight) / (meters * meters)).toFixed(1));
+      }
+      vitals = {
+        systolic: vitalsObs.systolic ?? null,
+        diastolic: vitalsObs.diastolic ?? null,
+        heartRate: vitalsObs.heartRate ?? null,
+        temperature: vitalsObs.temperature ?? null,
+        respiratoryRate: vitalsObs.respiratoryRate ?? null,
+        weight: vitalsObs.weight ?? null,
+        height: vitalsObs.height ?? null,
+        bmi,
+      };
+    }
+
+    const diagnoses: EpisodicDiagnosis[] = (latest.conditionDiagnoses || [])
+      .map((d: any) => ({
+        code: d.codeIcd10 || "",
+        display: d.display || "",
+        isPrimary: d.isPrimary === true,
+      }))
+      // primary first
+      .sort((a: EpisodicDiagnosis, b: EpisodicDiagnosis) =>
+        a.isPrimary === b.isPrimary ? 0 : a.isPrimary ? -1 : 1
+      );
+
+    const eduObs = observations.find(
+      (o) => o.notes && String(o.notes).startsWith(EDUKASI_PREFIX)
+    );
+    const education = eduObs?.notes
+      ? String(eduObs.notes).startsWith(EDUKASI_STRIP)
+        ? String(eduObs.notes).slice(EDUKASI_STRIP.length).trim() || null
+        : String(eduObs.notes).slice(EDUKASI_PREFIX.length).replace(/^:\s*/, "").trim() || null
+      : null;
+
+    const procedures: EpisodicProcedure[] = (latest.procedures || []).map(
+      (p: any) => ({ code: p.codeIcd9 ?? null, display: p.display || "" })
+    );
+
+    const episodicMeds: EpisodicMedication[] = (latest.medicationRequests || []).map(
+      (m: any) => ({ name: m.medication || "", dosage: m.dosage ?? null })
+    );
+
+    episodic = {
+      encounterDate: latest.periodStart || latest.createdAt || null,
+      diagnoses,
+      vitals,
+      clinicalNote: noteObs?.notes || null,
+      practitionerName: latest.practitioner?.name || null,
+      procedures,
+      medications: episodicMeds,
+      education,
+    };
+  }
+
+  return {
+    episodic,
+    pastConditions: dedupeStrings(
+      (prismaPatient?.conditionHistories || []).map((c: any) => c.description)
+    ),
+    allergies: dedupeStrings(
+      (prismaPatient?.allergyIntolerances || []).map((a: any) => a.description)
+    ),
+    medications: dedupeStrings(
+      (prismaPatient?.medicationStatements || []).map((m: any) => m.description)
+    ),
+  };
+}
+
 export interface PatientMedicalRecordData {
   hasMedicalRecord: boolean;
   clinicalSummary: ClinicalSummary;

@@ -39,7 +39,13 @@
       "Bash(cat next.config.ts)",
       "Bash(cat next.config.js)",
       "Bash(dir /b \"C:\\\\Users\\\\Gery Rachmadi\\\\Documents\\\\akademik\\\\kuliah\\\\MataKuliah\\\\Semester8\\\\TA\\\\rme-klinik-menganti\")",
-      "Bash(Test-Path *)"
+      "Bash(Test-Path *)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(node _tmp_verify.mjs)",
+      "Bash(node _tmp_find.mjs)",
+      "Bash(node --input-type=module -e ' *)",
+      "Bash(rm -f \"src/app/riwayat-medis/[noRm]/components/ClinicalSummaryTab.tsx\")",
+      "Bash(echo \"tsc exit: $?\")"
     ]
   }
 }

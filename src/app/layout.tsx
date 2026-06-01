@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Poppins } from "next/font/google";
+import { Plus_Jakarta_Sans, Poppins, Manrope } from "next/font/google";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -14,6 +14,12 @@ const poppins = Poppins({
   weight: ["300", "400", "500", "600", "700"],
 });
 
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-manrope",
+  weight: ["400", "500", "600", "700", "800"],
+});
+
 export const metadata: Metadata = {
   title: "RME Klinik Pratama Menganti",
   description: "Sistem Rekam Medis Elektronik - Klinik Pratama Menganti Gresik",
@@ -26,7 +32,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" suppressHydrationWarning>
-      <body className={`${plusJakartaSans.variable} ${poppins.variable} font-jakarta antialiased`}>
+      <body className={`${plusJakartaSans.variable} ${poppins.variable} ${manrope.variable} font-jakarta antialiased`}>
         {children}
       </body>
     </html>

@@ -4,7 +4,7 @@ import Breadcrumb from "@/components/shared/Breadcrumb";
 import PatientHistoryTabs from "@/components/shared/PatientHistoryTabs";
 import PatientHeader from "./components/PatientHeader";
 import { auth } from "@/lib/auth";
-import { mapPatientMedicalRecords } from "@/lib/mappers/medical-records-mapper";
+import { mapPatientMedicalRecords, mapRingkasanData } from "@/lib/mappers/medical-records-mapper";
 
 export default async function RiwayatMedisPage({
   params,
@@ -28,7 +28,6 @@ export default async function RiwayatMedisPage({
         include: {
           practitioner: true,
           observations: {
-            take: 1,
             orderBy: { createdAt: "desc" },
           },
           conditionDiagnoses: true,
@@ -41,6 +40,7 @@ export default async function RiwayatMedisPage({
   if (!patient) notFound();
 
   const mappedData = mapPatientMedicalRecords(patient, userRole);
+  const ringkasanData = mapRingkasanData(patient);
 
   return (
     <div className="grid grid-cols-12 gap-6">
@@ -65,6 +65,7 @@ export default async function RiwayatMedisPage({
         conditions={mappedData.conditions}
         allergies={mappedData.allergies}
         medications={mappedData.medications}
+        ringkasan={ringkasanData}
         userRole={userRole}
       />
 

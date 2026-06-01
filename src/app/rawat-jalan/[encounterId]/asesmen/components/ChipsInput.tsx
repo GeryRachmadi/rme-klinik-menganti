@@ -143,9 +143,13 @@ export default function ChipsInput({
                   <li
                     key={suggestion}
                     onMouseDown={(e) => {
+                      // Commit the suggestion as a chip immediately. Previously this
+                      // only filled the input (setInputValue), so a picked suggestion
+                      // was silently dropped on submit unless the user also clicked
+                      // the field-level "Simpan". handleAdd applies formatOnAdd, dedups,
+                      // clears the input and collapses the field.
                       e.preventDefault();
-                      setInputValue(suggestion);
-                      setShowSuggestions(false);
+                      handleAdd(suggestion);
                     }}
                     className="px-4 py-2.5 text-sm text-gray-700 hover:bg-[#E6F5F4] hover:text-[#0F766E] cursor-pointer transition-colors"
                   >
