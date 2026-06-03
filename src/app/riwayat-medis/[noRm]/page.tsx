@@ -4,7 +4,7 @@ import Breadcrumb from "@/components/shared/Breadcrumb";
 import PatientHistoryTabs from "@/components/shared/PatientHistoryTabs";
 import PatientHeader from "./components/PatientHeader";
 import { auth } from "@/lib/auth";
-import { mapPatientMedicalRecords, mapRingkasanData } from "@/lib/mappers/medical-records-mapper";
+import { mapPatientMedicalRecords, mapRingkasanData, mapEncounterTimeline } from "@/lib/mappers/medical-records-mapper";
 
 export default async function RiwayatMedisPage({
   params,
@@ -39,8 +39,30 @@ export default async function RiwayatMedisPage({
   });
   if (!patient) notFound();
 
+  // Front desk (PENDAFTARAN) gets demographic data only — clinical records are
+  // never serialized to their browser (least-privilege / medical privacy).
+  const isPendaftaran = userRole.toUpperCase() === "PENDAFTARAN";
+
   const mappedData = mapPatientMedicalRecords(patient, userRole);
   const ringkasanData = mapRingkasanData(patient);
+  const encounterTimeline = mapEncounterTimeline(patient);
+
+  // Components only need demographic scalars — strip the included clinical
+  // relations so they are never serialized into the client payload.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { conditionHistories, allergyIntolerances, medicationStatements, encounters, ...patientDemographic } = patient;
+
+  const clinicalProps = isPendaftaran
+    ? {}
+    : {
+        hasMedicalRecord: mappedData.hasMedicalRecord,
+        clinicalSummary: mappedData.clinicalSummary,
+        encounterTimeline,
+        conditions: mappedData.conditions,
+        allergies: mappedData.allergies,
+        medications: mappedData.medications,
+        ringkasan: ringkasanData,
+      };
 
   return (
     <div className="grid grid-cols-12 gap-6">
@@ -54,19 +76,13 @@ export default async function RiwayatMedisPage({
       />
 
       {/* Page Header */}
-      <PatientHeader patient={patient} userRole={userRole} />
+      <PatientHeader patient={patientDemographic} userRole={userRole} />
 
       {/* Tabs */}
-      <PatientHistoryTabs 
-        patient={patient} 
-        hasMedicalRecord={mappedData.hasMedicalRecord}
-        clinicalSummary={mappedData.clinicalSummary}
-        encounters={mappedData.encounters}
-        conditions={mappedData.conditions}
-        allergies={mappedData.allergies}
-        medications={mappedData.medications}
-        ringkasan={ringkasanData}
+      <PatientHistoryTabs
+        patient={patientDemographic}
         userRole={userRole}
+        {...clinicalProps}
       />
 
     </div>

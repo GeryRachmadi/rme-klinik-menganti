@@ -45,7 +45,13 @@
       "Bash(node _tmp_find.mjs)",
       "Bash(node --input-type=module -e ' *)",
       "Bash(rm -f \"src/app/riwayat-medis/[noRm]/components/ClinicalSummaryTab.tsx\")",
-      "Bash(echo \"tsc exit: $?\")"
+      "Bash(echo \"tsc exit: $?\")",
+      "mcp__claude_ai_Figma__get_design_context",
+      "Bash(ls .claude/skills/)",
+      "Bash(which chromium-cli *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
+      "Bash(node -e \"try{require.resolve\\('playwright'\\);console.log\\('playwright resolvable'\\)}catch\\(e\\){console.log\\('no playwright pkg'\\)}\")",
+      "Bash(git -C \"C:\\\\Users\\\\Gery Rachmadi\\\\Documents\\\\akademik\\\\kuliah\\\\MataKuliah\\\\Semester8\\\\TA\\\\rme-klinik-menganti\" diff HEAD -- src/components/shared/PatientHistoryTabs.tsx src/app/riwayat-medis/[noRm]/components/PatientHeader.tsx src/app/api/patients/[id]/active-encounter/route.ts)"
     ]
   }
 }

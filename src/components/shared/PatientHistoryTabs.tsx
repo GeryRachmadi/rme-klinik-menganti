@@ -9,7 +9,7 @@ import {
   MappedCondition,
   MappedAllergy,
   MappedMedication,
-  MappedEncounter,
+  TimelineEncounter,
   RingkasanData
 } from "@/lib/mappers/medical-records-mapper";
 
@@ -29,7 +29,7 @@ interface PatientHistoryTabsProps {
   conditions?: MappedCondition[];
   allergies?: MappedAllergy[];
   medications?: MappedMedication[];
-  encounters?: MappedEncounter[];
+  encounterTimeline?: TimelineEncounter[];
   ringkasan?: RingkasanData;
 }
 
@@ -49,11 +49,16 @@ export default function PatientHistoryTabs({
   conditions,
   allergies,
   medications,
-  encounters,
+  encounterTimeline,
   ringkasan
 }: PatientHistoryTabsProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("ringkasan");
+
+  // Front desk (PENDAFTARAN) may only see demographic data — least-privilege /
+  // medical privacy. Clinical tabs are withheld entirely.
+  const isPendaftaran = (userRole ?? "").toUpperCase() === "PENDAFTARAN";
+
+  const [activeTab, setActiveTab] = useState(isPendaftaran ? "profil" : "ringkasan");
 
   async function handleMulaiAsesmen() {
     const res = await fetch(`/api/patients/${patient.id}/active-encounter`);
@@ -67,14 +72,16 @@ export default function PatientHistoryTabs({
     }
   }
 
-  const TABS: TabItem[] = [
-    { id: "ringkasan",         label: "Ringkasan",         badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
-    { id: "profil",            label: "Profil" },
-    { id: "riwayat-kunjungan", label: "Riwayat Kunjungan", badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
-    { id: "kondisi",           label: "Kondisi",           badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
-    { id: "riwayat-alergi",    label: "Riwayat Alergi",    badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
-    { id: "pengobatan-rutin",  label: "Pengobatan Rutin",  badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
-  ];
+  const TABS: TabItem[] = isPendaftaran
+    ? [{ id: "profil", label: "Profil" }]
+    : [
+        { id: "ringkasan",         label: "Ringkasan",         badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
+        { id: "profil",            label: "Profil" },
+        { id: "riwayat-kunjungan", label: "Riwayat Kunjungan", badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
+        { id: "riwayat-penyakit",  label: "Riwayat Penyakit",  badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
+        { id: "riwayat-alergi",    label: "Riwayat Alergi",    badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
+        { id: "pengobatan-rutin",  label: "Pengobatan Rutin",  badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
+      ];
 
   return (
     <div className="col-span-12 bg-white rounded-3xl overflow-hidden">
@@ -99,10 +106,10 @@ export default function PatientHistoryTabs({
         )}
 
         {activeTab === "riwayat-kunjungan" && (
-          <EncounterHistoryTab data={encounters} />
+          <EncounterHistoryTab data={encounterTimeline} />
         )}
 
-        {activeTab === "kondisi" && (
+        {activeTab === "riwayat-penyakit" && (
           <ConditionTab data={conditions} />
         )}
 

@@ -1,5 +1,5 @@
-import { Plus } from "lucide-react";
 import type { Patient } from "@/generated/prisma";
+import MulaiAsesmenButton from "./MulaiAsesmenButton";
 
 export default function PatientHeader({
   patient,
@@ -25,7 +25,11 @@ export default function PatientHeader({
     .map((w) => w[0]?.toUpperCase() ?? "")
     .join("");
 
-  const canStartAssessment = ["admin", "dokter", "suster"].includes(userRole.toLowerCase());
+  // Visible to clinical/admin roles; hidden for PENDAFTARAN (front desk has no
+  // access to clinical workflows — least-privilege / medical privacy).
+  const canStartAssessment = ["ADMIN", "DOKTER", "PERAWAT"].includes(
+    (userRole ?? "").toUpperCase()
+  );
 
   return (
     <div className="col-span-12 bg-white rounded-3xl px-10 py-7 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -79,14 +83,10 @@ export default function PatientHeader({
 
       {/* Right Section */}
       {canStartAssessment && (
-        <button
-          type="button"
-          className="bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 font-medium shrink-0"
-          style={{ fontFamily: "var(--font-poppins)" }}
-        >
-          <Plus className="w-5 h-5" />
-          Mulai Asesmen
-        </button>
+        <MulaiAsesmenButton
+          patientId={patient.id}
+          patientName={patient.namaLengkap}
+        />
       )}
     </div>
   );

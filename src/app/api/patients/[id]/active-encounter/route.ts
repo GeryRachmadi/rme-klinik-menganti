@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getStartOfTodayWIB, getStartOfTomorrowWIB } from "@/lib/utils/date";
 
 const ALLOWED_ROLES = ["ADMIN", "DOKTER", "PERAWAT"];
 
@@ -22,14 +21,14 @@ export async function GET(
   const { id } = await params;
 
   try {
+    // An open encounter (MENUNGGU/DIPERIKSA) is active regardless of which day
+    // it was registered — a patient queued on a previous day but not yet seen
+    // is still assessable. The duplicate-encounter guard ensures at most one
+    // open encounter exists per patient.
     const encounter = await prisma.encounter.findFirst({
       where: {
         patientId: id,
         status: { in: ["MENUNGGU", "DIPERIKSA"] },
-        periodStart: {
-          gte: getStartOfTodayWIB(),
-          lt: getStartOfTomorrowWIB(),
-        },
       },
       select: {
         id: true,

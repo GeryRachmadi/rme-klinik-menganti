@@ -4,6 +4,7 @@ export interface ClinicalSummary {
 }
 
 export interface MappedCondition {
+  id: string;
   name: string;
   icd10: string;
   status: string;
@@ -12,17 +13,22 @@ export interface MappedCondition {
 }
 
 export interface MappedAllergy {
+  id: string;
   allergen: string;
   severity: string;
   reaction: string;
+  notes: string;
   dateDiscovered: Date | string | null;
 }
 
 export interface MappedMedication {
+  id: string;
   name: string;
   dosage: string;
   frequency: string;
+  notes: string;
   status: string;
+  date: Date | string | null;
 }
 
 export interface MappedEncounter {
@@ -81,6 +87,15 @@ export interface RingkasanData {
 const EDUKASI_PREFIX = "[Edukasi Pasien]";
 const EDUKASI_STRIP = "[Edukasi Pasien]: ";
 
+// Poli is encoded in the queue-number prefix: U-xxx = Umum, G-xxx = Gigi.
+// Mirrors getPoliLabel in DashboardQueueTable.
+function getPoliLabel(queueNumber: string | null | undefined): string {
+  const p = (queueNumber ?? "").charAt(0).toUpperCase();
+  if (p === "U") return "Poli Umum";
+  if (p === "G") return "Poli Gigi";
+  return "Kunjungan";
+}
+
 function hasAnyVital(o: any): boolean {
   return (
     o.systolic != null ||
@@ -99,6 +114,16 @@ function dedupeStrings(values: (string | null | undefined)[]): string[] {
     .map((v) => (v ?? "").trim())
     .filter((v) => v.length > 0);
   return cleaned.filter((v, i, arr) => arr.indexOf(v) === i);
+}
+
+function dedupeById<T>(items: T[], getKey: (item: T) => string): T[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = (getKey(item) ?? "").toLowerCase().trim();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 /**
@@ -197,6 +222,116 @@ export function mapRingkasanData(prismaPatient: any): RingkasanData {
   };
 }
 
+// ── Riwayat Kunjungan tab (vertical timeline of SELESAI encounters) ──
+export interface TimelineEncounter {
+  id: string;
+  encounterDate: Date | string | null;
+  practitionerName: string | null;
+  poli: string; // derived from queueNumber prefix — "Poli Umum" | "Poli Gigi"
+  status: string;
+  keluhanAwal: string | null; // Encounter.reasonCode (Keluhan Utama from asesmen)
+  vitals: EpisodicVitals | null;
+  diagnoses: EpisodicDiagnosis[];
+  primaryDiagnosisNote: string | null;
+  procedures: EpisodicProcedure[];
+  medications: EpisodicMedication[];
+  education: string | null;
+}
+
+/**
+ * Builds the Riwayat Kunjungan timeline: one rich card per SELESAI or BATAL
+ * encounter, newest first. BATAL encounters appear with a red badge for audit
+ * trail; their clinical fields will be empty (no SOAP was recorded).
+ */
+export function mapEncounterTimeline(prismaPatient: any): TimelineEncounter[] {
+  const encounters: any[] = prismaPatient?.encounters || [];
+
+  const selesai = encounters
+    .filter((e) => e.status === "SELESAI" || e.status === "BATAL")
+    .sort((a, b) => {
+      const da = a.periodStart || a.createdAt;
+      const db = b.periodStart || b.createdAt;
+      return new Date(db).getTime() - new Date(da).getTime();
+    });
+
+  return selesai.map((enc) => {
+    const observations: any[] = enc.observations || [];
+    const vitalsObs = observations.find(hasAnyVital) || null;
+    const noteObs =
+      observations.find(
+        (o) => o.notes && !String(o.notes).startsWith(EDUKASI_PREFIX)
+      ) || null;
+
+    let vitals: EpisodicVitals | null = null;
+    if (vitalsObs) {
+      let bmi: number | null = vitalsObs.bmi ?? null;
+      if (bmi == null && vitalsObs.weight && vitalsObs.height) {
+        const meters = Number(vitalsObs.height) / 100;
+        bmi = Number((Number(vitalsObs.weight) / (meters * meters)).toFixed(1));
+      }
+      vitals = {
+        systolic: vitalsObs.systolic ?? null,
+        diastolic: vitalsObs.diastolic ?? null,
+        heartRate: vitalsObs.heartRate ?? null,
+        temperature: vitalsObs.temperature ?? null,
+        respiratoryRate: vitalsObs.respiratoryRate ?? null,
+        weight: vitalsObs.weight ?? null,
+        height: vitalsObs.height ?? null,
+        bmi,
+      };
+    }
+
+    const rawDiagnoses: any[] = enc.conditionDiagnoses || [];
+    const diagnoses: EpisodicDiagnosis[] = rawDiagnoses
+      .map((d) => ({
+        code: d.codeIcd10 || "",
+        display: d.display || "",
+        isPrimary: d.isPrimary === true,
+      }))
+      // primary first
+      .sort((a, b) => (a.isPrimary === b.isPrimary ? 0 : a.isPrimary ? -1 : 1));
+
+    const primaryRaw =
+      rawDiagnoses.find((d) => d.isPrimary === true) || rawDiagnoses[0] || null;
+    const primaryDiagnosisNote =
+      (primaryRaw?.notes && String(primaryRaw.notes).trim()) ||
+      (noteObs?.notes && String(noteObs.notes).trim()) ||
+      null;
+
+    const eduObs = observations.find(
+      (o) => o.notes && String(o.notes).startsWith(EDUKASI_PREFIX)
+    );
+    const education = eduObs?.notes
+      ? String(eduObs.notes).startsWith(EDUKASI_STRIP)
+        ? String(eduObs.notes).slice(EDUKASI_STRIP.length).trim() || null
+        : String(eduObs.notes).slice(EDUKASI_PREFIX.length).replace(/^:\s*/, "").trim() || null
+      : null;
+
+    const procedures: EpisodicProcedure[] = (enc.procedures || []).map(
+      (p: any) => ({ code: p.codeIcd9 ?? null, display: p.display || "" })
+    );
+
+    const medications: EpisodicMedication[] = (enc.medicationRequests || []).map(
+      (m: any) => ({ name: m.medication || "", dosage: m.dosage ?? null })
+    );
+
+    return {
+      id: enc.id,
+      encounterDate: enc.periodStart || enc.createdAt || null,
+      practitionerName: enc.practitioner?.name || null,
+      poli: getPoliLabel(enc.queueNumber),
+      status: enc.status || "",
+      keluhanAwal: enc.reasonCode || null,
+      vitals,
+      diagnoses,
+      primaryDiagnosisNote,
+      procedures,
+      medications,
+      education,
+    };
+  });
+}
+
 export interface PatientMedicalRecordData {
   hasMedicalRecord: boolean;
   clinicalSummary: ClinicalSummary;
@@ -231,27 +366,42 @@ export function mapPatientMedicalRecords(
     primaryDiagnosis: primaryDiagnosisObj,
   };
 
-  const conditions: MappedCondition[] = (prismaPatient?.conditionHistories || []).map((c: any) => ({
-    name: c.description || c.name || "",
-    icd10: c.code || c.icd10 || "",
-    status: c.clinicalStatus || c.status || "",
-    dateDiagnosed: c.createdAt || c.dateDiagnosed || null,
-    notes: c.notes || "",
-  }));
+  const conditions: MappedCondition[] = dedupeById(
+    (prismaPatient?.conditionHistories || []).map((c: any) => ({
+      id: c.id || "",
+      name: c.description || c.name || "",
+      icd10: c.code || c.icd10 || "",
+      status: c.clinicalStatus || c.status || "",
+      dateDiagnosed: c.createdAt || c.dateDiagnosed || null,
+      notes: c.notes || "",
+    })),
+    (item) => item.name
+  );
 
-  const allergies: MappedAllergy[] = (prismaPatient?.allergyIntolerances || []).map((a: any) => ({
-    allergen: a.description || a.allergen || "",
-    severity: a.reactionSeverity || a.severity || "",
-    reaction: a.notes || a.reaction || "", // Notes often contains reaction details if reaction is missing
-    dateDiscovered: a.createdAt || a.dateDiscovered || null,
-  }));
+  const allergies: MappedAllergy[] = dedupeById(
+    (prismaPatient?.allergyIntolerances || []).map((a: any) => ({
+      id: a.id || "",
+      allergen: a.description || a.allergen || "",
+      severity: a.reactionSeverity || a.severity || "",
+      reaction: a.notes || a.reaction || "",
+      notes: a.notes || "",
+      dateDiscovered: a.createdAt || a.dateDiscovered || null,
+    })),
+    (item) => item.allergen
+  );
 
-  const medications: MappedMedication[] = (prismaPatient?.medicationStatements || []).map((m: any) => ({
-    name: m.description || m.name || "",
-    dosage: m.dosage || "",
-    frequency: m.notes || m.frequency || "", // Fallback to notes if frequency missing
-    status: m.clinicalStatus || m.status || "Active",
-  }));
+  const medications: MappedMedication[] = dedupeById(
+    (prismaPatient?.medicationStatements || []).map((m: any) => ({
+      id: m.id || "",
+      name: m.description || m.name || "",
+      dosage: m.dosage || "",
+      frequency: m.notes || m.frequency || "",
+      notes: m.notes || "",
+      status: m.clinicalStatus || m.status || "Active",
+      date: m.createdAt || null,
+    })),
+    (item) => item.name
+  );
 
   const mappedEncounters: MappedEncounter[] = sortedEncounters.map((e: any) => {
     const primaryDiag = e.conditionDiagnoses?.find(

@@ -172,15 +172,25 @@ function PengukuranFisikCard({ episodic }: { episodic: EpisodicData | null }) {
           <Metric label="Pernapasan" value={v.respiratoryRate ?? "-"} unit="x/mnt" />
           <Metric label="Tinggi Badan" value={v.height ?? "-"} unit="cm" />
           <Metric label="Berat Badan" value={v.weight ?? "-"} unit="kg" />
-          <Metric label="BMI" value={v.bmi ?? "-"} unit="kg/m²">
-            {bmiCategory && (
-              <span
-                className={`block text-[10px] font-bold uppercase tracking-wide mt-1 ${bmiCategory.color}`}
-              >
-                {bmiCategory.label}
-              </span>
-            )}
-          </Metric>
+          {v.bmi != null ? (
+            // BMI tile — matches the Riwayat Kunjungan tab BMI tile exactly.
+            <div className="bg-[#f6fefa] border border-gray-200 rounded-[9px] p-[15px] flex items-center justify-between">
+              <div className="flex flex-col gap-1">
+                <span className="font-bold text-[11px] text-[#64748b]">BMI:</span>
+                <span className="font-bold text-[16px] text-[#0f172a]">
+                  {v.bmi}
+                  <span className="ml-1 text-[11px] font-normal text-[#64748b]">kg/m²</span>
+                </span>
+              </div>
+              {bmiCategory && (
+                <span className="bg-[#10b981] text-white rounded px-2 py-0.5 text-[11px] font-bold">
+                  {bmiCategory.label}
+                </span>
+              )}
+            </div>
+          ) : (
+            <Metric label="BMI" value="-" unit="kg/m²" />
+          )}
         </div>
       )}
     </Card>
