@@ -31,6 +31,12 @@ interface PatientHistoryTabsProps {
   medications?: MappedMedication[];
   encounterTimeline?: TimelineEncounter[];
   ringkasan?: RingkasanData;
+  conditionNote?: string | null;
+  conditionNoteDate?: Date | string | null;
+  allergyNote?: string | null;
+  allergyNoteDate?: Date | string | null;
+  medicationNote?: string | null;
+  medicationNoteDate?: Date | string | null;
 }
 
 function EmptyBadge() {
@@ -50,7 +56,13 @@ export default function PatientHistoryTabs({
   allergies,
   medications,
   encounterTimeline,
-  ringkasan
+  ringkasan,
+  conditionNote,
+  conditionNoteDate,
+  allergyNote,
+  allergyNoteDate,
+  medicationNote,
+  medicationNoteDate
 }: PatientHistoryTabsProps) {
   const router = useRouter();
 
@@ -73,11 +85,11 @@ export default function PatientHistoryTabs({
   }
 
   const TABS: TabItem[] = isPendaftaran
-    ? [{ id: "profil", label: "Profil" }]
+    ? [{ id: "profil", label: "Biodata" }]
     : [
-        { id: "ringkasan",         label: "Ringkasan",         badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
-        { id: "profil",            label: "Profil" },
-        { id: "riwayat-kunjungan", label: "Riwayat Kunjungan", badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
+        { id: "ringkasan",         label: "Kunjungan Terakhir", badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
+        { id: "profil",            label: "Biodata" },
+        { id: "riwayat-kunjungan", label: "CPPT",              badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
         { id: "riwayat-penyakit",  label: "Riwayat Penyakit",  badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
         { id: "riwayat-alergi",    label: "Riwayat Alergi",    badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
         { id: "pengobatan-rutin",  label: "Pengobatan Rutin",  badge: !hasMedicalRecord ? <EmptyBadge /> : undefined },
@@ -110,15 +122,15 @@ export default function PatientHistoryTabs({
         )}
 
         {activeTab === "riwayat-penyakit" && (
-          <ConditionTab data={conditions} />
+          <ConditionTab data={conditions} sectionNote={conditionNote} sectionNoteDate={conditionNoteDate} />
         )}
 
         {activeTab === "riwayat-alergi" && (
-          <AllergyHistoryTab data={allergies} />
+          <AllergyHistoryTab data={allergies} sectionNote={allergyNote} sectionNoteDate={allergyNoteDate} />
         )}
 
         {activeTab === "pengobatan-rutin" && (
-          <MedicationTab data={medications} />
+          <MedicationTab data={medications} sectionNote={medicationNote} sectionNoteDate={medicationNoteDate} />
         )}
       </div>
     </div>

@@ -3,6 +3,8 @@
 import React, { useState, KeyboardEvent, useRef } from 'react';
 import { X, Plus } from 'lucide-react';
 
+export type ChipsInputMode = 'auto-commit' | 'pending-commit';
+
 export interface ChipsInputProps {
   addLabel?: string;
   value: string[];
@@ -17,6 +19,13 @@ export interface ChipsInputProps {
   onNegationChange?: (checked: boolean) => void;
   /* FITUR BARU: Array untuk dropdown rekomendasi */
   suggestions?: string[];
+  /**
+   * 'auto-commit' (default): clicking a suggestion commits the chip immediately
+   * (Riwayat Penyakit). 'pending-commit': clicking a suggestion only fills the
+   * input so the user can set severity/dosage (via extraInputNode) before
+   * committing with Simpan/Enter (Alergi & Pengobatan Rutin — BB-08.12).
+   */
+  mode?: ChipsInputMode;
 }
 
 export default function ChipsInput({
@@ -32,6 +41,7 @@ export default function ChipsInput({
   negationChecked,
   onNegationChange,
   suggestions = [],
+  mode = 'auto-commit',
 }: ChipsInputProps) {
   const [inputValue, setInputValue] = useState('');
   const [isInputVisible, setIsInputVisible] = useState(false);
@@ -63,6 +73,11 @@ export default function ChipsInput({
     if (e.key === 'Enter') {
       e.preventDefault();
       handleAdd();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setInputValue('');
+      setShowSuggestions(false);
+      setIsInputVisible(false);
     }
   };
 
@@ -143,13 +158,18 @@ export default function ChipsInput({
                   <li
                     key={suggestion}
                     onMouseDown={(e) => {
-                      // Commit the suggestion as a chip immediately. Previously this
-                      // only filled the input (setInputValue), so a picked suggestion
-                      // was silently dropped on submit unless the user also clicked
-                      // the field-level "Simpan". handleAdd applies formatOnAdd, dedups,
-                      // clears the input and collapses the field.
                       e.preventDefault();
-                      handleAdd(suggestion);
+                      if (mode === 'pending-commit') {
+                        // Don't commit yet — fill the input so the user can set
+                        // severity/dosage (extraInputNode) before pressing Simpan
+                        // or Enter. Prevents bypassing the severity window (BB-08.12).
+                        setInputValue(suggestion);
+                        setShowSuggestions(false);
+                      } else {
+                        // auto-commit (Riwayat Penyakit): commit immediately.
+                        // handleAdd applies formatOnAdd, dedups, clears + collapses.
+                        handleAdd(suggestion);
+                      }
                     }}
                     className="px-4 py-2.5 text-sm text-gray-700 hover:bg-[#E6F5F4] hover:text-[#0F766E] cursor-pointer transition-colors"
                   >

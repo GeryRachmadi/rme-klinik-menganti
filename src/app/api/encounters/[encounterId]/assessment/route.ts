@@ -48,10 +48,12 @@ export async function POST(
 
       if (alergi && alergi.length > 0) {
         await tx.allergyIntolerance.createMany({
-          data: alergi.map((a: { name: string; severity: string }) => ({
+          data: alergi.map((a: { name: string; severity?: string | null }) => ({
             patientId,
             description: a.name,
-            reactionSeverity: a.severity,
+            // Severity is optional (HL7 FHIR reaction.severity). reactionSeverity is
+            // String? in Prisma — store null when the nurse left it unselected.
+            reactionSeverity: a.severity || null,
             notes: catatanAlergi || null,
           })),
         });
@@ -68,13 +70,19 @@ export async function POST(
         });
       }
 
-      // Do not downgrade a SELESAI encounter; only promote MENUNGGU → DIPERIKSA
-      if (encounter.status === 'MENUNGGU') {
-        await tx.encounter.update({
-          where: { id: encounterId },
-          data: { status: 'DIPERIKSA' },
-        });
-      }
+      // Persist section-level catatan to the encounter unconditionally — independent
+      // of chips, so a catatan-only submission survives (BB-08.6). Empty/whitespace
+      // notes are normalized to null. Promote MENUNGGU → DIPERIKSA in the same update
+      // (never downgrade a SELESAI encounter).
+      await tx.encounter.update({
+        where: { id: encounterId },
+        data: {
+          riwayatPenyakitNotes: catatanPenyakit?.trim() ? catatanPenyakit : null,
+          riwayatAlergiNotes: catatanAlergi?.trim() ? catatanAlergi : null,
+          pengobatanRutinNotes: catatanObat?.trim() ? catatanObat : null,
+          ...(encounter.status === 'MENUNGGU' ? { status: 'DIPERIKSA' } : {}),
+        },
+      });
     });
 
     writeActivityLog(

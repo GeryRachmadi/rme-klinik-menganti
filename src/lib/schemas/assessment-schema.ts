@@ -14,7 +14,14 @@ export const AssessmentSchema = z.object({
   tidakAdaObat: z.boolean(),
   catatanObat: z.string().max(500, ERROR_MESSAGES.catatanMax),
 }).superRefine((data, ctx) => {
-  if (data.penyakit.length === 0 && !data.tidakAdaPenyakit) {
+  // A section is valid if ANY ONE holds: has chips, OR negation checked,
+  // OR has notes. Invalid only when all three are empty/false simultaneously —
+  // notes are a first-class standalone input (BB-08.6).
+  if (
+    data.penyakit.length === 0 &&
+    !data.tidakAdaPenyakit &&
+    data.catatanPenyakit.trim().length === 0
+  ) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: ERROR_MESSAGES.penyakit,
@@ -22,7 +29,11 @@ export const AssessmentSchema = z.object({
     });
   }
 
-  if (data.alergi.length === 0 && !data.tidakAdaAlergi) {
+  if (
+    data.alergi.length === 0 &&
+    !data.tidakAdaAlergi &&
+    data.catatanAlergi.trim().length === 0
+  ) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: ERROR_MESSAGES.alergi,
@@ -30,7 +41,11 @@ export const AssessmentSchema = z.object({
     });
   }
 
-  if (data.obat.length === 0 && !data.tidakAdaObat) {
+  if (
+    data.obat.length === 0 &&
+    !data.tidakAdaObat &&
+    data.catatanObat.trim().length === 0
+  ) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: ERROR_MESSAGES.obat,

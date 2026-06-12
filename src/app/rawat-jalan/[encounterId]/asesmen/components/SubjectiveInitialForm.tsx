@@ -28,6 +28,10 @@ interface SubjectiveInitialFormProps {
   hideSubmitButton?: boolean;
   draftState?: DraftState;
   isReadOnly?: boolean;
+  /** Read-only chief complaint from registration (reasonCode). When provided,
+   *  renders a KELUHAN UTAMA display as the first field. Nurse flow only —
+   *  the doctor edits Keluhan Utama in the Hasil Periksa Medis section. */
+  keluhanUtama?: string;
 }
 
 interface DraftPayload {
@@ -81,9 +85,10 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
   isEditMode = false,
   hideSubmitButton = false,
   isReadOnly = false,
+  keluhanUtama,
 }, ref) => {
   const router = useRouter();
-  const [alergiSeverity, setAlergiSeverity] = useState('Sedang');
+  const [alergiSeverity, setAlergiSeverity] = useState('');
   const [obatDosage, setObatDosage] = useState('');
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
@@ -153,6 +158,33 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 mb-8">
           <div className="flex flex-col gap-10">
 
+            {/* SECTION: KELUHAN UTAMA (read-only, from registration — nurse flow) */}
+            {keluhanUtama !== undefined && (
+              <div className="flex flex-col">
+                <h3
+                  className="text-sm font-bold text-[#0F766E] uppercase tracking-wider mb-3"
+                  style={{ WebkitTextStroke: '0.2px #0F766E', fontFamily: '"Plus Jakarta Sans", sans-serif' }}
+                >
+                  Keluhan Utama
+                </h3>
+                <textarea
+                  id="keluhanUtamaDisplay"
+                  rows={4}
+                  readOnly
+                  value={keluhanUtama}
+                  placeholder="Tidak ada keluhan tercatat"
+                  className="w-full border border-gray-200 rounded-xl p-4 text-sm font-sans resize-y focus:outline-none focus:ring-1 min-h-[100px] transition-colors placeholder-gray-400 bg-gray-50 text-gray-800 focus:ring-[#0F766E] focus:border-[#0F766E]"
+                  style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
+                />
+                <p
+                  className={`text-[12px] text-right mt-1 ${keluhanUtama.length > 500 ? 'text-red-500' : 'text-gray-400'}`}
+                  style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
+                >
+                  {keluhanUtama.length}/500 karakter
+                </p>
+              </div>
+            )}
+
             {/* SECTION: PENYAKIT */}
             <div className="flex flex-col">
               <h3
@@ -166,6 +198,7 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
                 control={control}
                 render={({ field }) => (
                   <ChipsInput
+                    mode="auto-commit"
                     addLabel="Riwayat"
                     value={field.value ?? []}
                     suggestions={SUGGESTIONS_PENYAKIT}
@@ -176,7 +209,6 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
                       setValue('tidakAdaPenyakit', checked, { shouldValidate: true });
                       if (checked) {
                         setValue('penyakit', [], { shouldValidate: true });
-                        setValue('catatanPenyakit', '', { shouldValidate: true });
                       }
                     }}
                     onChange={(newVal) => {
@@ -189,11 +221,11 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
               />
               <textarea
                 {...register('catatanPenyakit')}
-                disabled={isPenyakitNull || isReadOnly}
-                placeholder={isPenyakitNull ? 'Tidak ada catatan' : 'Tambahkan Catatan Disini (Opsional)'}
+                disabled={isReadOnly}
+                placeholder={isReadOnly ? 'Tidak ada catatan' : 'Tambahkan Catatan Disini (Opsional)'}
                 className={`w-full mt-2 border rounded-xl p-4 text-sm font-sans resize-y focus:outline-none focus:ring-1 min-h-[100px] transition-colors
                   ${errors.penyakit ? 'border-red-500 focus:ring-red-500' : 'focus:ring-[#0F766E] focus:border-[#0F766E] border-gray-200'}
-                  ${isPenyakitNull || isReadOnly ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800 placeholder-gray-400'}`}
+                  ${isReadOnly ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800 placeholder-gray-400'}`}
                 style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
               />
               {!isReadOnly && (
@@ -221,6 +253,7 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
                 control={control}
                 render={({ field }) => (
                   <ChipsInput
+                    mode="pending-commit"
                     addLabel="Riwayat"
                     value={field.value ?? []}
                     suggestions={SUGGESTIONS_ALERGI}
@@ -231,7 +264,6 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
                       setValue('tidakAdaAlergi', checked, { shouldValidate: true });
                       if (checked) {
                         setValue('alergi', [], { shouldValidate: true });
-                        setValue('catatanAlergi', '', { shouldValidate: true });
                       }
                     }}
                     onChange={(newVal) => {
@@ -246,12 +278,13 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
                         disabled={isAlergiNull || isReadOnly}
                         className="rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-[#0F766E] focus:outline-none focus:ring-1 focus:ring-[#0F766E] bg-white disabled:bg-gray-100"
                       >
-                        <option>Tinggi</option>
-                        <option>Sedang</option>
-                        <option>Rendah</option>
+                        <option value="">Tingkat (Opsional)</option>
+                        <option value="Tinggi">Tinggi</option>
+                        <option value="Sedang">Sedang</option>
+                        <option value="Rendah">Rendah</option>
                       </select>
                     }
-                    formatOnAdd={(val) => `${val} (${alergiSeverity})`}
+                    formatOnAdd={(val) => alergiSeverity ? `${val} (${alergiSeverity})` : val}
                     getChipColor={(chip) =>
                       chip.includes('Tinggi') ? 'bg-red-50 border-red-200 text-red-800' :
                       chip.includes('Sedang') ? 'bg-orange-50 border-orange-200 text-orange-800' :
@@ -263,11 +296,11 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
               />
               <textarea
                 {...register('catatanAlergi')}
-                disabled={isAlergiNull || isReadOnly}
-                placeholder={isAlergiNull ? 'Tidak ada catatan' : 'Tambahkan Catatan Disini (Opsional)'}
+                disabled={isReadOnly}
+                placeholder={isReadOnly ? 'Tidak ada catatan' : 'Tambahkan Catatan Disini (Opsional)'}
                 className={`w-full mt-2 border rounded-xl p-4 text-sm font-sans resize-y focus:outline-none focus:ring-1 min-h-[100px] transition-colors
                   ${errors.alergi ? 'border-red-500 focus:ring-red-500' : 'focus:ring-[#0F766E] focus:border-[#0F766E] border-gray-200'}
-                  ${isAlergiNull || isReadOnly ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800 placeholder-gray-400'}`}
+                  ${isReadOnly ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800 placeholder-gray-400'}`}
                 style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
               />
               {!isReadOnly && (
@@ -295,6 +328,7 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
                 control={control}
                 render={({ field }) => (
                   <ChipsInput
+                    mode="pending-commit"
                     addLabel="Riwayat"
                     value={field.value ?? []}
                     suggestions={SUGGESTIONS_OBAT}
@@ -305,7 +339,6 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
                       setValue('tidakAdaObat', checked, { shouldValidate: true });
                       if (checked) {
                         setValue('obat', [], { shouldValidate: true });
-                        setValue('catatanObat', '', { shouldValidate: true });
                       }
                     }}
                     onChange={(newVal) => {
@@ -329,11 +362,11 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
               />
               <textarea
                 {...register('catatanObat')}
-                disabled={isObatNull || isReadOnly}
-                placeholder={isObatNull ? 'Tidak ada catatan' : 'Tambahkan Catatan Disini (Opsional)'}
+                disabled={isReadOnly}
+                placeholder={isReadOnly ? 'Tidak ada catatan' : 'Tambahkan Catatan Disini (Opsional)'}
                 className={`w-full mt-2 border rounded-xl p-4 text-sm font-sans resize-y focus:outline-none focus:ring-1 min-h-[100px] transition-colors
                   ${errors.obat ? 'border-red-500 focus:ring-red-500' : 'focus:ring-[#0F766E] focus:border-[#0F766E] border-gray-200'}
-                  ${isObatNull || isReadOnly ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800 placeholder-gray-400'}`}
+                  ${isReadOnly ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800 placeholder-gray-400'}`}
                 style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
               />
               {!isReadOnly && (

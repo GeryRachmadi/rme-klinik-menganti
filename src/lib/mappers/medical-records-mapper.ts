@@ -75,6 +75,7 @@ export interface EpisodicData {
   procedures: EpisodicProcedure[];   // Tindakan from latest encounter
   medications: EpisodicMedication[]; // Resep Obat from latest encounter
   education: string | null;          // Edukasi/Anjuran free text
+  referral: { tujuan: string; alasan: string | null } | null; // Rujukan (ServiceRequest)
 }
 
 export interface RingkasanData {
@@ -196,6 +197,10 @@ export function mapRingkasanData(prismaPatient: any): RingkasanData {
       (m: any) => ({ name: m.medication || "", dosage: m.dosage ?? null })
     );
 
+    // Rujukan — ServiceRequest stores tujuan in `intent`, alasan in `note`.
+    const sr = (latest.serviceRequests || [])[0] || null;
+    const referral = sr ? { tujuan: sr.intent || "", alasan: sr.note ?? null } : null;
+
     episodic = {
       encounterDate: latest.periodStart || latest.createdAt || null,
       diagnoses,
@@ -205,6 +210,7 @@ export function mapRingkasanData(prismaPatient: any): RingkasanData {
       procedures,
       medications: episodicMeds,
       education,
+      referral,
     };
   }
 
@@ -236,6 +242,7 @@ export interface TimelineEncounter {
   procedures: EpisodicProcedure[];
   medications: EpisodicMedication[];
   education: string | null;
+  referral: { tujuan: string; alasan: string | null } | null; // ServiceRequest (Rujukan)
 }
 
 /**
@@ -315,6 +322,10 @@ export function mapEncounterTimeline(prismaPatient: any): TimelineEncounter[] {
       (m: any) => ({ name: m.medication || "", dosage: m.dosage ?? null })
     );
 
+    // Rujukan — ServiceRequest stores tujuan in `intent`, alasan in `note`.
+    const sr = (enc.serviceRequests || [])[0] || null;
+    const referral = sr ? { tujuan: sr.intent || "", alasan: sr.note ?? null } : null;
+
     return {
       id: enc.id,
       encounterDate: enc.periodStart || enc.createdAt || null,
@@ -328,6 +339,7 @@ export function mapEncounterTimeline(prismaPatient: any): TimelineEncounter[] {
       procedures,
       medications,
       education,
+      referral,
     };
   });
 }
@@ -339,6 +351,14 @@ export interface PatientMedicalRecordData {
   allergies: MappedAllergy[];
   medications: MappedMedication[];
   encounters: MappedEncounter[];
+  // Section-level Kajian Awal catatan from the most recent SELESAI encounter that
+  // carries one. Shown below the longitudinal cards in each history tab (BB-08.17).
+  conditionNote: string | null;
+  conditionNoteDate: Date | string | null;
+  allergyNote: string | null;
+  allergyNoteDate: Date | string | null;
+  medicationNote: string | null;
+  medicationNoteDate: Date | string | null;
 }
 
 export function mapPatientMedicalRecords(
@@ -403,6 +423,20 @@ export function mapPatientMedicalRecords(
     (item) => item.name
   );
 
+  // Most-recent non-empty section note across SELESAI encounters (newest first).
+  const selesaiDesc = sortedEncounters.filter((e: any) => e.status === "SELESAI");
+  const conditionNoteEnc = selesaiDesc.find((e: any) => e.riwayatPenyakitNotes?.trim()) ?? null;
+  const conditionNote = conditionNoteEnc?.riwayatPenyakitNotes ?? null;
+  const conditionNoteDate = conditionNoteEnc?.periodStart ?? conditionNoteEnc?.createdAt ?? null;
+
+  const allergyNoteEnc = selesaiDesc.find((e: any) => e.riwayatAlergiNotes?.trim()) ?? null;
+  const allergyNote = allergyNoteEnc?.riwayatAlergiNotes ?? null;
+  const allergyNoteDate = allergyNoteEnc?.periodStart ?? allergyNoteEnc?.createdAt ?? null;
+
+  const medicationNoteEnc = selesaiDesc.find((e: any) => e.pengobatanRutinNotes?.trim()) ?? null;
+  const medicationNote = medicationNoteEnc?.pengobatanRutinNotes ?? null;
+  const medicationNoteDate = medicationNoteEnc?.periodStart ?? medicationNoteEnc?.createdAt ?? null;
+
   const mappedEncounters: MappedEncounter[] = sortedEncounters.map((e: any) => {
     const primaryDiag = e.conditionDiagnoses?.find(
       (d: any) => d.isPrimary === true
@@ -423,5 +457,11 @@ export function mapPatientMedicalRecords(
     allergies,
     medications,
     encounters: mappedEncounters,
+    conditionNote,
+    conditionNoteDate,
+    allergyNote,
+    allergyNoteDate,
+    medicationNote,
+    medicationNoteDate,
   };
 }

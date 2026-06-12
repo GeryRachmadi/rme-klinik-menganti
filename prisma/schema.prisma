@@ -128,6 +128,12 @@ model Encounter {
   patientType   String    @default("UMUM")
   syncStatus    String    @default("UNSYNCED") // UNSYNCED | SUCCESS | FAILED_SYNC
   transactionId String?                        // Kemenkes transaction ID from SATUSEHAT
+  // Section-level Kajian Awal notes — independent of chip rows so a catatan-only
+  // submission survives (UC-08 BB-08.6 / BB-08.17). Episodic: belongs to this visit.
+  riwayatPenyakitNotes String? @db.Text
+  riwayatAlergiNotes   String? @db.Text
+  pengobatanRutinNotes String? @db.Text
+  pemeriksaanFisikNotes String? @db.Text
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
