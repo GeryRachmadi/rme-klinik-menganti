@@ -117,6 +117,8 @@ export default async function BerandaPage({
       }),
       prisma.encounter.findMany({
         where: {
+          // Nurse's active queue excludes cancelled encounters (BATAL).
+          status: { not: "BATAL" },
           createdAt: { gte: todayStart, lt: todayEnd },
         },
         take: 8,
@@ -186,7 +188,9 @@ export default async function BerandaPage({
             where: { practitionerId: pid, status: "SELESAI", createdAt: { gte: todayStart, lt: todayEnd } },
           }),
           prisma.encounter.findMany({
-            where: { practitionerId: pid, createdAt: { gte: todayStart, lt: todayEnd } },
+            // Doctor's active queue = DIPERIKSA only; MENUNGGU is the nurse's
+            // stage and SELESAI lives in the Riwayat Pemeriksaan widget.
+            where: { practitionerId: pid, status: "DIPERIKSA", createdAt: { gte: todayStart, lt: todayEnd } },
             take: 8,
             orderBy: { createdAt: "asc" },
             include: {

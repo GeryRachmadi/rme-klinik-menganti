@@ -316,13 +316,18 @@ export default function DashboardQueueTable({
 
                   {showAction && (
                     <td className="py-3">
-                      <Link
-                        href={`/rawat-jalan/${enc.id}/asesmen`}
-                        className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold text-white hover:opacity-90 transition-opacity"
-                        style={{ background: "#2BB5A0", fontFamily: "var(--font-jakarta)" }}
-                      >
-                        {ACTION_LABEL[variant]}
-                      </Link>
+                      {enc.status === "BATAL" ? (
+                        // Cancelled encounters carry no assessable action.
+                        <span className="text-xs text-gray-300">—</span>
+                      ) : (
+                        <Link
+                          href={`/rawat-jalan/${enc.id}/asesmen`}
+                          className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold text-white hover:opacity-90 transition-opacity"
+                          style={{ background: "#2BB5A0", fontFamily: "var(--font-jakarta)" }}
+                        >
+                          {ACTION_LABEL[variant]}
+                        </Link>
+                      )}
                     </td>
                   )}
                 </tr>

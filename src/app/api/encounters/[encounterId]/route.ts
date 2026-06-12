@@ -74,9 +74,9 @@ export async function PUT(
       return NextResponse.json({ success: false, error: "Kunjungan tidak ditemukan" }, { status: 404 });
     }
 
-    if (role === "PENDAFTARAN" && encounter.status !== "MENUNGGU") {
+    if (role === "PENDAFTARAN" && !["MENUNGGU", "DIPERIKSA"].includes(encounter.status)) {
       return NextResponse.json(
-        { success: false, error: "Hanya antrean berstatus Menunggu yang dapat dibatalkan." },
+        { success: false, error: "Hanya antrean berstatus Menunggu atau Diperiksa yang dapat dibatalkan." },
         { status: 403 }
       );
     }

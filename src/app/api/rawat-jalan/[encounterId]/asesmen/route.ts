@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { writeActivityLog } from "@/lib/activity-log";
+import { parseAllergyChip, parseMedicationChip } from "@/lib/utils/assessment-parser";
 
 export async function POST(
   request: Request,
@@ -25,6 +26,33 @@ export async function POST(
     const body = await request.json();
     const { assessmentData, physicalData, hasilPeriksaData, selectedDiagnoses, plan } = body;
 
+    // Conditional Rujukan guard: an active referral must carry both Tujuan and
+    // Alasan — block empty ServiceRequest creation server-side (BB-11.14).
+    if (plan?.rujukan?.isActive === true) {
+      const tujuan = typeof plan.rujukan.tujuanRujukan === "string" ? plan.rujukan.tujuanRujukan.trim() : "";
+      const alasan = typeof plan.rujukan.alasanRujukan === "string" ? plan.rujukan.alasanRujukan.trim() : "";
+      if (!tujuan || !alasan) {
+        return Response.json(
+          { error: "Tujuan dan Alasan Rujukan wajib diisi" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Mandatory Plan content guard (H5 Sev2, PIC request): Tindakan, Resep, and
+    // Edukasi are all required. Mirrors the client PlanFormSchema exactly — manual
+    // tindakan entries live inside procedures (codeIcd9 "MANUAL"), so a non-empty
+    // procedures array is the single definition of "Tindakan present" on both sides.
+    if (!plan?.procedure?.procedures?.length) {
+      return Response.json({ error: "Tindakan Medis wajib diisi" }, { status: 400 });
+    }
+    if (!plan?.medication?.medicationText?.trim()) {
+      return Response.json({ error: "Resep Obat wajib diisi" }, { status: 400 });
+    }
+    if (!plan?.edukasi?.anjuranEdukasi?.trim()) {
+      return Response.json({ error: "Edukasi / Anjuran wajib diisi" }, { status: 400 });
+    }
+
     const encounter = await prisma.encounter.findUnique({
       where: { id: encounterId },
       include: { patient: { select: { namaLengkap: true, noRm: true } } },
@@ -45,6 +73,105 @@ export async function POST(
     }
 
     await prisma.$transaction(async (tx) => {
+      // Step 0: Persist Kajian Awal chips (patient-scoped longitudinal records).
+      // The doctor flow posts RAW, unparsed chips (e.g. "Amoxicillin (Tinggi)",
+      // "Paracetamol (500mg)"), whereas the nurse route receives them pre-parsed —
+      // so parse server-side here before writing. These models carry patientId and
+      // NO encounterId, so a deleteMany({ patientId }) would wipe the patient's
+      // history from OTHER visits. Instead, insert-if-not-exists keyed on
+      // (patientId, description): the doctor form arrives pre-filled with the
+      // nurse's chips, and dedup-on-bare-name prevents re-saves from duplicating
+      // them. When a bare name already exists, allergy severity / medication dosage
+      // is updated in place if it changed (so the doctor can correct what the nurse
+      // entered) — ConditionHistory has no such field, so it stays skip-only.
+      // Section-level catatan is persisted to the Encounter (Step 7), so chip rows
+      // store notes: null to avoid double-writing stale notes on re-save.
+      const patientId = encounter.patientId;
+
+      const penyakitChips: string[] = Array.isArray(assessmentData?.penyakit) ? assessmentData.penyakit : [];
+      const alergiChips: string[] = Array.isArray(assessmentData?.alergi) ? assessmentData.alergi : [];
+      const obatChips: string[] = Array.isArray(assessmentData?.obat) ? assessmentData.obat : [];
+
+      if (penyakitChips.length > 0) {
+        const existing = await tx.conditionHistory.findMany({ where: { patientId }, select: { description: true } });
+        const seen = new Set(existing.map((e) => e.description.trim().toLowerCase()));
+        const rows: { patientId: string; description: string; clinicalStatus: string; notes: null }[] = [];
+        for (const raw of penyakitChips) {
+          const name = raw.trim();
+          const key = name.toLowerCase();
+          if (!name || seen.has(key)) continue;
+          seen.add(key);
+          rows.push({ patientId, description: name, clinicalStatus: "ACTIVE", notes: null });
+        }
+        if (rows.length > 0) await tx.conditionHistory.createMany({ data: rows });
+      }
+
+      if (alergiChips.length > 0) {
+        const existing = await tx.allergyIntolerance.findMany({ where: { patientId }, select: { description: true, reactionSeverity: true } });
+        // Map bareName(lowercase) → the stored row's exact description + severity.
+        // We key on lowercase for case-insensitive matching but keep the original
+        // description string for the updateMany filter so casing differences don't
+        // miss the row.
+        const stored = new Map<string, { description: string; severity: string | null }>();
+        for (const e of existing) {
+          stored.set(e.description.trim().toLowerCase(), { description: e.description, severity: e.reactionSeverity ?? null });
+        }
+        const rows: { patientId: string; description: string; reactionSeverity: string | null; notes: null }[] = [];
+        for (const chip of alergiChips) {
+          const { name, severity } = parseAllergyChip(chip);
+          if (!name) continue;
+          const key = name.toLowerCase();
+          const incoming = severity || null;
+          const prev = stored.get(key);
+          if (prev) {
+            // Existing allergen for this patient — update only when severity changed
+            // (e.g. nurse left it blank, doctor corrects it); otherwise no-op skip.
+            if (prev.severity !== incoming) {
+              await tx.allergyIntolerance.updateMany({
+                where: { patientId, description: prev.description },
+                data: { reactionSeverity: incoming },
+              });
+              stored.set(key, { description: prev.description, severity: incoming });
+            }
+            continue;
+          }
+          stored.set(key, { description: name, severity: incoming });
+          rows.push({ patientId, description: name, reactionSeverity: incoming, notes: null });
+        }
+        if (rows.length > 0) await tx.allergyIntolerance.createMany({ data: rows });
+      }
+
+      if (obatChips.length > 0) {
+        const existing = await tx.medicationStatement.findMany({ where: { patientId }, select: { description: true, dosage: true } });
+        // Same pattern as allergy: key on lowercase bare name, keep exact stored
+        // description for the updateMany filter, update only when dosage changed.
+        const stored = new Map<string, { description: string; dosage: string | null }>();
+        for (const e of existing) {
+          stored.set(e.description.trim().toLowerCase(), { description: e.description, dosage: e.dosage ?? null });
+        }
+        const rows: { patientId: string; description: string; dosage: string | null; notes: null }[] = [];
+        for (const chip of obatChips) {
+          const { name, dosage } = parseMedicationChip(chip);
+          if (!name) continue;
+          const key = name.toLowerCase();
+          const incoming = dosage || null;
+          const prev = stored.get(key);
+          if (prev) {
+            if (prev.dosage !== incoming) {
+              await tx.medicationStatement.updateMany({
+                where: { patientId, description: prev.description },
+                data: { dosage: incoming },
+              });
+              stored.set(key, { description: prev.description, dosage: incoming });
+            }
+            continue;
+          }
+          stored.set(key, { description: name, dosage: incoming });
+          rows.push({ patientId, description: name, dosage: incoming, notes: null });
+        }
+        if (rows.length > 0) await tx.medicationStatement.createMany({ data: rows });
+      }
+
       // Step 1: Replace diagnoses (delete existing, insert new)
       await tx.conditionDiagnosis.deleteMany({ where: { encounterId } });
       if (selectedDiagnoses && selectedDiagnoses.length > 0) {
@@ -147,11 +274,16 @@ export async function POST(
         });
       }
 
-      // Step 7: Mark encounter as SELESAI
+      // Step 7: Mark encounter as SELESAI + persist section-level Kajian Awal notes.
+      // The doctor flow carries catatan in assessmentData; store it on the encounter
+      // (independent of chips) so it survives to /riwayat-medis (BB-08.6 / BB-08.17).
       await tx.encounter.update({
         where: { id: encounterId },
         data: {
           reasonCode: hasilPeriksaData?.keluhanUtama ?? null,
+          riwayatPenyakitNotes: assessmentData?.catatanPenyakit?.trim() ? assessmentData.catatanPenyakit : null,
+          riwayatAlergiNotes: assessmentData?.catatanAlergi?.trim() ? assessmentData.catatanAlergi : null,
+          pengobatanRutinNotes: assessmentData?.catatanObat?.trim() ? assessmentData.catatanObat : null,
           status: "SELESAI",
           updatedAt: new Date(),
         },
