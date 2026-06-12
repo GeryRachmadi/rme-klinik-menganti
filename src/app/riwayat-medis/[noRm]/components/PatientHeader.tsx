@@ -1,12 +1,17 @@
 import type { Patient } from "@/generated/prisma";
 import MulaiAsesmenButton from "./MulaiAsesmenButton";
+import { formatDob } from "@/lib/utils/format-dob";
 
 export default function PatientHeader({
   patient,
   userRole,
+  latestDiagnosis,
+  latestTreatment,
 }: {
   patient: Patient;
   userRole: string;
+  latestDiagnosis?: string | null;
+  latestTreatment?: string | null;
 }) {
   const dob = new Date(patient.tanggalLahir);
   const today = new Date();
@@ -62,6 +67,14 @@ export default function PatientHeader({
             >
               NIK: {patient.nik}
             </span>
+            {patient.tanggalLahir && (
+              <span
+                className="bg-blue-100 text-blue-700 px-3 py-0.5 rounded-full text-xs font-medium"
+                style={{ fontFamily: "var(--font-jakarta)" }}
+              >
+                {formatDob(patient.tanggalLahir)}
+              </span>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -78,6 +91,27 @@ export default function PatientHeader({
               {age} tahun
             </span>
           </div>
+
+          {(latestDiagnosis || latestTreatment) && (
+            <div className="flex flex-wrap items-center gap-2">
+              {latestDiagnosis && (
+                <span
+                  className="bg-red-50 text-red-700 border border-red-700 px-4 py-1 rounded-full text-sm font-medium"
+                  style={{ fontFamily: "var(--font-jakarta)" }}
+                >
+                  Dx: {latestDiagnosis}
+                </span>
+              )}
+              {latestTreatment && (
+                <span
+                  className="bg-purple-50 text-purple-700 border border-purple-700 px-4 py-1 rounded-full text-sm font-medium"
+                  style={{ fontFamily: "var(--font-jakarta)" }}
+                >
+                  Tx: {latestTreatment}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

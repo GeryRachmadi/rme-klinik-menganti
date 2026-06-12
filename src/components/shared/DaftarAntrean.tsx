@@ -16,6 +16,7 @@ import {
 import EncounterRegistrationDrawer from "@/components/shared/EncounterRegistrationDrawer";
 import EncounterEditDrawer from "@/components/shared/EncounterEditDrawer";
 import CalendarDateDropdown from "@/components/shared/CalendarDateDropdown";
+import { formatDob } from "@/lib/utils/format-dob";
 
 type Prioritas = "Stabil" | "Cukup Berisiko" | "Berisiko" | "Berisiko Tinggi";
 type StatusAntrean = "Menunggu" | "Diperiksa" | "Selesai" | "Batal";
@@ -30,6 +31,7 @@ interface AntreanData {
   jenisKelamin: string;
   umur: number;
   noRm: string;
+  tanggalLahir?: Date | string | null;
   jenisPasien: JenisPasien;
   poli: string;
   dokter: string;
@@ -440,6 +442,9 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
                           <p className="text-xs text-gray-400 mt-0.5">
                             {row.jenisKelamin} • {row.umur} tahun
                           </p>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {formatDob(row.tanggalLahir)}
+                          </p>
                           <p className="text-xs font-bold text-[#2BB5A0] mt-0.5">{row.noRm}</p>
                         </div>
                         <span
@@ -513,7 +518,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
                           {(userRole === "ADMIN"
                             ? row.status !== "Batal"
                             : userRole === "PENDAFTARAN"
-                            ? row.status === "Menunggu"
+                            ? row.status === "Menunggu" || row.status === "Diperiksa"
                             : false) && (
                             <button
                               type="button"

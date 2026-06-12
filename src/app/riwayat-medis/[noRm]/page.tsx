@@ -33,6 +33,7 @@ export default async function RiwayatMedisPage({
           conditionDiagnoses: true,
           medicationRequests: true,
           procedures: true,
+          serviceRequests: true,
         },
       },
     },
@@ -46,6 +47,15 @@ export default async function RiwayatMedisPage({
   const mappedData = mapPatientMedicalRecords(patient, userRole);
   const ringkasanData = mapRingkasanData(patient);
   const encounterTimeline = mapEncounterTimeline(patient);
+
+  // Latest Diagnosis & Treatment summary for the Patient Header banner (UAT H6 Sev2).
+  const latestDiagnosis = ringkasanData.episodic?.diagnoses?.[0]
+    ? `${ringkasanData.episodic.diagnoses[0].code} — ${ringkasanData.episodic.diagnoses[0].display}`
+    : null;
+  const latestTreatment =
+    ringkasanData.episodic?.procedures?.[0]?.display ??
+    ringkasanData.episodic?.medications?.[0]?.name ??
+    null;
 
   // Components only need demographic scalars — strip the included clinical
   // relations so they are never serialized into the client payload.
@@ -61,6 +71,12 @@ export default async function RiwayatMedisPage({
         conditions: mappedData.conditions,
         allergies: mappedData.allergies,
         medications: mappedData.medications,
+        conditionNote: mappedData.conditionNote,
+        conditionNoteDate: mappedData.conditionNoteDate,
+        allergyNote: mappedData.allergyNote,
+        allergyNoteDate: mappedData.allergyNoteDate,
+        medicationNote: mappedData.medicationNote,
+        medicationNoteDate: mappedData.medicationNoteDate,
         ringkasan: ringkasanData,
       };
 
@@ -76,7 +92,12 @@ export default async function RiwayatMedisPage({
       />
 
       {/* Page Header */}
-      <PatientHeader patient={patientDemographic} userRole={userRole} />
+      <PatientHeader
+        patient={patientDemographic}
+        userRole={userRole}
+        latestDiagnosis={isPendaftaran ? null : latestDiagnosis}
+        latestTreatment={isPendaftaran ? null : latestTreatment}
+      />
 
       {/* Tabs */}
       <PatientHistoryTabs

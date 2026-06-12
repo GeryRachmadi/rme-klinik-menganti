@@ -468,6 +468,14 @@ export default function PatientRegistrationDrawer({
                   className={`${cls(errors.tanggalLahir)} text-gray-600`}
                 />
                 <p className="mt-1 text-sm text-gray-500">Contoh: 17/01/1990</p>
+                {/* Live Age display — additive, recomputes as the user picks a DoB.
+                    Reuses the existing calculateAge() and watchedDOB (also used by
+                    the BB-04.7 guardian logic, which is left untouched). */}
+                {watchedDOB && !Number.isNaN(new Date(watchedDOB).getTime()) && calculateAge(new Date(watchedDOB)) >= 0 && (
+                  <p className="mt-1 text-sm text-gray-500">
+                    Umur: {calculateAge(new Date(watchedDOB))} tahun
+                  </p>
+                )}
                 <FieldError message={errors.tanggalLahir?.message} />
               </div>
             </div>

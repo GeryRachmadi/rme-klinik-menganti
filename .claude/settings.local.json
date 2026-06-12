@@ -51,7 +51,16 @@
       "Bash(which chromium-cli *)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
       "Bash(node -e \"try{require.resolve\\('playwright'\\);console.log\\('playwright resolvable'\\)}catch\\(e\\){console.log\\('no playwright pkg'\\)}\")",
-      "Bash(git -C \"C:\\\\Users\\\\Gery Rachmadi\\\\Documents\\\\akademik\\\\kuliah\\\\MataKuliah\\\\Semester8\\\\TA\\\\rme-klinik-menganti\" diff HEAD -- src/components/shared/PatientHistoryTabs.tsx src/app/riwayat-medis/[noRm]/components/PatientHeader.tsx src/app/api/patients/[id]/active-encounter/route.ts)"
+      "Bash(git -C \"C:\\\\Users\\\\Gery Rachmadi\\\\Documents\\\\akademik\\\\kuliah\\\\MataKuliah\\\\Semester8\\\\TA\\\\rme-klinik-menganti\" diff HEAD -- src/components/shared/PatientHistoryTabs.tsx src/app/riwayat-medis/[noRm]/components/PatientHeader.tsx src/app/api/patients/[id]/active-encounter/route.ts)",
+      "Bash(find src *)",
+      "Bash(ls \"src/app/rawat-jalan/[encounterId]/asesmen/components/\")",
+      "Bash(ls \"src/app/rawat-jalan/[encounterId]/asesmen/\")",
+      "PowerShell(npx tsc --noEmit)",
+      "Bash(dir /s /b src\\\\app\\\\api)",
+      "Bash(findstr physical *)",
+      "Bash(Get-ChildItem -Recurse \"C:\\\\Users\\\\Gery Rachmadi\\\\Documents\\\\akademik\\\\kuliah\\\\MataKuliah\\\\Semester8\\\\TA\\\\rme-klinik-menganti\\\\src\\\\app\\\\api\" -Filter \"*.ts\")",
+      "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 40)",
+      "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 30)"
     ]
   }
 }

@@ -297,6 +297,33 @@ function PerencanaanMedis({ encounter }: { encounter: TimelineEncounter }) {
   );
 }
 
+// ── RUJUKAN (ServiceRequest) ──
+function Rujukan({ referral }: { referral: TimelineEncounter['referral'] }) {
+  if (!referral) return null;
+
+  return (
+    <div className="flex flex-col gap-3">
+      <SectionLabel>Rujukan</SectionLabel>
+      <div className="bg-[#f3f4f5] border border-dashed border-[#999] rounded-[13px] p-[23px] flex flex-col gap-2">
+        <p
+          className="font-extrabold text-[11px] text-[#94a3b8] uppercase tracking-wide"
+          style={POPPINS}
+        >
+          Rujuk ke Fasilitas Lain
+        </p>
+        <p className="font-bold text-[17px] text-[#334155] leading-[26px]" style={JAKARTA}>
+          Tujuan: {referral.tujuan || '—'}
+        </p>
+        {referral.alasan && (
+          <p className="text-[14px] text-[#475569] leading-[22px]" style={JAKARTA}>
+            <span className="font-bold text-[#334155]">Alasan:</span> {referral.alasan}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function EncounterCard({
   encounter,
   defaultExpanded = false,
@@ -420,6 +447,9 @@ export function EncounterCard({
 
                 {/* PERENCANAAN MEDIS */}
                 <PerencanaanMedis encounter={encounter} />
+
+                {/* RUJUKAN */}
+                <Rujukan referral={encounter.referral} />
               </div>
             </div>
           </div>
@@ -439,7 +469,7 @@ export default function EncounterHistoryTab({ data }: EncounterHistoryTabProps) 
       <div className="w-full py-2">
         <EmptyTabState
           icon={FileX}
-          title="Belum Ada Riwayat Kunjungan"
+          title="Belum Ada CPPT"
           description="Belum ada riwayat kunjungan tercatat. Silakan selesaikan asesmen untuk memulai pencatatan SOAP."
         />
       </div>

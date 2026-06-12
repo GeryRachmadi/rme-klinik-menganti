@@ -271,6 +271,7 @@ function InnerLabel({ children }: { children: React.ReactNode }) {
 function PerencanaanMedisCard({ episodic }: { episodic: EpisodicData | null }) {
   const medications = episodic?.medications ?? [];
   const anjuranText = episodic?.education ?? null;
+  const referral = episodic?.referral ?? null;
   const doctor = episodic?.practitionerName ?? null;
 
   return (
@@ -279,29 +280,33 @@ function PerencanaanMedisCard({ episodic }: { episodic: EpisodicData | null }) {
         Perencanaan Medis
       </h3>
 
-      {/* INNER CARD — Resep Obat (only if medications exist) */}
-      {medications.length > 0 && (
-        <div className="bg-white rounded-[24px] drop-shadow-[0px_1px_1px_rgba(0,0,0,0.05)] px-[20px] pt-[18.75px] pb-[20px] flex flex-col gap-4" style={JAKARTA}>
-          <InnerLabel>Resep Obat</InnerLabel>
+      {/* INNER CARD — Resep Obat (always show) */}
+      <div className="bg-white rounded-[24px] drop-shadow-[0px_1px_1px_rgba(0,0,0,0.05)] px-[20px] pt-[18.75px] pb-[20px] flex flex-col gap-4" style={JAKARTA}>
+        <InnerLabel>Resep Obat</InnerLabel>
+        {medications.length > 0 ? (
           <ul className="list-disc pl-5 flex flex-col gap-1">
             {medications.map((m, i) => (
               <li
                 key={`${m.name}-${i}`}
-                className="italic text-[#475569] text-[14px] leading-[22.75px]"
+                className="text-[#475569] text-[14px] leading-[22.75px]"
               >
                 {m.name || "Obat"}
                 {m.dosage ? ` — ${m.dosage}` : ""}
               </li>
             ))}
           </ul>
-        </div>
-      )}
+        ) : (
+          <p className="italic text-[#94a3b8] text-[14px]">
+            Tidak ada resep obat tercatat.
+          </p>
+        )}
+      </div>
 
-      {/* INNER CARD 3 — Edukasi / Anjuran + doctor signature (always show) */}
+      {/* INNER CARD — Edukasi / Anjuran (always show) */}
       <div className="bg-white rounded-[24px] drop-shadow-[0px_1px_1px_rgba(0,0,0,0.05)] px-[20px] pt-[18.75px] pb-[20px] flex flex-col gap-4" style={JAKARTA}>
         <InnerLabel>Edukasi / Anjuran</InnerLabel>
         {anjuranText ? (
-          <p className="italic text-[#475569] text-[14px] leading-[22.75px]">
+          <p className="text-[#475569] text-[14px] leading-[22.75px]">
             &ldquo;{anjuranText}&rdquo;
           </p>
         ) : (
@@ -309,19 +314,44 @@ function PerencanaanMedisCard({ episodic }: { episodic: EpisodicData | null }) {
             Tidak ada anjuran tercatat.
           </p>
         )}
-        {doctor && (
-          <div className="flex items-center gap-2">
-            <div className="bg-[#D8E2FF] rounded-full w-6 h-6 flex items-center justify-center shrink-0">
-              <span className="text-[#001A42] font-bold text-[10px] uppercase">
-                {getInitials(doctor)}
-              </span>
-            </div>
-            <span className="text-[#94a3b8] font-bold text-[12px] uppercase tracking-wide">
-              Oleh: {doctor.toUpperCase()}
-            </span>
+      </div>
+
+      {/* INNER CARD — Rujukan ke Fasilitas Lain (always show) */}
+      <div className="bg-white rounded-[24px] drop-shadow-[0px_1px_1px_rgba(0,0,0,0.05)] px-[20px] pt-[18.75px] pb-[20px] flex flex-col gap-4" style={JAKARTA}>
+        <InnerLabel>Rujukan ke Fasilitas Lain</InnerLabel>
+        {referral ? (
+          <div className="flex flex-col gap-1.5">
+            <p className="text-[#475569] text-[14px] leading-[22.75px]">
+              <span className="font-bold text-[#334155]">Tujuan:</span>{" "}
+              {referral.tujuan || "—"}
+            </p>
+            {referral.alasan && (
+              <p className="text-[#475569] text-[14px] leading-[22.75px]">
+                <span className="font-bold text-[#334155]">Alasan:</span>{" "}
+                {referral.alasan}
+              </p>
+            )}
           </div>
+        ) : (
+          <p className="italic text-[#94a3b8] text-[14px]">
+            Tidak ada rujukan tercatat.
+          </p>
         )}
       </div>
+
+      {/* Doctor signature — once, below all plan fields */}
+      {doctor && (
+        <div className="flex items-center gap-2" style={JAKARTA}>
+          <div className="bg-[#D8E2FF] rounded-full w-6 h-6 flex items-center justify-center shrink-0">
+            <span className="text-[#001A42] font-bold text-[10px] uppercase">
+              {getInitials(doctor)}
+            </span>
+          </div>
+          <span className="text-[#94a3b8] font-bold text-[12px] uppercase tracking-wide">
+            Oleh: {doctor.toUpperCase()}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

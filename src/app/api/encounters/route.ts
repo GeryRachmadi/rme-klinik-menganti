@@ -28,10 +28,22 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: false, error: "Akun tidak ditemukan" }, { status: 404 });
     }
 
-    const whereCondition: Prisma.EncounterWhereInput =
-      account.role === "DOKTER" && account.practitioner
-        ? { practitionerId: account.practitioner.id }
-        : {};
+    // Role-based queue visibility (additive to the BB-06.2 data-isolation filter):
+    //  • DOKTER  → only DIPERIKSA (active) + SELESAI (history); MENUNGGU is the
+    //    nurse's stage and BATAL is hidden. practitionerId isolation preserved.
+    //  • PERAWAT → MENUNGGU + DIPERIKSA + SELESAI; BATAL hidden.
+    //  • PENDAFTARAN / ADMIN → all statuses, as before.
+    let whereCondition: Prisma.EncounterWhereInput = {};
+    if (account.role === "DOKTER") {
+      whereCondition = {
+        ...(account.practitioner ? { practitionerId: account.practitioner.id } : {}),
+        status: { in: ["DIPERIKSA", "SELESAI"] },
+      };
+    } else if (account.role === "PERAWAT") {
+      whereCondition = {
+        status: { in: ["MENUNGGU", "DIPERIKSA", "SELESAI"] },
+      };
+    }
 
     const encounters = await prisma.encounter.findMany({
       where: whereCondition,
@@ -62,6 +74,7 @@ export async function GET(req: Request) {
         namaPasien: enc.patient.namaLengkap,
         jenisKelamin: enc.patient.jenisKelamin === "LAKI_LAKI" ? "Laki-laki" : "Perempuan",
         umur: age,
+        tanggalLahir: enc.patient.tanggalLahir,
         noRm: enc.patient.noRm,
         jenisPasien: enc.patientType as "UMUM" | "BPJS",
         poli: enc.practitioner?.speciality ?? "-",

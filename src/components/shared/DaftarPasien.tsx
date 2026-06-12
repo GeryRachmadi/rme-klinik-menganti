@@ -17,6 +17,7 @@ import PatientRegistrationDrawer from "@/components/shared/PatientRegistrationDr
 import PatientEditDrawer from "@/components/shared/PatientEditDrawer";
 import PatientDeleteModal from "@/components/shared/PatientDeleteModal";
 import type { ApiResponse, PaginatedData } from "@/types/api";
+import { formatDob } from "@/lib/utils/format-dob";
 
 function calcAge(dob: Date): number {
   const today = new Date();
@@ -234,6 +235,7 @@ export default function DaftarPasien() {
               {[
                 "NAMA",
                 "NIK / IHS",
+                "TANGGAL LAHIR",
                 "NOMOR REKAM MEDIS",
                 "NO.HP / KONTAK",
                 "ACTION",
@@ -251,14 +253,14 @@ export default function DaftarPasien() {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={5} className="py-16 text-center">
+                <td colSpan={6} className="py-16 text-center">
                   <Loader2 size={20} strokeWidth={2} className="inline-block animate-spin text-gray-300" />
                 </td>
               </tr>
             ) : filteredPatients.length === 0 ? (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={6}
                   className="py-16 text-center text-sm text-gray-300"
                   style={{ fontFamily: "var(--font-jakarta)" }}
                 >
@@ -300,6 +302,16 @@ export default function DaftarPasien() {
                       style={{ fontFamily: "var(--font-jakarta)" }}
                     >
                       {patient.ihs ?? "-"}
+                    </p>
+                  </td>
+
+                  {/* TANGGAL LAHIR */}
+                  <td className="py-4">
+                    <p
+                      className="text-sm text-gray-600"
+                      style={{ fontFamily: "var(--font-jakarta)" }}
+                    >
+                      {formatDob(patient.tanggalLahir)}
                     </p>
                   </td>
 

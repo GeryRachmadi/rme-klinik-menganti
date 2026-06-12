@@ -77,27 +77,35 @@ export default async function AsesmenPage({
     ?.map((c) => c.description)
     .filter((v): v is string => Boolean(v)) ?? [];
   const alergiList = encounter.patient.allergyIntolerances
-    ?.map((a) => `${a.description} (${a.reactionSeverity})`)
+    ?.map((a) => a.reactionSeverity ? `${a.description} (${a.reactionSeverity})` : a.description)
     .filter((v): v is string => Boolean(v)) ?? [];
   const obatList = encounter.patient.medicationStatements
     ?.map((m) => m.dosage ? `${m.description} (${m.dosage})` : m.description)
     .filter((v): v is string => Boolean(v)) ?? [];
 
+  // Hydrate section-level catatan from this encounter's own fields (BB-08.15).
+  // These live on the Encounter (episodic), independent of chip rows, so a
+  // catatan-only submission round-trips correctly.
+  const catatanPenyakit = encounter.riwayatPenyakitNotes ?? "";
+  const catatanAlergi = encounter.riwayatAlergiNotes ?? "";
+  const catatanObat = encounter.pengobatanRutinNotes ?? "";
+
   const defaultValues: Record<string, any> = {
     penyakit: penyakitList,
     alergi: alergiList,
     obat: obatList,
-    catatanPenyakit: "",
-    catatanAlergi: "",
-    catatanObat: "",
+    catatanPenyakit,
+    catatanAlergi,
+    catatanObat,
   };
 
-  // Infer NKA/tidak-ada booleans for DIPERIKSA/SELESAI encounters
-  // (when form was submitted, empty array means the "tidak ada" checkbox was checked)
+  // Infer NKA/tidak-ada booleans for DIPERIKSA/SELESAI encounters.
+  // A section is "tidak ada" only when it has NO chips AND NO catatan — a
+  // catatan-only section was deliberate input, not a negation (BB-08.6).
   if (encounter.status !== 'MENUNGGU') {
-    defaultValues.tidakAdaPenyakit = penyakitList.length === 0;
-    defaultValues.tidakAdaAlergi = alergiList.length === 0;
-    defaultValues.tidakAdaObat = obatList.length === 0;
+    defaultValues.tidakAdaPenyakit = penyakitList.length === 0 && !catatanPenyakit;
+    defaultValues.tidakAdaAlergi = alergiList.length === 0 && !catatanAlergi;
+    defaultValues.tidakAdaObat = obatList.length === 0 && !catatanObat;
   }
 
   const mainObs = encounter.observations?.find(
@@ -115,6 +123,10 @@ export default async function AsesmenPage({
     if (obs.height !== null) defaultValues.tinggiBadan = obs.height.toString();
     if (obs.weight !== null) defaultValues.beratBadan = obs.weight.toString();
     if (obs.bmi !== null) defaultValues.bmi = obs.bmi;
+  }
+
+  if (encounter.pemeriksaanFisikNotes) {
+    defaultValues.catatan = encounter.pemeriksaanFisikNotes;
   }
 
   const isEditMode = encounter.status === 'DIPERIKSA';
@@ -194,6 +206,7 @@ export default async function AsesmenPage({
           practitioner: encounter.practitioner,
         }}
         age={age}
+        tanggalLahir={encounter.patient.tanggalLahir}
       />
 
       <div className="col-span-12 w-full pt-2 pb-10">
