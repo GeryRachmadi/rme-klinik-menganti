@@ -1,58 +1,61 @@
 import { z } from "zod"
-import { VITAL_BOUNDS } from "@/lib/constants/assessment-validation"
+
+// Tier 1 — Hard limits (physically impossible, always block via Zod)
+const HARD_TD_SYS_MIN = 40
+const HARD_TD_SYS_MAX = 300
+const HARD_TD_DIAS_MIN = 20
+const HARD_TD_DIAS_MAX = 200
 
 export const PhysicalExamSchema = z.object({
   tekananDarah: z
     .string()
-    .regex(/^\d{2,3}\/\d{2,3}$/, "Format: 130/85")
+    .regex(/^\d{1,3}\/\d{1,3}$/, "Format: 130/85")
     .refine(
       (val) => {
-        // Parse BP and check bounds
         const [sys, dias] = val.split("/").map(Number)
-        const [minSys, minDias] = VITAL_BOUNDS.tekananDarah.min
-          .split("/")
-          .map(Number)
-        const [maxSys, maxDias] = VITAL_BOUNDS.tekananDarah.max
-          .split("/")
-          .map(Number)
         return (
-          sys >= minSys && sys <= maxSys &&
-          dias >= minDias && dias <= maxDias
+          sys >= HARD_TD_SYS_MIN && sys <= HARD_TD_SYS_MAX &&
+          dias >= HARD_TD_DIAS_MIN && dias <= HARD_TD_DIAS_MAX
         )
       },
-      {
-        message: `Tekanan Darah harus antara ${VITAL_BOUNDS.tekananDarah.min} - ${VITAL_BOUNDS.tekananDarah.max}`
-      }
+      { message: `Tekanan Darah harus antara ${HARD_TD_SYS_MIN}/${HARD_TD_DIAS_MIN} - ${HARD_TD_SYS_MAX}/${HARD_TD_DIAS_MAX}` }
     ),
-  
+
   suhu: z
     .coerce.number()
-    .min(VITAL_BOUNDS.suhu.min, `Suhu minimal ${VITAL_BOUNDS.suhu.min}°C`)
-    .max(VITAL_BOUNDS.suhu.max, `Suhu maksimal ${VITAL_BOUNDS.suhu.max}°C`),
+    .min(25, "Suhu minimal 25°C")
+    .max(50, "Suhu maksimal 50°C"),
 
   nadi: z
     .coerce.number()
-    .min(VITAL_BOUNDS.nadi.min, `Nadi minimal ${VITAL_BOUNDS.nadi.min} bpm`)
-    .max(VITAL_BOUNDS.nadi.max, `Nadi maksimal ${VITAL_BOUNDS.nadi.max} bpm`),
+    .min(10, "Nadi minimal 10 bpm")
+    .max(300, "Nadi maksimal 300 bpm"),
 
   napas: z
     .coerce.number()
-    .min(VITAL_BOUNDS.napas.min, `Napas minimal ${VITAL_BOUNDS.napas.min} x/min`)
-    .max(VITAL_BOUNDS.napas.max, `Napas maksimal ${VITAL_BOUNDS.napas.max} x/min`),
+    .min(1, "Napas minimal 1 x/min")
+    .max(80, "Napas maksimal 80 x/min"),
 
-  tinggiBadan: z
-    .coerce.number()
-    .min(VITAL_BOUNDS.tinggiBadan.min, `Tinggi badan minimal ${VITAL_BOUNDS.tinggiBadan.min} cm`)
-    .max(VITAL_BOUNDS.tinggiBadan.max, `Tinggi badan maksimal ${VITAL_BOUNDS.tinggiBadan.max} cm`),
+  // Optional — fill only when measured
+  tinggiBadan: z.preprocess(
+    (val) => (val === '' || val == null) ? undefined : Number(val),
+    z.number()
+      .min(30, "Tinggi badan minimal 30 cm")
+      .max(250, "Tinggi badan maksimal 250 cm")
+      .optional()
+  ),
 
-  beratBadan: z
-    .coerce.number()
-    .min(VITAL_BOUNDS.beratBadan.min, `Berat badan minimal ${VITAL_BOUNDS.beratBadan.min} kg`)
-    .max(VITAL_BOUNDS.beratBadan.max, `Berat badan maksimal ${VITAL_BOUNDS.beratBadan.max} kg`),
-  
+  beratBadan: z.preprocess(
+    (val) => (val === '' || val == null) ? undefined : Number(val),
+    z.number()
+      .min(1, "Berat badan minimal 1 kg")
+      .max(300, "Berat badan maksimal 300 kg")
+      .optional()
+  ),
+
   bmi: z.number().optional(),
-  
-  catatan: z.string().optional()
+
+  catatan: z.string().optional(),
 })
 
 export type PhysicalExamData = z.infer<typeof PhysicalExamSchema>

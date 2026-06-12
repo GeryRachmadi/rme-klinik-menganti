@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } f
 import { useForm, Controller, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
-import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 import { PhysicalExamSchema, type PhysicalExamData } from '@/lib/schemas/physical-exam-schema';
 import { getOutOfBoundsFields } from '@/lib/utils/bounds-validator';
@@ -14,6 +14,7 @@ import { getPhysicalExamDraftKey } from '@/lib/constants/storage-keys';
 import { calculateBMI, getBMIStatus } from '@/lib/utils/bmi-calculator';
 import VitalSignInput from './VitalSignInput';
 import BMIDisplay from './BMIDisplay';
+import OutOfBoundsConfirmModal from './OutOfBoundsConfirmModal';
 import type { DraftState } from './AsesmenPageClient';
 
 // ─── Prop types ──────────────────────────────────────────────────────────────
@@ -33,11 +34,29 @@ interface ObjectivePhysicalFormProps {
   isReadOnly?: boolean;
 }
 
-// ─── Draft payload ────────────────────────────────────────────────────────────
+// ─── Tier 2 soft limit check (warn, don't block) ─────────────────────────────
 
-interface DraftPayload {
-  data: PhysicalExamData;
-  timestamp: number;
+function checkSoftLimits(data: PhysicalExamData): string[] {
+  const violations: string[] = [];
+
+  if (data.tekananDarah) {
+    const [sys, dias] = data.tekananDarah.split('/').map(Number);
+    if (!isNaN(sys) && (sys < 90 || sys > 160))
+      violations.push(`Tekanan Darah Sistol: ${sys} mmHg`);
+    if (!isNaN(dias) && (dias < 60 || dias > 100))
+      violations.push(`Tekanan Darah Diastol: ${dias} mmHg`);
+  }
+  const nadiVal = Number(data.nadi);
+  if (data.nadi != null && !isNaN(nadiVal) && (nadiVal < 50 || nadiVal > 120))
+    violations.push(`Nadi: ${nadiVal} x/mnt`);
+  const suhuVal = Number(data.suhu);
+  if (data.suhu != null && !isNaN(suhuVal) && (suhuVal < 35 || suhuVal > 38))
+    violations.push(`Suhu: ${suhuVal}°C`);
+  const napasVal = Number(data.napas);
+  if (data.napas != null && !isNaN(napasVal) && (napasVal < 10 || napasVal > 30))
+    violations.push(`Pernapasan: ${napasVal} x/mnt`);
+
+  return violations;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -60,6 +79,12 @@ const ObjectivePhysicalForm = forwardRef<ObjectivePhysicalFormRef, ObjectivePhys
   const { toast, showSuccess, showError, showWarning } = useFormToast();
 
   const [outOfBoundsFields, setOutOfBoundsFields] = useState<string[]>([]);
+  const [showOutOfBoundsModal, setShowOutOfBoundsModal] = useState(false);
+  const [modalViolations, setModalViolations] = useState<string[]>([]);
+
+  // Refs for the Promise-based modal confirmation flow
+  const resolveRef = useRef<((data: PhysicalExamData | null) => void) | null>(null);
+  const pendingDataRef = useRef<PhysicalExamData | null>(null);
 
   const {
     control,
@@ -88,11 +113,21 @@ const ObjectivePhysicalForm = forwardRef<ObjectivePhysicalFormRef, ObjectivePhys
   useImperativeHandle(ref, () => ({
     submitForm: async () => {
       const isValid = await trigger();
-      console.log('[ObjectivePhysicalForm] Validation result:', { isValid, data: getValues(), errors: formState.errors });
       if (!isValid) return null;
-      // Re-parse through schema so coerced numbers are returned, not raw strings
       const parsed = PhysicalExamSchema.safeParse(getValues());
-      return parsed.success ? parsed.data : null;
+      if (!parsed.success) return null;
+      const data = parsed.data;
+
+      const violations = checkSoftLimits(data);
+      if (violations.length > 0) {
+        pendingDataRef.current = data;
+        setModalViolations(violations);
+        setShowOutOfBoundsModal(true);
+        return new Promise<PhysicalExamData | null>((resolve) => {
+          resolveRef.current = resolve;
+        });
+      }
+      return data;
     },
     restoreDraft: (data: any) => {
       if (!data) return;
@@ -102,7 +137,25 @@ const ObjectivePhysicalForm = forwardRef<ObjectivePhysicalFormRef, ObjectivePhys
     }
   }), [formState, trigger, getValues, reset]);
 
-  // Individual field watches — avoids passing watch() (new object each render) as a dependency
+  function handleModalKembali() {
+    setShowOutOfBoundsModal(false);
+    pendingDataRef.current = null;
+    if (resolveRef.current) {
+      resolveRef.current(null);
+      resolveRef.current = null;
+    }
+  }
+
+  function handleModalLanjut() {
+    setShowOutOfBoundsModal(false);
+    if (resolveRef.current) {
+      resolveRef.current(pendingDataRef.current);
+      resolveRef.current = null;
+      pendingDataRef.current = null;
+    }
+  }
+
+  // Individual field watches
   const tekananDarah = watch('tekananDarah');
   const suhu = watch('suhu');
   const nadi = watch('nadi');
@@ -147,6 +200,13 @@ const ObjectivePhysicalForm = forwardRef<ObjectivePhysicalFormRef, ObjectivePhys
 
   return (
     <div className="relative w-full" style={{ fontFamily: 'var(--font-jakarta)' }}>
+      <OutOfBoundsConfirmModal
+        isOpen={showOutOfBoundsModal}
+        violations={modalViolations}
+        onKembali={handleModalKembali}
+        onLanjut={handleModalLanjut}
+      />
+
       {toast && (
         <div className={`fixed top-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl animate-in slide-in-from-top-5 duration-300 ${
           toast.type === 'success' ? 'bg-[#E6F5F4] border border-[#B2DFDB]' :
@@ -168,10 +228,7 @@ const ObjectivePhysicalForm = forwardRef<ObjectivePhysicalFormRef, ObjectivePhys
         </div>
       )}
 
-      <form
-        id="form-physical-exam"
-        className="w-full"
-      >
+      <form id="form-physical-exam" className="w-full">
         <h2
           className="mb-5 text-[22px] font-bold text-[#0F766E] uppercase tracking-wide font-poppins"
           style={{ WebkitTextStroke: '0.4px #0F766E' }}
@@ -194,7 +251,7 @@ const ObjectivePhysicalForm = forwardRef<ObjectivePhysicalFormRef, ObjectivePhys
                     type="text"
                     value={field.value ?? ''}
                     onChange={field.onChange}
-                    placeholder="130/85"
+                    placeholder="Contoh: 120/80"
                     warning={outOfBoundsFields.includes('tekananDarah')}
                     error={fieldState.error?.message}
                     disabled={isReadOnly}
@@ -212,7 +269,7 @@ const ObjectivePhysicalForm = forwardRef<ObjectivePhysicalFormRef, ObjectivePhys
                     step={0.1}
                     value={field.value ?? ''}
                     onChange={field.onChange}
-                    placeholder="36.5"
+                    placeholder="Contoh: 36.5"
                     warning={outOfBoundsFields.includes('suhu')}
                     error={fieldState.error?.message}
                     disabled={isReadOnly}
@@ -229,7 +286,7 @@ const ObjectivePhysicalForm = forwardRef<ObjectivePhysicalFormRef, ObjectivePhys
                     type="number"
                     value={field.value ?? ''}
                     onChange={field.onChange}
-                    placeholder="80"
+                    placeholder="Contoh: 80"
                     warning={outOfBoundsFields.includes('nadi')}
                     error={fieldState.error?.message}
                     disabled={isReadOnly}
@@ -246,7 +303,7 @@ const ObjectivePhysicalForm = forwardRef<ObjectivePhysicalFormRef, ObjectivePhys
                     type="number"
                     value={field.value ?? ''}
                     onChange={field.onChange}
-                    placeholder="20"
+                    placeholder="Contoh: 18"
                     warning={outOfBoundsFields.includes('napas')}
                     error={fieldState.error?.message}
                     disabled={isReadOnly}
@@ -268,7 +325,8 @@ const ObjectivePhysicalForm = forwardRef<ObjectivePhysicalFormRef, ObjectivePhys
                     step={0.1}
                     value={field.value ?? ''}
                     onChange={field.onChange}
-                    placeholder="170"
+                    placeholder="Contoh: 170"
+                    optional
                     warning={outOfBoundsFields.includes('tinggiBadan')}
                     error={fieldState.error?.message}
                     disabled={isReadOnly}
@@ -286,7 +344,8 @@ const ObjectivePhysicalForm = forwardRef<ObjectivePhysicalFormRef, ObjectivePhys
                     step={0.1}
                     value={field.value ?? ''}
                     onChange={field.onChange}
-                    placeholder="65"
+                    placeholder="Contoh: 65"
+                    optional
                     warning={outOfBoundsFields.includes('beratBadan')}
                     error={fieldState.error?.message}
                     disabled={isReadOnly}

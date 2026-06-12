@@ -14,7 +14,7 @@ export function isWithinBounds(
     if (typeof value !== 'string') return false;
     
     // Parse string "130/85" → extract systolic and diastolic
-    const match = value.match(/^(\d{2,3})\/(\d{2,3})$/);
+    const match = value.match(/^(\d{1,3})\/(\d{1,3})$/);
     if (!match) return false;
 
     const systolic = parseInt(match[1], 10);

@@ -81,12 +81,13 @@ export async function POST(
         },
       });
 
-      if (encounter.status === 'MENUNGGU') {
-        await tx.encounter.update({
-          where: { id: encounterId },
-          data: { status: 'DIPERIKSA' },
-        });
-      }
+      await tx.encounter.update({
+        where: { id: encounterId },
+        data: {
+          ...(encounter.status === 'MENUNGGU' ? { status: 'DIPERIKSA' } : {}),
+          pemeriksaanFisikNotes: bodyValidation.data.catatan ?? null,
+        },
+      });
 
       return {
         success: true,
@@ -111,9 +112,10 @@ export async function POST(
       { status: 200 }
     );
   } catch (error) {
-    console.error("Physical exam save error:", error);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Physical exam save error:", msg, error);
     return Response.json(
-      { error: "Terjadi kesalahan internal saat menyimpan data" },
+      { error: "Terjadi kesalahan internal saat menyimpan data", devMessage: msg },
       { status: 500 }
     );
   }

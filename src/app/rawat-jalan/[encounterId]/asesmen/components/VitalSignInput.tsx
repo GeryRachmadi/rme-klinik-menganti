@@ -14,13 +14,14 @@ interface VitalSignInputProps {
   disabled?: boolean;
   step?: number;
   warning?: boolean;
+  optional?: boolean;
 }
 
 function formatBloodPressure(raw: string): string {
   const digits = raw.replace(/\D/g, '');
   if (digits.length === 0) return '';
   if (digits.length <= 3) return digits;
-  return `${digits.slice(0, 3)}/${digits.slice(3, 5)}`;
+  return `${digits.slice(0, 3)}/${digits.slice(3, 6)}`;
 }
 
 export default function VitalSignInput({
@@ -34,6 +35,7 @@ export default function VitalSignInput({
   disabled = false,
   step,
   warning,
+  optional = false,
 }: VitalSignInputProps) {
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(formatBloodPressure(e.target.value));
@@ -64,6 +66,9 @@ export default function VitalSignInput({
       <div className={`flex items-center gap-2 ${warning ? "text-yellow-600" : ""}`}>
         <label className="text-xs font-bold text-[#0F766E] uppercase tracking-wider" style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
           {label}
+          {optional && (
+            <span className="text-gray-400 font-normal normal-case tracking-normal ml-1">(Opsional)</span>
+          )}
         </label>
         {warning && <AlertCircle className="h-4 w-4" />}
       </div>

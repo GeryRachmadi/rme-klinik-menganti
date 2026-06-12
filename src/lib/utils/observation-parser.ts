@@ -2,7 +2,7 @@ import { PhysicalExamData } from "@/lib/schemas/physical-exam-schema";
 import { OBSERVATION_CODES } from "@/lib/constants/observation-codes";
 
 export function parseTekananDarah(value: string): { systolic: number; diastolic: number } {
-  if (!/^\d{2,3}\/\d{2,3}$/.test(value)) {
+  if (!/^\d{1,3}\/\d{1,3}$/.test(value)) {
     throw new Error("Format tekanan darah tidak valid");
   }
   const [systolic, diastolic] = value.split("/").map(Number);

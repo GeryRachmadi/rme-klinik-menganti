@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const MONTHS_ID = [
   "Januari","Februari","Maret","April","Mei","Juni",
@@ -255,160 +255,174 @@ export default function CalendarDateDropdown({ value, onChange, onClose }: Calen
   }
   const rows: Date[][] = Array.from({ length: 6 }, (_, i) => cells.slice(i * 7, i * 7 + 7));
 
-  const CHIP_ON  = "bg-[#2DD4BF]/10 border border-[#2DD4BF]/30 text-[#006B5F] font-bold";
-  const CHIP_OFF = "text-[#50555C] font-medium hover:bg-[#F4F4F4]";
-  const PILL_ACTIVE = "border-[#2DD4BF] bg-[#E6F5F4] text-[#006B5F] font-semibold";
-  const PILL_EMPTY  = "border-gray-200 bg-white text-gray-400";
-
   const PRESETS = [
-    { key: "semua",      label: "Semua Tanggal", icon: false },
-    { key: "hari-ini",   label: "Hari Ini",      icon: true  },
-    { key: "minggu-ini", label: "Minggu Ini",    icon: false },
-    { key: "bulan-ini",  label: "Bulan Ini",     icon: false },
-    { key: "tahun-ini",  label: "Tahun Ini",     icon: false },
-    { key: "custom",     label: "Custom",        icon: false },
+    { key: "semua",      label: "Semua Tanggal" },
+    { key: "hari-ini",   label: "Hari Ini"      },
+    { key: "minggu-ini", label: "Minggu Ini"    },
+    { key: "bulan-ini",  label: "Bulan Ini"     },
+    { key: "tahun-ini",  label: "Tahun Ini"     },
   ];
 
   return (
     <div
-      className="flex flex-col bg-white rounded-xl border border-gray-100 shadow-sm"
-      style={{ minWidth: 480, fontFamily: "var(--font-jakarta)" }}
+      className="flex flex-col bg-white rounded-[6.67px] shadow-[0px_6.67px_17.786px_0px_rgba(0,0,0,0.08)] overflow-clip"
+      style={{ fontFamily: "var(--font-jakarta)" }}
     >
-      {/* ── Range bar — masked inputs ── */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
-        <input
-          type="text"
-          readOnly
-          value={maskDisplay(startDigits)}
-          onKeyDown={handleStartKeyDown}
-          className={`flex-1 px-4 py-2 rounded-full border text-sm text-center outline-none cursor-text transition-colors focus:ring-2 focus:ring-[#2DD4BF]/40 ${
-            rangeStart ? PILL_ACTIVE : PILL_EMPTY
-          }`}
-        />
-        <span className="text-gray-400 text-sm font-bold flex-shrink-0">→</span>
-        <input
-          type="text"
-          readOnly
-          value={maskDisplay(endDigits)}
-          onKeyDown={handleEndKeyDown}
-          className={`flex-1 px-4 py-2 rounded-full border text-sm text-center outline-none cursor-text transition-colors focus:ring-2 focus:ring-[#2DD4BF]/40 ${
-            rangeEnd ? PILL_ACTIVE : PILL_EMPTY
-          }`}
-        />
-      </div>
-
-      {/* ── Panels row ── */}
+      {/* ── Body row: sidebar + calendar ── */}
       <div className="flex flex-row">
-        {/* Left panel */}
-        <div className="flex flex-col border-r border-gray-100 p-2 gap-0.5 flex-shrink-0" style={{ width: 140 }}>
-          {PRESETS.map(({ key, label, icon }) => (
+        {/* ── LEFT SIDEBAR ── */}
+        <div className="w-[168px] flex-shrink-0 self-stretch border-r border-[#bec9c5] flex flex-col gap-[13px] px-[13px] py-[13px]">
+          {/* Preset section */}
+          <div className="flex flex-col gap-[2.2px]">
+            <span className="text-[#006b5f] font-extrabold text-[10px] tracking-[0.5px] uppercase px-[8.9px]">
+              Preset
+            </span>
+            {PRESETS.map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => selectPreset(key)}
+                className={`w-full text-left px-[8.9px] py-[6.5px] rounded-[4.4px] font-semibold text-[11.5px] tracking-[0.4px] text-[#3e4946] transition-colors cursor-pointer ${
+                  activePreset === key
+                    ? "bg-[#eafbf9] border border-[#b1f0e8]"
+                    : "hover:bg-gray-50"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Date range input section — pinned to bottom of sidebar */}
+          <div className="mt-auto bg-[#eceef0] rounded-[6.67px] p-[8.9px] flex flex-col gap-[8.9px]">
+            <span className="text-[#005147] font-bold text-[10px] tracking-[0.5px]">
+              Pilih Rentang Waktu:
+            </span>
+
+            {/* Dari */}
+            <div className="flex flex-col gap-[4.4px]">
+              <label className="text-[#005147] font-bold text-[10.5px]">Dari</label>
+              <input
+                type="text"
+                readOnly
+                value={maskDisplay(startDigits)}
+                onKeyDown={handleStartKeyDown}
+                className={`bg-white border border-[#bec9c5] rounded-[4.4px] px-[9.4px] py-[7.5px] w-full font-normal text-[12.5px] outline-none cursor-text focus:border-[#2DD4BF] ${
+                  startDigits ? "text-[#191c1e]" : "text-[#bec9c5]"
+                }`}
+              />
+            </div>
+
+            {/* Sampai */}
+            <div className="flex flex-col gap-[4.4px]">
+              <label className="text-[#005147] font-bold text-[10.5px]">Sampai</label>
+              <input
+                type="text"
+                readOnly
+                value={maskDisplay(endDigits)}
+                onKeyDown={handleEndKeyDown}
+                className={`bg-white border border-[#bec9c5] rounded-[4.4px] px-[9.4px] py-[7.5px] w-full font-normal text-[12.5px] outline-none cursor-text focus:border-[#2DD4BF] ${
+                  endDigits ? "text-[#191c1e]" : "text-[#bec9c5]"
+                }`}
+              />
+            </div>
+
             <button
-              key={key}
               type="button"
-              onClick={() => selectPreset(key)}
-              className={`w-full flex items-center justify-between px-2 py-1.5 rounded-[4px] cursor-pointer text-xs transition-colors ${
-                activePreset === key ? CHIP_ON : CHIP_OFF
-              }`}
+              onClick={handleSimpan}
+              className="bg-[#005147] text-white rounded-[4.4px] py-[6.5px] w-full font-semibold text-[11.5px] tracking-[0.4px] text-center drop-shadow-[0px_1px_1px_rgba(0,0,0,0.05)] hover:bg-[#0F766E] transition-colors cursor-pointer"
             >
-              <span>{label}</span>
-              {icon && <RefreshCw size={11} className="flex-shrink-0 opacity-70" />}
+              Simpan
             </button>
-          ))}
-
-          <div className="flex-1" />
-
-          <button
-            type="button"
-            onClick={handleSimpan}
-            className="w-full py-1.5 rounded-lg text-xs font-bold text-white bg-[#006B5F] hover:bg-[#0F766E] transition-colors mt-1"
-          >
-            Simpan
-          </button>
+          </div>
         </div>
 
-        {/* Right panel — calendar */}
-        <div className="flex-1 p-3 flex flex-col">
-          <div className="flex items-center justify-between mb-2">
-            <button type="button" onClick={prevMonth} className="p-0.5 rounded hover:bg-[#F4F4F4] text-[#50555C] cursor-pointer">
-              <ChevronLeft size={14} />
+        {/* ── RIGHT MAIN AREA ── */}
+        <div className="flex-1 bg-white px-[40px] py-[24px] flex flex-col justify-center">
+          {/* Month navigation */}
+          <div className="flex items-center justify-between w-full">
+            <button
+              type="button"
+              onClick={prevMonth}
+              className="p-1 rounded-full hover:bg-[#F4F4F4] text-[#191c1e] cursor-pointer"
+            >
+              <ChevronLeft className="h-[24px] w-[22px]" />
             </button>
-            <span className="font-extrabold text-xs text-[#50555C] text-center flex-1 select-none">
+            <span className="font-bold text-[20px] text-[#191c1e] leading-[26px] select-none">
               {MONTHS_ID[month]} {year}
             </span>
-            <button type="button" onClick={nextMonth} className="p-0.5 rounded hover:bg-[#F4F4F4] text-[#50555C] cursor-pointer">
-              <ChevronRight size={14} />
+            <button
+              type="button"
+              onClick={nextMonth}
+              className="p-1 rounded-full hover:bg-[#F4F4F4] text-[#191c1e] cursor-pointer"
+            >
+              <ChevronRight className="h-[24px] w-[22px]" />
             </button>
           </div>
 
-          <div className="grid grid-cols-7 mb-1">
+          {/* Day headers */}
+          <div className="grid grid-cols-7 pt-[8.9px]">
             {DAYS_SHORT.map((d) => (
-              <div key={d} className="text-center text-[10px] font-semibold text-[#94979A] py-0.5 select-none">
+              <div
+                key={d}
+                className="text-center font-semibold text-[13px] text-[#bec9c5] tracking-[0.4px] py-[6px] select-none"
+              >
                 {d}
               </div>
             ))}
           </div>
 
+          {/* Day cells */}
           <div className="flex flex-col">
             {rows.map((row, rowIdx) => {
-              const rowIsThisWeek = activePreset === "minggu-ini" &&
-                row.some((d) => d >= thisMon && d <= thisSun);
+              const inRangeFlags = row.map(
+                (d) =>
+                  rangeStart !== null &&
+                  rangeEnd !== null &&
+                  d >= rangeStart &&
+                  d <= rangeEnd
+              );
               return (
-                <div
-                  key={rowIdx}
-                  className={`grid grid-cols-7 ${rowIsThisWeek ? "bg-[#B9F4ED] rounded-[2px]" : ""}`}
-                >
+                <div key={rowIdx} className="grid grid-cols-7">
                   {row.map((date, cellIdx) => {
-                    const dateStr        = toDateStr(date);
                     const isCurrentMonth = date.getMonth() === month;
-                    const isToday        = dateStr === todayStr;
+                    const isToday        = toDateStr(date) === todayStr;
+                    const isSelected     = selectedDate !== null && isSameDay(date, selectedDate);
+                    const isCircle       = isToday || isSelected;
 
-                    const isRangeStart = activePreset === "custom" && rangeStart !== null && isSameDay(date, rangeStart);
-                    const isRangeEnd   = activePreset === "custom" && rangeEnd   !== null && isSameDay(date, rangeEnd);
-                    const isInRange    = activePreset === "custom" && rangeStart !== null && rangeEnd !== null &&
-                      date > rangeStart && date < rangeEnd;
-                    const isPendingSel = activePreset === "custom" && selectedDate !== null &&
-                      !isToday && isSameDay(date, selectedDate);
+                    const inRange     = inRangeFlags[cellIdx];
+                    const rangeRoundL  = inRange && (cellIdx === 0 || !inRangeFlags[cellIdx - 1]);
+                    const rangeRoundR  = inRange && (cellIdx === 6 || !inRangeFlags[cellIdx + 1]);
 
-                    const isInMingguIni = activePreset === "minggu-ini" && date >= thisMon && date <= thisSun;
-                    const isInBulanIni  = activePreset === "bulan-ini"  && date >= firstOfThisMonth && date <= lastOfThisMonth;
-                    const isInTahunIni  = activePreset === "tahun-ini"  && date >= firstOfThisYear && date <= lastOfThisYear;
-                    const isHariIni     = activePreset === "hari-ini"   && isToday;
+                    // Wrapper handles the range band (full-width) + row-end rounding
+                    let wrapperCls = "flex items-center justify-center py-[11px] cursor-pointer ";
+                    if (inRange && !isCircle) {
+                      wrapperCls += "bg-[rgba(98,250,227,0.4)] ";
+                      if (rangeRoundL) wrapperCls += "rounded-l-[4.4px] ";
+                      if (rangeRoundR) wrapperCls += "rounded-r-[4.4px] ";
+                    }
 
-                    let cls = "flex items-center justify-center text-[11px] cursor-pointer transition-colors relative z-10 ";
-
-                    if (isRangeStart && rangeEnd) {
-                      cls += "w-full h-7 rounded-l-full bg-[#2DD4BF]/30 text-[#006B5F] font-bold";
-                    } else if (isRangeStart && !rangeEnd) {
-                      cls += "w-7 h-7 my-0.5 rounded-full bg-[#2DD4BF]/30 text-[#006B5F] font-bold";
-                    } else if (isRangeEnd) {
-                      cls += "w-full h-7 rounded-r-full bg-[#2DD4BF]/30 text-[#006B5F] font-bold";
-                    } else if (isInRange) {
-                      cls += "w-full h-7 rounded-none bg-[#B9F4ED] text-[#006B5F] font-semibold";
-                    } else if (isHariIni || isToday) {
-                      cls += "w-7 h-7 my-0.5 rounded-full bg-[#006B5F] text-white font-bold";
-                    } else if (isPendingSel) {
-                      cls += "w-7 h-7 my-0.5 rounded-full ring-2 ring-[#2DD4BF] text-[#006B5F] font-bold";
-                    } else if (isInMingguIni) {
-                      cls += "w-7 h-7 my-0.5 rounded-full font-semibold " + (isCurrentMonth ? "text-[#303336]" : "text-[#B3B7BC]");
-                    } else if (isInBulanIni) {
-                      cls += "w-7 h-7 my-0.5 rounded-sm bg-[#B9F4ED]/60 text-[#006B5F] font-semibold";
-                    } else if (isInTahunIni) {
-                      cls += "w-7 h-7 my-0.5 rounded-sm bg-[#B9F4ED]/40 text-[#303336] font-semibold";
+                    // Inner day rendering — every cell uses the SAME fixed-size box
+                    // so months with/without a circle keep identical dimensions.
+                    const boxBase = "flex items-center justify-center size-[36px] rounded-full text-[16px] ";
+                    let dayCls = "";
+                    if (isToday) {
+                      dayCls = boxBase + "bg-[#005147] text-white font-bold";
+                    } else if (isSelected) {
+                      dayCls = boxBase + "bg-[#C0FDF4] text-[#005147] font-bold";
                     } else if (isCurrentMonth) {
-                      cls += "w-7 h-7 my-0.5 rounded-full text-[#303336] font-semibold hover:bg-[#E6F5F4]";
+                      dayCls = boxBase + "text-[#191c1e] font-bold";
                     } else {
-                      cls += "w-7 h-7 my-0.5 rounded-full text-[#B3B7BC] font-semibold hover:bg-[#F4F4F4]";
+                      dayCls = boxBase + "text-[#b3b7bc] font-normal";
                     }
 
                     return (
-                      <div key={cellIdx} className="flex items-center justify-center">
-                        <button
-                          type="button"
-                          className={cls}
-                          onClick={() => handleCellClick(date)}
-                        >
-                          {date.getDate()}
-                        </button>
+                      <div
+                        key={cellIdx}
+                        className={wrapperCls}
+                        onClick={() => handleCellClick(date)}
+                      >
+                        <span className={dayCls}>{date.getDate()}</span>
                       </div>
                     );
                   })}
@@ -417,6 +431,24 @@ export default function CalendarDateDropdown({ value, onChange, onClose }: Calen
             })}
           </div>
         </div>
+      </div>
+
+      {/* ── FOOTER ── */}
+      <div className="border-t border-[#bec9c5] bg-[rgba(242,244,246,0.2)] flex items-center justify-end gap-[8.9px] px-[13px] py-[13px]">
+        <button
+          type="button"
+          onClick={onClose}
+          className="border border-[#6e7976] rounded-[4.4px] px-[22px] py-[8.5px] text-[#6e7976] font-semibold text-[11.5px] tracking-[0.4px] hover:bg-gray-50 transition-colors cursor-pointer"
+        >
+          Batal
+        </button>
+        <button
+          type="button"
+          onClick={handleSimpan}
+          className="bg-[#005147] text-white rounded-[4.4px] px-[22px] py-[8.5px] font-semibold text-[11.5px] tracking-[0.4px] shadow-[0px_5.6px_8.3px_-1.7px_rgba(0,0,0,0.1)] hover:bg-[#0F766E] transition-colors cursor-pointer"
+        >
+          Simpan
+        </button>
       </div>
     </div>
   );
