@@ -93,6 +93,10 @@ export default function AsesmenDokter({
   const [isSubmittingCentral, setIsSubmittingCentral] = useState(false);
   const [selectedDiagnoses, setSelectedDiagnoses] = useState<Array<{code: string, display: string, notes?: string}>>(savedDiagnoses ?? []);
   const [showDraftModal, setShowDraftModal] = useState(false);
+  // Per-field Plan validation errors surfaced from the central PlanFormSchema
+  // safeParse (Tindakan/Resep/Edukasi are all mandatory). Cleared on each submit
+  // attempt and on success; the Rujukan form shows its own native errors.
+  const [planErrors, setPlanErrors] = useState<{ procedure: string | null; medication: string | null; edukasi: string | null }>({ procedure: null, medication: null, edukasi: null });
 
   // SATUSEHAT submission state
   const [localSyncStatus, setLocalSyncStatus] = useState(syncStatus ?? 'UNSYNCED');
@@ -305,6 +309,7 @@ export default function AsesmenDokter({
   const handleCentralSubmit = async () => {
     setIsSubmittingCentral(true);
     let saved = false;
+    setPlanErrors({ procedure: null, medication: null, edukasi: null });
     try {
       // Individually catch each submitForm so that FormHasilPeriksa's throw is
       // normalised to null (same as the null-returning forms) instead of
@@ -340,23 +345,56 @@ export default function AsesmenDokter({
         return;
       }
 
-      // Extract Plan data without triggering internal validation
+      // Referral is the one Plan subsection with conditional validation: when the
+      // toggle is ON, Tujuan + Alasan are mandatory. submitForm() runs trigger()
+      // so per-field errors surface in the form, and returns null when invalid.
+      let rujukanData: { isActive?: boolean; tujuanRujukan?: string; alasanRujukan?: string } = { isActive: false };
+      if (referralRef.current) {
+        const validatedReferral = await referralRef.current.submitForm();
+        if (validatedReferral === null) {
+          showError('Lengkapi data Rujukan: Tujuan dan Alasan Rujukan wajib diisi.');
+          setIsSubmittingCentral(false);
+          return;
+        }
+        rujukanData = validatedReferral;
+      }
+
+      // Extract remaining Plan data without triggering internal validation
       const planPayload = {
         procedure: procedureRef.current?.getValues ? procedureRef.current.getValues() : {},
         medication: medicationRef.current?.getValues ? medicationRef.current.getValues() : {},
         edukasi: educationRef.current?.getValues ? educationRef.current.getValues() : {},
-        rujukan: referralRef.current?.getValues ? referralRef.current.getValues() : { isActive: false },
+        rujukan: rujukanData,
       };
 
       const planValidation = PlanFormSchema.safeParse(planPayload);
       if (!planValidation.success) {
-        const errorMessage =
-          planValidation.error?.issues?.[0]?.message ||
-          'Data Rencana Asesmen belum lengkap. Silakan isi minimal satu dari: Tindakan, Resep, Rujukan, atau Edukasi.';
-        showError(errorMessage);
+        // Map each per-field issue back to its form so the message renders below
+        // the relevant input (Tindakan / Resep / Edukasi are all mandatory now).
+        const issues = planValidation.error.issues;
+        const msgFor = (a: string, b: string) =>
+          issues.find((i) => i.path[0] === a && i.path[1] === b)?.message ?? null;
+        const procErr = msgFor('procedure', 'procedures');
+        const medErr = msgFor('medication', 'medicationText');
+        const eduErr = msgFor('edukasi', 'anjuranEdukasi');
+        setPlanErrors({ procedure: procErr, medication: medErr, edukasi: eduErr });
+        // Fire a summary toast (same showError utility/style as the Rujukan guard)
+        // so an empty field is noticed even when scrolled away — alongside the
+        // per-field inline errors. Lists only the fields that are actually empty.
+        const emptyFields = [
+          procErr ? 'Tindakan Medis' : null,
+          medErr ? 'Resep Obat' : null,
+          eduErr ? 'Edukasi' : null,
+        ].filter(Boolean);
+        showError(
+          emptyFields.length > 0
+            ? `Periksa kembali bagian: ${emptyFields.join(', ')} wajib diisi.`
+            : 'Lengkapi Rencana Asesmen sebelum menyimpan.'
+        );
         setIsSubmittingCentral(false);
         return;
       }
+      setPlanErrors({ procedure: null, medication: null, edukasi: null });
       console.log('[AsesmenDokter] Validated Plan Data:', planValidation.data);
 
       const response = await fetch(`/api/rawat-jalan/${encounterId}/asesmen`, {
@@ -550,6 +588,7 @@ export default function AsesmenDokter({
           isEditMode={isEditMode}
           hideSubmitButton={true}
           isReadOnly={isReadOnly}
+          keluhanUtama={encounter?.reasonCode ?? ''}
         />
       </div>
 
@@ -646,9 +685,9 @@ export default function AsesmenDokter({
           </div>
 
           <div className="flex flex-col gap-6">
-            <PlanProcedureForm ref={procedureRef} encounterId={encounterId} isReadOnly={isReadOnly} defaultValues={savedPlan?.procedures} />
-            <PlanMedicationForm ref={medicationRef} encounterId={encounterId} isReadOnly={isReadOnly} defaultValues={{ medicationText: savedPlan?.medicationText ?? '' }} />
-            <PlanEducationForm ref={educationRef} encounterId={encounterId} isReadOnly={isReadOnly} defaultValues={{ anjuranEdukasi: savedPlan?.anjuranEdukasi ?? '' }} />
+            <PlanProcedureForm ref={procedureRef} encounterId={encounterId} isReadOnly={isReadOnly} defaultValues={savedPlan?.procedures} externalError={planErrors.procedure} />
+            <PlanMedicationForm ref={medicationRef} encounterId={encounterId} isReadOnly={isReadOnly} defaultValues={{ medicationText: savedPlan?.medicationText ?? '' }} externalError={planErrors.medication} />
+            <PlanEducationForm ref={educationRef} encounterId={encounterId} isReadOnly={isReadOnly} defaultValues={{ anjuranEdukasi: savedPlan?.anjuranEdukasi ?? '' }} externalError={planErrors.edukasi} />
             <PlanReferralForm ref={referralRef} encounterId={encounterId} isReadOnly={isReadOnly} defaultValues={savedPlan?.rujukan} />
           </div>
         </div>

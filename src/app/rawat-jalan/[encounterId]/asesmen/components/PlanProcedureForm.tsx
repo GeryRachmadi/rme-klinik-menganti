@@ -22,12 +22,15 @@ interface PlanProcedureFormProps {
   encounterId: string;
   isReadOnly?: boolean;
   defaultValues?: Array<{ codeIcd9: string; display: string; notes: string }>;
+  /** Validation error surfaced from the central PlanFormSchema (Tindakan is mandatory). */
+  externalError?: string | null;
 }
 
 const PlanProcedureForm = forwardRef<PlanProcedureFormRef, PlanProcedureFormProps>(({
   encounterId,
   isReadOnly = false,
   defaultValues,
+  externalError,
 }, ref) => {
   const draftKey = getProcedureDraftKey(encounterId);
   const { toast, showWarning } = useFormToast();
@@ -134,6 +137,7 @@ const PlanProcedureForm = forwardRef<PlanProcedureFormRef, PlanProcedureFormProp
         style={{ WebkitTextStroke: '0.2px #0F766E', fontFamily: '"Plus Jakarta Sans", sans-serif' }}
       >
         Tindakan Medis
+        <span className="text-red-500 ml-1" style={{ WebkitTextStroke: '0' }}>*</span>
       </h3>
 
       {/* Selected procedure chips */}
@@ -181,6 +185,8 @@ const PlanProcedureForm = forwardRef<PlanProcedureFormRef, PlanProcedureFormProp
           </button>
         </>
       )}
+
+      {externalError && <p className="text-red-500 text-[13px] mt-1.5">{externalError}</p>}
     </div>
   );
 });

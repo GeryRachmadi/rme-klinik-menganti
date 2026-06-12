@@ -1,17 +1,19 @@
 // Mengekstrak "Amoxicillin (Tinggi)" menjadi { name: "Amoxicillin", severity: "Tinggi" }
-export function parseAllergyChip(chip: string): { name: string; severity: 'Tinggi' | 'Sedang' | 'Rendah' } {
+// Tingkat keparahan bersifat opsional — chip tanpa "(Tinggi/Sedang/Rendah)"
+// menghasilkan severity kosong ("").
+export function parseAllergyChip(chip: string): { name: string; severity: string } {
   // Regex mencari teks apapun, diikuti oleh spasi opsional, dan (Tinggi/Sedang/Rendah) di akhir string
   const match = chip.match(/(.*?)\s*\((Tinggi|Sedang|Rendah)\)$/i);
-  
+
   if (match) {
-    return { 
-      name: match[1].trim(), 
-      severity: match[2] as 'Tinggi' | 'Sedang' | 'Rendah' 
+    return {
+      name: match[1].trim(),
+      severity: match[2]
     };
   }
-  
-  // Fallback aman jika user bypass regex (hanya memasukkan "Amoxicillin")
-  return { name: chip.trim(), severity: 'Sedang' }; 
+
+  // Tidak ada tingkat keparahan — severity opsional, simpan kosong.
+  return { name: chip.trim(), severity: '' };
 }
 
 // Mengekstrak "Paracetamol (500mg)" menjadi { name: "Paracetamol", dosage: "500mg" }

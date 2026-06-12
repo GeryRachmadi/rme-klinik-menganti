@@ -225,6 +225,7 @@ export default function AsesmenPerawat({
           isEditMode={isEditMode}
           hideSubmitButton={true}
           isReadOnly={isReadOnly}
+          keluhanUtama={encounter?.reasonCode ?? ''}
         />
       </div>
 

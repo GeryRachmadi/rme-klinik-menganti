@@ -4,6 +4,7 @@
  */
 export const ICD10_MOCK_DATA = [
   { code: 'J02.9', display: 'Acute pharyngitis, unspecified' },
+  { code: 'A00.0', display: 'Cholera due to Vibrio cholerae 01, biovar cholerae' },
   { code: 'I10', display: 'Essential hypertension' },
   { code: 'E11.9', display: 'Type 2 diabetes mellitus without complications' },
   { code: 'M79.3', display: 'Panniculitis, unspecified' },
@@ -28,4 +29,26 @@ export const ICD10_MOCK_DATA = [
   { code: 'K03.8', display: 'Other specified diseases of hard tissues of teeth' },
   { code: 'K02.1', display: 'Caries of dentine' },
   { code: 'K05.2', display: 'Aggressive periodontitis' },
+  { code: 'K30', display: 'Functional dyspepsia' },
+  { code: 'J45.9', display: 'Unspecified asthma' },
+  { code: 'M10.9', display: 'Gout, unspecified' },
+  { code: 'E78.5', display: 'Hyperlipidemia, unspecified' },
+  { code: 'A15.9', display: 'Respiratory tuberculosis, unspecified' },
 ];
+
+/**
+ * Maps Indonesian condition names (as stored from SubjectiveInitialForm SUGGESTIONS_PENYAKIT)
+ * to ICD-10 codes. Used as a display-layer fallback when the DB code field is empty.
+ */
+export const CONDITION_NAME_TO_ICD10: Record<string, string> = {
+  'Hipertensi': 'I10',
+  'Diabetes Melitus Tipe 2': 'E11.9',
+  'Maag (Dispepsia)': 'K30',
+  'Radang Tenggorokan (Faringitis)': 'J02.9',
+  'Asma': 'J45.9',
+  'Asam Urat (Gout)': 'M10.9',
+  'Kolesterol Tinggi': 'E78.5',
+  'Tuberkulosis (TBC)': 'A15.9',
+  'ISPA': 'J06.9',
+  'Diare': 'K59.1',
+};
