@@ -18,7 +18,7 @@ Fixes requested by the clinic PIC during UAT heuristic evaluation, worked by pri
 | 2 | BB-11.15: Missing Referral data display in CPPT / Riwayat Medis UI | ✅ Done |
 | 3 | Role-based queue filtering (hide MENUNGGU from Doctors, no action buttons on BATAL, no DIPERIKSA duplicates downstream) | ✅ Done |
 
-### Priority 1 — Core Adjustments & Quick Wins (items 4–8 ✅ / 9 ⏳ pending test / 10–11 ⏳)
+### Priority 1 — Core Adjustments & Quick Wins ✅ ALL DONE (items 4–11)
 | # | Item | Status |
 |---|---|---|
 | 4 | Terminology: "Profil"→"Biodata", "Riwayat Kunjungan"→"CPPT", "Ringkasan"→"Kunjungan Terakhir" | ✅ Done |
@@ -26,9 +26,9 @@ Fixes requested by the clinic PIC during UAT heuristic evaluation, worked by pri
 | 6 | Medical Profile hyperlink → prominent button for Doctor | ✅ Done |
 | 7 | Allergy Severity → optional (drop required attr, keep DB schema) | ✅ Done |
 | 8 | All fields in Doctor's Plan section mandatory (Tindakan, Resep, Edukasi) | ✅ Done |
-| 9 | **Age & DoB: DoB calendar input + system-calculated Age display** | ⏳ Implemented, pending browser test |
-| 10 | Visit History Header: move Diagnosis + Treatment data to top of history card | ⏳ Not started |
-| 11 | Routine Medication: move input out of the prescription form module | ⏳ Not started |
+| 9 | **Age & DoB: DoB calendar input + system-calculated Age display** | ✅ Done |
+| 10 | Visit History Header: move Diagnosis + Treatment data to top of history card | ✅ Done |
+| 11 | Routine Medication: move input out of the prescription form module | ✅ Done |
 
 ### Priority 2 — Major Feature Overhaul ⏳ NOT STARTED
 | # | Item | Status |
@@ -71,6 +71,19 @@ Fixes requested by the clinic PIC during UAT heuristic evaluation, worked by pri
 ### Item 7 — Allergy Severity optional
 - `reactionSeverity String?` already nullable; severity dropdown optional; API stores `severity || null`.
 
+### Item 9 follow-up — DoB column in list tables + formatDob shared util
+- `DaftarAntrean.tsx` (/rawat-jalan): DoB added inside the PASIEN cell below the gender/age line as `text-xs text-gray-400 mt-0.5`. Required API mapper change: `tanggalLahir` added to `mappedData` in `src/app/api/encounters/route.ts` (data was already fetched, mapper was stripping it).
+- `DaftarPasien.tsx` (/rekam-medis): new TANGGAL LAHIR column after the NIK/IHS column. Frontend-only change — `tanggalLahir` already in the full `Patient` payload.
+- `formatDob()` extracted to shared util `src/lib/utils/format-dob.ts` — single source of truth. Both `PatientHeader.tsx` and `PatientAssessmentHeader.tsx` now import from this util instead of duplicating the function. Format: "DD MMM YYYY", WIB timezone (Asia/Jakarta).
+
+### Item 10 — Latest Diagnosis + Treatment in PatientHeader banner
+- `page.tsx` (riwayat-medis): derives `latestDiagnosis` and `latestTreatment` from `ringkasanData.episodic` (already computed by `mapRingkasanData`, no Prisma changes needed). `latestDiagnosis` = `episodic?.diagnoses?.[0]` formatted as "CODE — display". `latestTreatment` = first procedure display, falling back to first medication name, else `null`.
+- `PatientHeader.tsx`: two new optional props — `latestDiagnosis?: string | null`, `latestTreatment?: string | null`. Renders as a new chip row below the gender/age row: Dx chip `bg-red-50 text-red-700`, Tx chip `bg-purple-50 text-purple-700`. Only renders if at least one value is non-null.
+- Privacy-stripping pattern preserved — only scalar strings passed, never raw clinical relations.
+
+### Item 11 — Pengobatan Rutin instructional text
+- Pure copywriting change: "Diresepkan" → "Dicatat" in the Pengobatan Rutin section to clarify this is a logging field, not a prescription module.
+
 ### Pre-existing bug fixed: doctor route silently dropped Kajian Awal chips
 The doctor route (`rawat-jalan/[encounterId]/asesmen/route.ts`) never wrote `AllergyIntolerance` / `ConditionHistory` / `MedicationStatement` on a DIPERIKSA save — only section notes. Added a **Step 0** in the transaction:
 - Doctor posts **raw unparsed chips**; parse server-side via `parseAllergyChip` / `parseMedicationChip` (pure utils, server-safe).
@@ -91,15 +104,14 @@ The doctor route (`rawat-jalan/[encounterId]/asesmen/route.ts`) never wrote `All
 - **BMI categories:** <18.5 Kurus · 18.5–24.9 Normal · 25–29.9 Gemuk · ≥30 Obesitas
 - **CalendarDateDropdown:** portal-based, `isMounted` guard required
 - **Section-level Kajian Awal notes** live on `Encounter` (episodic): `riwayatPenyakitNotes` / `riwayatAlergiNotes` / `pengobatanRutinNotes` (`String? @db.Text`).
+- **formatDob shared util:** `src/lib/utils/format-dob.ts` — use this, never duplicate locally. Returns "DD MMM YYYY" in WIB (Asia/Jakarta). Both patient header components import from here.
+- **latestDiagnosis/latestTreatment in PatientHeader:** derived from `ringkasanData.episodic` in `page.tsx` — passed as scalar string props only. Never pass raw clinical relations to `PatientHeader`.
 
 ---
 
 ## ⏳ Pending / Next
 
-- ⏳ Browser-test Item 9 (DoB chips on both headers, live Age in registration form, DoB chip not rendering when `tanggalLahir` is null)
-- ▶️ **Next up:** Priority 1 item 10 (Visit History header — Diagnosis + Treatment to top of card)
-- ▶️ **Then:** Priority 1 item 11 (move Routine Medication out of prescription module — highest risk in Priority 1)
-- ⏳ Priority 2 feature overhaul (items 12–20)
+- ▶️ **Next up:** Priority 2 feature overhaul (items 12–20)
 - ⏳ Priority 3 (palette refresh, login captcha)
 - ⏳ SATUSEHAT real credentials (pending Kemenkes 401)
 - ⏳ Thesis BAB 4 writeup
