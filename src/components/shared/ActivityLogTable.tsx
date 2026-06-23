@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { SlidersHorizontal, ClipboardList, ChevronLeft, ChevronRight } from "lucide-react";
 import type { Prisma } from "@/generated/prisma";
+import { formatDoctorName } from "@/lib/utils/format-doctor-name";
 
 export type ActivityLogEntry = Prisma.ActivityLogGetPayload<{
   include: {
@@ -10,7 +11,7 @@ export type ActivityLogEntry = Prisma.ActivityLogGetPayload<{
       select: {
         username: true;
         role: true;
-        practitioner: { select: { name: true } };
+        practitioner: { select: { name: true; speciality: true } };
       };
     };
   };
@@ -214,8 +215,12 @@ export default function ActivityLogTable({ logs, total }: ActivityLogTableProps)
             {paginated.map((log) => {
               const parsed = parseAction(log.action);
               const title = ACTION_TITLES[parsed.type] ?? parsed.desc;
-              const actorName =
+              const actorRawName =
                 log.account?.practitioner?.name ?? log.account?.username ?? "-";
+              const actorName =
+                log.account?.role === "DOKTER" && log.account.practitioner?.name
+                  ? formatDoctorName(log.account.practitioner.name, log.account.practitioner.speciality)
+                  : actorRawName;
               const actorRoleLabel = ROLE_LABELS[log.account?.role ?? ""] ?? "-";
 
               return (

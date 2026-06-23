@@ -1,5 +1,9 @@
 import { ExternalLink } from 'lucide-react';
 import { formatDob } from '@/lib/utils/format-dob';
+import { formatDoctorName } from '@/lib/utils/format-doctor-name';
+import CetakButton from '@/app/riwayat-medis/[noRm]/components/CetakButton';
+import CpptHistoryButton from './CpptHistoryButton';
+import type { TimelineEncounter } from '@/lib/mappers/medical-records-mapper';
 
 interface PatientAssessmentHeaderProps {
   patient: {
@@ -11,10 +15,18 @@ interface PatientAssessmentHeaderProps {
   encounter: {
     periodStart: Date;
     reasonCode: string | null;
-    practitioner?: { name: string } | null;
+    practitioner?: { name: string; speciality?: string | null } | null;
   };
   age: string;
   tanggalLahir?: Date | string | null;
+  // Show the "Cetak" action only for a completed (SELESAI) encounter. The
+  // printed document is rendered by <PrintableDocument /> on the page.
+  canPrint?: boolean;
+  // CPPT history (Item 12) — past visit timeline + the doctor's role/status so the
+  // "Lihat CPPT" control can scope itself (doctor-only, auto-popup on DIPERIKSA).
+  cpptTimeline?: TimelineEncounter[];
+  encounterStatus?: string;
+  userRole?: string;
 }
 
 function formatEncounterDate(date: Date): string {
@@ -33,7 +45,16 @@ export default function PatientAssessmentHeader({
   encounter,
   age,
   tanggalLahir,
+  canPrint = false,
+  cpptTimeline = [],
+  encounterStatus,
+  userRole,
 }: PatientAssessmentHeaderProps) {
+  // Doctor-only (and Admin), and only while the encounter is being examined
+  // (DIPERIKSA): the nurse view shares this header but must not get the CPPT
+  // control/auto-popup, and there is no CPPT to show before/after examination.
+  const showCppt =
+    userRole?.toUpperCase() !== 'PERAWAT' && encounterStatus === 'DIPERIKSA';
   const initials = patient.namaLengkap
     .split(' ')
     .slice(0, 2)
@@ -116,23 +137,31 @@ export default function PatientAssessmentHeader({
               {encounter.practitioner?.name && (
                 <p>
                   <span className="font-medium text-gray-700">Dokter:</span>{' '}
-                  {encounter.practitioner.name}
+                  {formatDoctorName(encounter.practitioner.name, encounter.practitioner.speciality)}
                 </p>
               )}
             </div>
           </div>
         </div>
 
-        <a
-          href={`/riwayat-medis/${patient.noRm}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-6 py-3 text-base font-semibold text-white bg-[#006B4E] rounded-full hover:opacity-90 transition-opacity shrink-0 self-center"
-          style={{ fontFamily: 'var(--font-jakarta)' }}
-        >
-          <ExternalLink className="w-5 h-5" />
-          Lihat Detail Profil
-        </a>
+        <div className="flex items-center gap-3 shrink-0 self-center">
+          {canPrint && <CetakButton size="lg" />}
+
+          {showCppt && (
+            <CpptHistoryButton data={cpptTimeline} encounterStatus={encounterStatus} />
+          )}
+
+          <a
+            href={`/riwayat-medis/${patient.noRm}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-6 py-3 text-base font-semibold text-white bg-[#006B4E] rounded-full hover:opacity-90 transition-opacity shrink-0"
+            style={{ fontFamily: 'var(--font-jakarta)' }}
+          >
+            <ExternalLink className="w-5 h-5" />
+            Lihat Detail Profil
+          </a>
+        </div>
 
       </div>
     </div>

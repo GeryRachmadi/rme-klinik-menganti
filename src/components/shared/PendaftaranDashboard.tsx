@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import type { Prisma } from "@/generated/prisma";
 import DashboardQueueTable, { type QueueEncounterItem } from "@/components/shared/DashboardQueueTable";
+import { formatDoctorName } from "@/lib/utils/format-doctor-name";
 
 type EncounterWithPatient = Prisma.EncounterGetPayload<{
   include: { patient: { select: { namaLengkap: true } } };
@@ -270,7 +271,7 @@ export default function PendaftaranDashboard({
                       className="text-sm font-bold text-gray-800 truncate leading-snug"
                       style={{ fontFamily: "var(--font-poppins)" }}
                     >
-                      {prac.name}
+                      {formatDoctorName(prac.name, prac.speciality)}
                     </p>
                     <p
                       className="text-xs text-gray-400 truncate"

@@ -33,7 +33,7 @@ export default async function BerandaPage({
               select: {
                 username: true,
                 role: true,
-                practitioner: { select: { name: true } },
+                practitioner: { select: { name: true, speciality: true } },
               },
             },
           },
