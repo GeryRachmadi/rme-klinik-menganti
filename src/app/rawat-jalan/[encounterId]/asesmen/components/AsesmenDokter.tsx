@@ -71,11 +71,26 @@ export default function AsesmenDokter({
 
   const isReadOnly = encounter?.status?.toUpperCase() === 'SELESAI' && userRole?.toUpperCase() !== 'ADMIN';
 
+  // Item 14/19 added mandatory Kajian Awal fields (notes, nursing assessment,
+  // family history) that live only on the encounter scalar columns — the
+  // legacy penyakit/alergi/obat chip arrays no longer cover the full picture.
+  // The nurse is considered "done" if ANY of these has content; only warn when
+  // every single one is empty.
   const missingAssessment =
-    initialAssessment === null ||
-    (initialAssessment.penyakit.length === 0 &&
-      initialAssessment.alergi.length === 0 &&
-      initialAssessment.obat.length === 0);
+    initialAssessment === null
+      ? !encounter?.riwayatPenyakitNotes &&
+        !encounter?.riwayatAlergiNotes &&
+        !encounter?.pengobatanRutinNotes &&
+        !encounter?.asesmenKeperawatan &&
+        !encounter?.riwayatPenyakitKeluarga
+      : initialAssessment.penyakit.length === 0 &&
+        initialAssessment.alergi.length === 0 &&
+        initialAssessment.obat.length === 0 &&
+        !encounter?.riwayatPenyakitNotes &&
+        !encounter?.riwayatAlergiNotes &&
+        !encounter?.pengobatanRutinNotes &&
+        !encounter?.asesmenKeperawatan &&
+        !encounter?.riwayatPenyakitKeluarga;
 
   const missingVitals =
     initialPhysical === null ||
