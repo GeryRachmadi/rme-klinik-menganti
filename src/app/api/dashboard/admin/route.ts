@@ -20,7 +20,7 @@ export async function GET() {
           select: {
             role: true,
             username: true,
-            practitioner: { select: { name: true } },
+            practitioner: { select: { name: true, speciality: true } },
           },
         },
       },

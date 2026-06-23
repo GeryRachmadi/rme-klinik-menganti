@@ -12,6 +12,7 @@ import {
   TimelineEncounter,
   RingkasanData
 } from "@/lib/mappers/medical-records-mapper";
+import type { FamilyHistory } from "@/lib/utils/family-history";
 
 import PatientProfileTab from "@/app/riwayat-medis/[noRm]/components/PatientProfileTab";
 import EncounterHistoryTab from "@/app/riwayat-medis/[noRm]/components/EncounterHistoryTab";
@@ -37,6 +38,8 @@ interface PatientHistoryTabsProps {
   allergyNoteDate?: Date | string | null;
   medicationNote?: string | null;
   medicationNoteDate?: Date | string | null;
+  familyHistory?: FamilyHistory | null;
+  familyHistoryDate?: Date | string | null;
 }
 
 function EmptyBadge() {
@@ -62,7 +65,9 @@ export default function PatientHistoryTabs({
   allergyNote,
   allergyNoteDate,
   medicationNote,
-  medicationNoteDate
+  medicationNoteDate,
+  familyHistory,
+  familyHistoryDate
 }: PatientHistoryTabsProps) {
   const router = useRouter();
 
@@ -122,7 +127,7 @@ export default function PatientHistoryTabs({
         )}
 
         {activeTab === "riwayat-penyakit" && (
-          <ConditionTab data={conditions} sectionNote={conditionNote} sectionNoteDate={conditionNoteDate} />
+          <ConditionTab data={conditions} sectionNote={conditionNote} sectionNoteDate={conditionNoteDate} familyHistory={familyHistory} familyHistoryDate={familyHistoryDate} />
         )}
 
         {activeTab === "riwayat-alergi" && (

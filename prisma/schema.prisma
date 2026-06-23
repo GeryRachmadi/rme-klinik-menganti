@@ -74,7 +74,8 @@ model Practitioner {
 
   accountId     String   @unique
   account       Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  encounters    Encounter[]
+  encounters         Encounter[] @relation("EncounterDokter")
+  encountersPerawat  Encounter[] @relation("EncounterPerawat")
 }
 
 // ============================================
@@ -102,6 +103,7 @@ model Patient {
   pekerjaan        String
   perusahaan       String?
   noHp             String
+  noBpjs           String?
   /// Guardian details — all-or-nothing rule: if any field is provided, all must be provided.
   /// See Zod schema in lib/validations/patient.ts for enforcement.
   namaWali         String?
@@ -140,7 +142,13 @@ model Encounter {
   patientId          String
   patient            Patient       @relation(fields: [patientId], references: [id])
   practitionerId     String?
-  practitioner       Practitioner? @relation(fields: [practitionerId], references: [id])
+  practitioner       Practitioner? @relation("EncounterDokter", fields: [practitionerId], references: [id])
+  perawatId               String?
+  perawat                 Practitioner? @relation("EncounterPerawat", fields: [perawatId], references: [id])
+  jenisPenjamin           String?
+  instruksiLab            String?       @db.Text
+  asesmenKeperawatan      String?       @db.Text
+  riwayatPenyakitKeluarga String?       @db.Text
   createdByAccountId String?
   createdByAccount   Account?      @relation("EncounterCreatedBy", fields: [createdByAccountId], references: [id])
 
@@ -257,6 +265,11 @@ model MedicationRequest {
   medication  String
   dosage      String?
   instruction String?
+  isRacikan      Boolean   @default(false)
+  bentukRacikan  String?
+  jumlahRacikan  Int?
+  aturanPakai    String?
+  waktuKonsumsi  String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

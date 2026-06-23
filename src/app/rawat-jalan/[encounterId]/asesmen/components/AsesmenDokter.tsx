@@ -4,17 +4,21 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import SubjectiveInitialForm, { SubjectiveInitialFormRef } from './SubjectiveInitialForm';
 import ObjectivePhysicalForm, { ObjectivePhysicalFormRef } from './ObjectivePhysicalForm';
+import NursingDiagnosisForm, { NursingDiagnosisFormRef } from './NursingDiagnosisForm';
 import SubjectiveObjectiveExtendedForm, { SubjectiveObjectiveExtendedFormRef } from './SubjectiveObjectiveExtendedForm';
 import { AssessmentDiagnosisForm } from './AssessmentDiagnosisForm';
 import PlanProcedureForm, { PlanProcedureFormRef } from './PlanProcedureForm';
 import PlanMedicationForm, { PlanMedicationFormRef } from './PlanMedicationForm';
 import PlanEducationForm, { PlanEducationFormRef } from './PlanEducationForm';
+import PlanLabInstructionForm, { PlanLabInstructionFormRef } from './PlanLabInstructionForm';
 import PlanReferralForm, { PlanReferralFormRef } from './PlanReferralForm';
 import DraftFoundModal from './DraftFoundModal';
 import { Loader2, AlertCircle, CheckCircle2, Info, AlertTriangle } from 'lucide-react';
 import { useFormToast } from '@/hooks/useFormToast';
-import { getAssessmentDraftKey, getPhysicalExamDraftKey, getHasilPeriksaDraftKey, getProcedureDraftKey, getMedicationDraftKey, getEducationDraftKey, getReferralDraftKey } from '@/lib/constants/storage-keys';
+import { getAssessmentDraftKey, getPhysicalExamDraftKey, getHasilPeriksaDraftKey, getProcedureDraftKey, getMedicationDraftKey, getEducationDraftKey, getLabInstructionDraftKey, getReferralDraftKey } from '@/lib/constants/storage-keys';
 import { PlanFormSchema } from '@/lib/schemas/plan-schema';
+import type { RacikanContainer } from '@/lib/utils/racikan-container';
+import type { NonRacikanItem } from '@/lib/schemas/plan-schema';
 import MissingDataWarning from './MissingDataWarning';
 
 export interface AsesmenDokterProps {
@@ -36,8 +40,10 @@ export interface AsesmenDokterProps {
   savedHasilPeriksa?: { keluhanUtama: string; pemeriksaanFisikTambahan: string };
   savedPlan?: {
     procedures: Array<{ codeIcd9: string; display: string; notes: string }>;
-    medicationText: string;
+    nonRacikanItems?: NonRacikanItem[];
+    racikanItems?: RacikanContainer[];
     anjuranEdukasi: string;
+    instruksiLab: string;
     rujukan: { isActive: boolean; tujuanRujukan: string; alasanRujukan: string };
   };
   syncStatus?: string;
@@ -78,16 +84,25 @@ export default function AsesmenDokter({
       !initialPhysical.heartRate &&
       !initialPhysical.respiratoryRate);
 
+  // Asesmen Keperawatan (Item 14) is soft for the doctor — mirrors the Kajian Awal
+  // override: if the nurse left it empty (legacy data / Dokter Override), warn but
+  // never block. Computed from the page-hydrated defaultValues (load-time state).
+  const missingNursing =
+    !defaultValues?.nursingAssessment?.diagnoses ||
+    defaultValues.nursingAssessment.diagnoses.length === 0;
+
   console.log('[AsesmenDokter] Assessment missing:', missingAssessment);
   console.log('[AsesmenDokter] Vitals missing:', missingVitals);
   
   const hasShownErrorRef = useRef(false);
   const assessmentRef = useRef<SubjectiveInitialFormRef>(null);
   const physicalRef = useRef<ObjectivePhysicalFormRef>(null);
+  const nursingRef = useRef<NursingDiagnosisFormRef>(null);
   const hasilPeriksaRef = useRef<SubjectiveObjectiveExtendedFormRef>(null);
   const procedureRef = useRef<PlanProcedureFormRef>(null);
   const medicationRef = useRef<PlanMedicationFormRef>(null);
   const educationRef = useRef<PlanEducationFormRef>(null);
+  const labInstructionRef = useRef<PlanLabInstructionFormRef>(null);
   const referralRef = useRef<PlanReferralFormRef>(null);
 
   const [isSubmittingCentral, setIsSubmittingCentral] = useState(false);
@@ -96,7 +111,7 @@ export default function AsesmenDokter({
   // Per-field Plan validation errors surfaced from the central PlanFormSchema
   // safeParse (Tindakan/Resep/Edukasi are all mandatory). Cleared on each submit
   // attempt and on success; the Rujukan form shows its own native errors.
-  const [planErrors, setPlanErrors] = useState<{ procedure: string | null; medication: string | null; edukasi: string | null }>({ procedure: null, medication: null, edukasi: null });
+  const [planErrors, setPlanErrors] = useState<{ procedure: string | null; medication: string | null; edukasi: string | null; instruksiLab: string | null }>({ procedure: null, medication: null, edukasi: null, instruksiLab: null });
 
   // SATUSEHAT submission state
   const [localSyncStatus, setLocalSyncStatus] = useState(syncStatus ?? 'UNSYNCED');
@@ -140,7 +155,9 @@ export default function AsesmenDokter({
       getProcedureDraftKey(encounterId),
       getMedicationDraftKey(encounterId),
       getEducationDraftKey(encounterId),
+      getLabInstructionDraftKey(encounterId),
       getReferralDraftKey(encounterId),
+      `draft_nursing_${encounterId}`,
     ].forEach(key => localStorage.removeItem(key));
   }, [encounterId, encounterStatus]);
 
@@ -209,6 +226,10 @@ export default function AsesmenDokter({
         hasContent: (d: any) => !!d?.anjuranEdukasi,
       },
       {
+        key: `draft_labInstruction_${encounterId}`,
+        hasContent: (d: any) => !!d?.instruksiLab,
+      },
+      {
         key: `draft_referral_${encounterId}`,
         hasContent: (d: any) => d?.isActive === true || !!d?.tujuanRujukan || !!d?.alasanRujukan,
       },
@@ -263,11 +284,15 @@ export default function AsesmenDokter({
     localStorage.removeItem(getProcedureDraftKey(encounterId));
     localStorage.removeItem(getMedicationDraftKey(encounterId));
     localStorage.removeItem(getEducationDraftKey(encounterId));
+    localStorage.removeItem(getLabInstructionDraftKey(encounterId));
     localStorage.removeItem(getReferralDraftKey(encounterId));
+    localStorage.removeItem(`draft_nursing_${encounterId}`);
     procedureRef.current?.resetForm();
     medicationRef.current?.resetForm();
     educationRef.current?.resetForm();
+    labInstructionRef.current?.resetForm();
     referralRef.current?.resetForm();
+    nursingRef.current?.resetForm();
     setShowDraftModal(false);
   };
 
@@ -309,7 +334,7 @@ export default function AsesmenDokter({
   const handleCentralSubmit = async () => {
     setIsSubmittingCentral(true);
     let saved = false;
-    setPlanErrors({ procedure: null, medication: null, edukasi: null });
+    setPlanErrors({ procedure: null, medication: null, edukasi: null, instruksiLab: null });
     try {
       // Individually catch each submitForm so that FormHasilPeriksa's throw is
       // normalised to null (same as the null-returning forms) instead of
@@ -321,6 +346,11 @@ export default function AsesmenDokter({
       try { assessmentData = await assessmentRef.current?.submitForm() ?? null; } catch { assessmentData = null; }
       try { physicalData = await physicalRef.current?.submitForm() ?? null; } catch { physicalData = null; }
       try { hasilPeriksaData = await hasilPeriksaRef.current?.submitForm() ?? null; } catch { hasilPeriksaData = null; }
+
+      // Asesmen Keperawatan is SOFT for the doctor — read values directly (no
+      // validating submitForm, so no inline "wajib diisi" error is raised) and
+      // never block. Serialize whatever the doctor optionally provided.
+      const nursingData = nursingRef.current?.getValues() ?? null;
 
       if (missingAssessment) console.log('[AsesmenDokter] Doctor is completing missing Assessment data');
       if (missingVitals) console.log('[AsesmenDokter] Doctor is completing missing Vitals data');
@@ -364,6 +394,7 @@ export default function AsesmenDokter({
         procedure: procedureRef.current?.getValues ? procedureRef.current.getValues() : {},
         medication: medicationRef.current?.getValues ? medicationRef.current.getValues() : {},
         edukasi: educationRef.current?.getValues ? educationRef.current.getValues() : {},
+        labInstruction: labInstructionRef.current?.getValues ? labInstructionRef.current.getValues() : {},
         rujukan: rujukanData,
       };
 
@@ -377,7 +408,8 @@ export default function AsesmenDokter({
         const procErr = msgFor('procedure', 'procedures');
         const medErr = msgFor('medication', 'medicationText');
         const eduErr = msgFor('edukasi', 'anjuranEdukasi');
-        setPlanErrors({ procedure: procErr, medication: medErr, edukasi: eduErr });
+        const labErr = msgFor('labInstruction', 'instruksiLab');
+        setPlanErrors({ procedure: procErr, medication: medErr, edukasi: eduErr, instruksiLab: labErr });
         // Fire a summary toast (same showError utility/style as the Rujukan guard)
         // so an empty field is noticed even when scrolled away — alongside the
         // per-field inline errors. Lists only the fields that are actually empty.
@@ -385,6 +417,7 @@ export default function AsesmenDokter({
           procErr ? 'Tindakan Medis' : null,
           medErr ? 'Resep Obat' : null,
           eduErr ? 'Edukasi' : null,
+          labErr ? 'Instruksi Lab' : null,
         ].filter(Boolean);
         showError(
           emptyFields.length > 0
@@ -394,7 +427,7 @@ export default function AsesmenDokter({
         setIsSubmittingCentral(false);
         return;
       }
-      setPlanErrors({ procedure: null, medication: null, edukasi: null });
+      setPlanErrors({ procedure: null, medication: null, edukasi: null, instruksiLab: null });
       console.log('[AsesmenDokter] Validated Plan Data:', planValidation.data);
 
       const response = await fetch(`/api/rawat-jalan/${encounterId}/asesmen`, {
@@ -404,6 +437,7 @@ export default function AsesmenDokter({
           assessmentData,
           physicalData,
           hasilPeriksaData,
+          nursingData,
           selectedDiagnoses,
           plan: planValidation.data,
         }),
@@ -424,7 +458,9 @@ export default function AsesmenDokter({
         `draft_procedure_${encounterId}`,
         `draft_medication_${encounterId}`,
         `draft_education_${encounterId}`,
+        `draft_labInstruction_${encounterId}`,
         `draft_referral_${encounterId}`,
+        `draft_nursing_${encounterId}`,
       ];
       keysToRemove.forEach(key => localStorage.removeItem(key));
       showSuccess('Asesmen dan rencana tindak lanjut berhasil disimpan!');
@@ -576,7 +612,7 @@ export default function AsesmenDokter({
         </div>
       )}
 
-      <MissingDataWarning missingAssessment={missingAssessment} missingVitals={missingVitals} />
+      <MissingDataWarning missingAssessment={missingAssessment} missingVitals={missingVitals} missingNursing={missingNursing} />
 
       {/* Kajian Awal / Subjective (Editable by Doctor) */}
       <div>
@@ -602,6 +638,17 @@ export default function AsesmenDokter({
           canEdit={true}
           defaultValues={defaultValues}
           hideSubmitButton={true}
+          isReadOnly={isReadOnly}
+        />
+      </div>
+
+      {/* Asesmen Keperawatan / Nursing Assessment (SDKI) — distinct block */}
+      <div>
+        <div className="h-px bg-gray-200 mb-6" />
+        <NursingDiagnosisForm
+          ref={nursingRef}
+          encounterId={encounterId}
+          defaultValues={defaultValues?.nursingAssessment}
           isReadOnly={isReadOnly}
         />
       </div>
@@ -686,8 +733,9 @@ export default function AsesmenDokter({
 
           <div className="flex flex-col gap-6">
             <PlanProcedureForm ref={procedureRef} encounterId={encounterId} isReadOnly={isReadOnly} defaultValues={savedPlan?.procedures} externalError={planErrors.procedure} />
-            <PlanMedicationForm ref={medicationRef} encounterId={encounterId} isReadOnly={isReadOnly} defaultValues={{ medicationText: savedPlan?.medicationText ?? '' }} externalError={planErrors.medication} />
+            <PlanMedicationForm ref={medicationRef} encounterId={encounterId} isReadOnly={isReadOnly} defaultValues={{ nonRacikanItems: savedPlan?.nonRacikanItems ?? [], racikanItems: savedPlan?.racikanItems ?? [] }} externalError={planErrors.medication} />
             <PlanEducationForm ref={educationRef} encounterId={encounterId} isReadOnly={isReadOnly} defaultValues={{ anjuranEdukasi: savedPlan?.anjuranEdukasi ?? '' }} externalError={planErrors.edukasi} />
+            <PlanLabInstructionForm ref={labInstructionRef} encounterId={encounterId} isReadOnly={isReadOnly} defaultValues={{ instruksiLab: savedPlan?.instruksiLab ?? '' }} externalError={planErrors.instruksiLab} />
             <PlanReferralForm ref={referralRef} encounterId={encounterId} isReadOnly={isReadOnly} defaultValues={savedPlan?.rujukan} />
           </div>
         </div>

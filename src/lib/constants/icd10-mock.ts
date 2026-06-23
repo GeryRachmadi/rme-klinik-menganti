@@ -34,6 +34,8 @@ export const ICD10_MOCK_DATA = [
   { code: 'M10.9', display: 'Gout, unspecified' },
   { code: 'E78.5', display: 'Hyperlipidemia, unspecified' },
   { code: 'A15.9', display: 'Respiratory tuberculosis, unspecified' },
+  { code: 'R41.844', display: 'Frontal lobe and executive function deficit' },
+  { code: 'A01.00', display: 'Typhoid fever, unspecified' },
 ];
 
 /**

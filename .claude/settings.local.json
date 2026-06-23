@@ -60,7 +60,13 @@
       "Bash(findstr physical *)",
       "Bash(Get-ChildItem -Recurse \"C:\\\\Users\\\\Gery Rachmadi\\\\Documents\\\\akademik\\\\kuliah\\\\MataKuliah\\\\Semester8\\\\TA\\\\rme-klinik-menganti\\\\src\\\\app\\\\api\" -Filter \"*.ts\")",
       "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 40)",
-      "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 30)"
+      "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 30)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(echo \"---EXIT $?---\")",
+      "PowerShell(npm install *)",
+      "PowerShell(npm ls *)",
+      "PowerShell(npx tsc --noEmit; \"EXIT: $LASTEXITCODE\")",
+      "mcp__plugin_figma_figma__get_design_context"
     ]
   }
 }

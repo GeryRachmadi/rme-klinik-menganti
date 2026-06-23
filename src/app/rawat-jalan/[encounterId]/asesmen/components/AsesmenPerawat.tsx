@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Loader2, AlertCircle, CheckCircle2, Info } from 'lucide-react';
 import SubjectiveInitialForm, { SubjectiveInitialFormRef } from './SubjectiveInitialForm';
 import ObjectivePhysicalForm, { ObjectivePhysicalFormRef } from './ObjectivePhysicalForm';
+import NursingDiagnosisForm, { NursingDiagnosisFormRef } from './NursingDiagnosisForm';
 import { useFormToast } from '@/hooks/useFormToast';
 import DraftFoundModal from './DraftFoundModal';
 import { getAssessmentDraftKey, getPhysicalExamDraftKey } from '@/lib/constants/storage-keys';
@@ -38,6 +39,7 @@ export default function AsesmenPerawat({
   
   const assessmentRef = useRef<SubjectiveInitialFormRef>(null);
   const physicalRef = useRef<ObjectivePhysicalFormRef>(null);
+  const nursingRef = useRef<NursingDiagnosisFormRef>(null);
 
   const [isSubmittingCentral, setIsSubmittingCentral] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
@@ -52,6 +54,7 @@ export default function AsesmenPerawat({
     if (encounterStatus?.toUpperCase() !== 'SELESAI') return;
     localStorage.removeItem(getAssessmentDraftKey(encounterId));
     localStorage.removeItem(getPhysicalExamDraftKey(encounterId));
+    localStorage.removeItem(`draft_nursing_${encounterId}`);
   }, [encounterId, encounterStatus]);
 
   useEffect(() => {
@@ -109,6 +112,8 @@ export default function AsesmenPerawat({
   const handleRejectDraft = () => {
     localStorage.removeItem(getAssessmentDraftKey(encounterId));
     localStorage.removeItem(getPhysicalExamDraftKey(encounterId));
+    localStorage.removeItem(`draft_nursing_${encounterId}`);
+    nursingRef.current?.resetForm();
     setShowDraftModal(false);
   };
 
@@ -117,32 +122,39 @@ export default function AsesmenPerawat({
     try {
       const assessmentData = await assessmentRef.current?.submitForm() ?? null;
       const physicalData = await physicalRef.current?.submitForm() ?? null;
+      const nursingData = await nursingRef.current?.submitForm() ?? null;
 
-      console.log('[AsesmenPerawat] Validation results:', { assessmentData, physicalData });
+      console.log('[AsesmenPerawat] Validation results:', { assessmentData, physicalData, nursingData });
 
       const errors: string[] = [];
       if (!assessmentData) errors.push('Kajian Awal Keperawatan');
       if (!physicalData) errors.push('Pemeriksaan Fisik');
+      if (!nursingData) errors.push('Asesmen Keperawatan');
       if (errors.length > 0) {
-        showError(`Periksa kembali bagian: ${errors.join(' dan ')}.`);
+        showError(`Periksa kembali bagian: ${errors.join(', ')}.`);
         return;
       }
 
-      // Both forms passed — non-null assertions safe here
+      // All forms passed — non-null assertions safe here
       const validAssessment = assessmentData!;
       const validPhysical = physicalData!;
+      const validNursing = nursingData!;
 
       // Submit Kajian Awal Keperawatan
       const parsedAssessment = {
         penyakit: validAssessment.penyakit ?? [],
         alergi: (validAssessment.alergi ?? []).map(parseAllergyChip),
         obat: (validAssessment.obat ?? []).map(parseMedicationChip),
+        keluarga: validAssessment.keluarga ?? [],
         tidakAdaPenyakit: validAssessment.tidakAdaPenyakit,
         tidakAdaAlergi: validAssessment.tidakAdaAlergi,
         tidakAdaObat: validAssessment.tidakAdaObat,
+        tidakAdaKeluarga: validAssessment.tidakAdaKeluarga,
         catatanPenyakit: validAssessment.catatanPenyakit,
         catatanAlergi: validAssessment.catatanAlergi,
         catatanObat: validAssessment.catatanObat,
+        catatanKeluarga: validAssessment.catatanKeluarga,
+        nursingAssessment: validNursing,
       };
 
       const resAssessment = await fetch(`/api/encounters/${encounterId}/assessment`, {
@@ -171,6 +183,7 @@ export default function AsesmenPerawat({
       // Bersihkan draf
       deleteDraft(encounterId);
       localStorage.removeItem(getPhysicalExamDraftKey(encounterId));
+      localStorage.removeItem(`draft_nursing_${encounterId}`);
 
       showSuccess('Asesmen perawatan berhasil disimpan.');
       setTimeout(() => router.push('/rawat-jalan'), 1500);
@@ -239,6 +252,17 @@ export default function AsesmenPerawat({
           canEdit={true}
           defaultValues={defaultValues}
           hideSubmitButton={true}
+          isReadOnly={isReadOnly}
+        />
+      </div>
+
+      {/* Asesmen Keperawatan / Nursing Assessment (SDKI) — distinct block */}
+      <div>
+        <div className="h-px bg-gray-200 mb-6" />
+        <NursingDiagnosisForm
+          ref={nursingRef}
+          encounterId={encounterId}
+          defaultValues={defaultValues?.nursingAssessment}
           isReadOnly={isReadOnly}
         />
       </div>
