@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { writeActivityLog } from '@/lib/activity-log';
+import { serializeFamilyHistory } from '@/lib/utils/family-history';
+import { serializeNursingAssessment } from '@/lib/utils/nursing-assessment';
 
 export async function POST(
   request: Request,
@@ -16,7 +18,15 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { penyakit, alergi, obat, catatanPenyakit, catatanAlergi, catatanObat } = body;
+    const { penyakit, alergi, obat, catatanPenyakit, catatanAlergi, catatanObat, keluarga, tidakAdaKeluarga, catatanKeluarga, nursingAssessment } = body;
+
+    // Asesmen Keperawatan (Item 14) is mandatory — at least 1 SDKI diagnosis.
+    if (!Array.isArray(nursingAssessment?.diagnoses) || nursingAssessment.diagnoses.length === 0) {
+      return NextResponse.json(
+        { error: 'Asesmen Keperawatan wajib diisi — pilih minimal 1 diagnosis SDKI.' },
+        { status: 400 }
+      );
+    }
 
     const encounter = await prisma.encounter.findUnique({
       where: { id: encounterId },
@@ -80,6 +90,8 @@ export async function POST(
           riwayatPenyakitNotes: catatanPenyakit?.trim() ? catatanPenyakit : null,
           riwayatAlergiNotes: catatanAlergi?.trim() ? catatanAlergi : null,
           pengobatanRutinNotes: catatanObat?.trim() ? catatanObat : null,
+          riwayatPenyakitKeluarga: serializeFamilyHistory(keluarga, tidakAdaKeluarga, catatanKeluarga),
+          asesmenKeperawatan: serializeNursingAssessment(nursingAssessment?.diagnoses, nursingAssessment?.catatan),
           ...(encounter.status === 'MENUNGGU' ? { status: 'DIPERIKSA' } : {}),
         },
       });

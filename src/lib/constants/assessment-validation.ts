@@ -14,6 +14,7 @@ export const ERROR_MESSAGES = {
   penyakit: "Mohon isi riwayat penyakit atau centang opsi 'Pasien menyangkal'",
   alergi: "Mohon isi riwayat alergi atau centang opsi 'No Known Allergies (NKA)'",
   obat: "Mohon isi pengobatan rutin atau centang opsi 'Tidak ada pengobatan rutin'",
+  keluarga: "Mohon isi riwayat penyakit keluarga atau centang opsi 'Tidak ada riwayat penyakit keluarga'",
   catatanMax: "Catatan maksimal 500 karakter",
 } as const;
 

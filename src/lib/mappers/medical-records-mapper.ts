@@ -1,3 +1,7 @@
+import { parseFamilyHistory, type FamilyHistory } from "@/lib/utils/family-history";
+import { parseNursingAssessment, type NursingAssessment } from "@/lib/utils/nursing-assessment";
+import { parseRacikanContainer } from "@/lib/utils/racikan-container";
+
 export interface ClinicalSummary {
   latestVitals: any | null;
   primaryDiagnosis: any | null;
@@ -34,6 +38,7 @@ export interface MappedMedication {
 export interface MappedEncounter {
   date: Date | string | null;
   practitionerName: string;
+  practitionerSpeciality: string | null;
   primaryDiagnosis: string;
   status: string;
 }
@@ -61,20 +66,82 @@ export interface EpisodicProcedure {
   display: string;
 }
 
-export interface EpisodicMedication {
-  name: string;
-  dosage: string | null;
+// Discriminated medication display shape — distinguishes Non-Racikan (flat,
+// dedicated columns are the source of truth) from Racikan (container JSON in
+// `medication` is the source of truth; dedicated columns may be stale per the
+// dual-write in the persistence loop).
+export type MedicationDisplayItem =
+  | {
+      type: "non-racikan";
+      namaObat: string;
+      dosis: string | null;
+      bentukSediaan: string | null;
+      jumlah: number | null;
+      aturanPakai: string | null;
+      waktuKonsumsi: string | null;
+    }
+  | {
+      type: "racikan";
+      namaRacikan: string;
+      bentukSediaan: string;
+      jumlah: number;
+      aturanPakai: string;
+      waktuKonsumsi: string;
+      ingredients: Array<{ namaObat: string; dosis: string }>;
+    };
+
+/**
+ * Maps raw MedicationRequest rows into display-ready items. Non-Racikan rows
+ * read their structured fields straight from the dedicated columns; Racikan
+ * rows parse the JSON container stored in `medication` (the dedicated columns
+ * are a redundant dual-write for racikan rows, so the JSON wins). Rows that
+ * fail to parse are skipped rather than crashing the page — though
+ * parseRacikanContainer's legacy-string fallback means this should be rare.
+ */
+function mapMedicationRequests(rows: any[]): MedicationDisplayItem[] {
+  const items: MedicationDisplayItem[] = [];
+  for (const m of rows) {
+    if (!m.isRacikan) {
+      items.push({
+        type: "non-racikan",
+        namaObat: m.medication || "",
+        dosis: m.dosage ?? null,
+        bentukSediaan: m.bentukRacikan ?? null,
+        jumlah: m.jumlahRacikan ?? null,
+        aturanPakai: m.aturanPakai ?? null,
+        waktuKonsumsi: m.waktuKonsumsi ?? null,
+      });
+      continue;
+    }
+
+    const container = parseRacikanContainer(m.medication);
+    if (!container) continue;
+    items.push({
+      type: "racikan",
+      namaRacikan: container.namaRacikan,
+      bentukSediaan: container.bentukSediaan,
+      jumlah: container.jumlah,
+      aturanPakai: container.aturanPakai,
+      waktuKonsumsi: container.waktuKonsumsi,
+      ingredients: container.ingredients,
+    });
+  }
+  return items;
 }
 
 export interface EpisodicData {
   encounterDate: Date | string | null;
+  keluhanAwal: string | null;        // Encounter.reasonCode (Keluhan Utama)
+  patientType: string | null;        // Encounter.patientType ("UMUM" | "BPJS")
   diagnoses: EpisodicDiagnosis[];
   vitals: EpisodicVitals | null;
   clinicalNote: string | null;
   practitionerName: string | null;
+  practitionerSpeciality: string | null;
   procedures: EpisodicProcedure[];   // Tindakan from latest encounter
-  medications: EpisodicMedication[]; // Resep Obat from latest encounter
+  medications: MedicationDisplayItem[]; // Resep Obat from latest encounter
   education: string | null;          // Edukasi/Anjuran free text
+  instruksiLab: string | null;       // Instruksi Lab / Penunjang Medis Eksternal
   referral: { tujuan: string; alasan: string | null } | null; // Rujukan (ServiceRequest)
 }
 
@@ -193,8 +260,8 @@ export function mapRingkasanData(prismaPatient: any): RingkasanData {
       (p: any) => ({ code: p.codeIcd9 ?? null, display: p.display || "" })
     );
 
-    const episodicMeds: EpisodicMedication[] = (latest.medicationRequests || []).map(
-      (m: any) => ({ name: m.medication || "", dosage: m.dosage ?? null })
+    const episodicMeds: MedicationDisplayItem[] = mapMedicationRequests(
+      latest.medicationRequests || []
     );
 
     // Rujukan — ServiceRequest stores tujuan in `intent`, alasan in `note`.
@@ -203,13 +270,17 @@ export function mapRingkasanData(prismaPatient: any): RingkasanData {
 
     episodic = {
       encounterDate: latest.periodStart || latest.createdAt || null,
+      keluhanAwal: latest.reasonCode || null,
+      patientType: latest.patientType || null,
       diagnoses,
       vitals,
       clinicalNote: noteObs?.notes || null,
       practitionerName: latest.practitioner?.name || null,
+      practitionerSpeciality: latest.practitioner?.speciality ?? null,
       procedures,
       medications: episodicMeds,
       education,
+      instruksiLab: latest.instruksiLab ?? null,
       referral,
     };
   }
@@ -233,6 +304,7 @@ export interface TimelineEncounter {
   id: string;
   encounterDate: Date | string | null;
   practitionerName: string | null;
+  practitionerSpeciality: string | null;
   poli: string; // derived from queueNumber prefix — "Poli Umum" | "Poli Gigi"
   status: string;
   keluhanAwal: string | null; // Encounter.reasonCode (Keluhan Utama from asesmen)
@@ -240,9 +312,14 @@ export interface TimelineEncounter {
   diagnoses: EpisodicDiagnosis[];
   primaryDiagnosisNote: string | null;
   procedures: EpisodicProcedure[];
-  medications: EpisodicMedication[];
+  medications: MedicationDisplayItem[];
   education: string | null;
+  instruksiLab: string | null;       // Instruksi Lab / Penunjang Medis Eksternal
   referral: { tujuan: string; alasan: string | null } | null; // ServiceRequest (Rujukan)
+  // Asesmen Keperawatan (Item 14) — episodic per-visit nursing judgment, parsed
+  // from Encounter.asesmenKeperawatan JSON. NOT a longitudinal "most recent wins"
+  // summary; each card shows ITS OWN visit's nursing assessment.
+  nursingAssessment: NursingAssessment | null;
 }
 
 /**
@@ -318,18 +395,21 @@ export function mapEncounterTimeline(prismaPatient: any): TimelineEncounter[] {
       (p: any) => ({ code: p.codeIcd9 ?? null, display: p.display || "" })
     );
 
-    const medications: EpisodicMedication[] = (enc.medicationRequests || []).map(
-      (m: any) => ({ name: m.medication || "", dosage: m.dosage ?? null })
+    const medications: MedicationDisplayItem[] = mapMedicationRequests(
+      enc.medicationRequests || []
     );
 
     // Rujukan — ServiceRequest stores tujuan in `intent`, alasan in `note`.
     const sr = (enc.serviceRequests || [])[0] || null;
     const referral = sr ? { tujuan: sr.intent || "", alasan: sr.note ?? null } : null;
 
+    const nursingAssessment = parseNursingAssessment(enc.asesmenKeperawatan);
+
     return {
       id: enc.id,
       encounterDate: enc.periodStart || enc.createdAt || null,
       practitionerName: enc.practitioner?.name || null,
+      practitionerSpeciality: enc.practitioner?.speciality ?? null,
       poli: getPoliLabel(enc.queueNumber),
       status: enc.status || "",
       keluhanAwal: enc.reasonCode || null,
@@ -339,7 +419,9 @@ export function mapEncounterTimeline(prismaPatient: any): TimelineEncounter[] {
       procedures,
       medications,
       education,
+      instruksiLab: enc.instruksiLab ?? null,
       referral,
+      nursingAssessment,
     };
   });
 }
@@ -359,6 +441,11 @@ export interface PatientMedicalRecordData {
   allergyNoteDate: Date | string | null;
   medicationNote: string | null;
   medicationNoteDate: Date | string | null;
+  // Riwayat Penyakit Keluarga (UAT Phase 2 Item 19) — most recent non-null value
+  // across SELESAI encounters, parsed from its JSON string. Shown as a subsection
+  // in the Riwayat Penyakit tab.
+  familyHistory: FamilyHistory | null;
+  familyHistoryDate: Date | string | null;
 }
 
 export function mapPatientMedicalRecords(
@@ -437,6 +524,18 @@ export function mapPatientMedicalRecords(
   const medicationNote = medicationNoteEnc?.pengobatanRutinNotes ?? null;
   const medicationNoteDate = medicationNoteEnc?.periodStart ?? medicationNoteEnc?.createdAt ?? null;
 
+  // Family history — most recent SELESAI encounter whose JSON parses to content.
+  let familyHistory: FamilyHistory | null = null;
+  let familyHistoryDate: Date | string | null = null;
+  for (const e of selesaiDesc) {
+    const parsed = parseFamilyHistory(e.riwayatPenyakitKeluarga);
+    if (parsed) {
+      familyHistory = parsed;
+      familyHistoryDate = e.periodStart ?? e.createdAt ?? null;
+      break;
+    }
+  }
+
   const mappedEncounters: MappedEncounter[] = sortedEncounters.map((e: any) => {
     const primaryDiag = e.conditionDiagnoses?.find(
       (d: any) => d.isPrimary === true
@@ -445,6 +544,7 @@ export function mapPatientMedicalRecords(
     return {
       date: e.periodStart || e.createdAt || null,
       practitionerName: e.practitioner?.name || e.practitionerName || "",
+      practitionerSpeciality: e.practitioner?.speciality ?? null,
       primaryDiagnosis: primaryDiag?.display || primaryDiag?.codeIcd10 || primaryDiag?.name || "",
       status: e.status || "",
     };
@@ -463,5 +563,7 @@ export function mapPatientMedicalRecords(
     allergyNoteDate,
     medicationNote,
     medicationNoteDate,
+    familyHistory,
+    familyHistoryDate,
   };
 }

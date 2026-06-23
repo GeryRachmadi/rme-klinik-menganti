@@ -2,6 +2,10 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { writeActivityLog } from "@/lib/activity-log";
 import { parseAllergyChip, parseMedicationChip } from "@/lib/utils/assessment-parser";
+import { serializeFamilyHistory } from "@/lib/utils/family-history";
+import { serializeNursingAssessment } from "@/lib/utils/nursing-assessment";
+import { serializeRacikanContainer, type RacikanContainer } from "@/lib/utils/racikan-container";
+import type { NonRacikanItem } from "@/lib/schemas/plan-schema";
 
 export async function POST(
   request: Request,
@@ -24,7 +28,13 @@ export async function POST(
 
   try {
     const body = await request.json();
-    const { assessmentData, physicalData, hasilPeriksaData, selectedDiagnoses, plan } = body;
+    const { assessmentData, physicalData, hasilPeriksaData, nursingData, selectedDiagnoses, plan } = body;
+
+    // Asesmen Keperawatan (Item 14) is SOFT on the doctor route — mirrors the
+    // Kajian Awal override: the doctor may complete an encounter the nurse left
+    // unassessed (e.g. covering for an absent nurse). No guard here; whatever value
+    // is provided (including null) is serialized below. The NURSE route keeps the
+    // hard mandatory guard.
 
     // Conditional Rujukan guard: an active referral must carry both Tujuan and
     // Alasan — block empty ServiceRequest creation server-side (BB-11.14).
@@ -46,11 +56,20 @@ export async function POST(
     if (!plan?.procedure?.procedures?.length) {
       return Response.json({ error: "Tindakan Medis wajib diisi" }, { status: 400 });
     }
-    if (!plan?.medication?.medicationText?.trim()) {
+    const hasNonRacikan = Array.isArray(plan?.medication?.nonRacikanItems)
+      && plan.medication.nonRacikanItems.length > 0;
+    const hasRacikan = Array.isArray(plan?.medication?.racikanItems)
+      && plan.medication.racikanItems.length > 0;
+    if (!hasNonRacikan && !hasRacikan) {
       return Response.json({ error: "Resep Obat wajib diisi" }, { status: 400 });
     }
     if (!plan?.edukasi?.anjuranEdukasi?.trim()) {
       return Response.json({ error: "Edukasi / Anjuran wajib diisi" }, { status: 400 });
+    }
+    // Instruksi Lab (H2 Sev3) is a permanent, mandatory Plan fixture — mirrors the
+    // Edukasi guard. The doctor must type something explicit (even "-"), never blank.
+    if (!plan?.labInstruction?.instruksiLab?.trim()) {
+      return Response.json({ error: "Instruksi Lab wajib diisi" }, { status: 400 });
     }
 
     const encounter = await prisma.encounter.findUnique({
@@ -236,14 +255,50 @@ export async function POST(
         });
       }
 
-      // Step 4: Replace medication (delete existing, insert new if provided)
+      // Step 4: Replace medication (delete existing, insert new if provided).
+      // Non-Racikan saves as one row PER drug (isRacikan: false, flat — no JSON,
+      // the structured fields live directly in the dedicated columns); Racikan
+      // saves as one row PER container (isRacikan: true) — both can coexist
+      // (Item 13 rebuild, Option A non-racikan/racikan field-array split).
       await tx.medicationRequest.deleteMany({ where: { encounterId } });
-      const medicationText: string | undefined = plan?.medication?.medicationText?.trim();
-      if (medicationText) {
+      const nonRacikanItems: NonRacikanItem[] =
+        Array.isArray(plan?.medication?.nonRacikanItems) ? plan.medication.nonRacikanItems : [];
+      for (const item of nonRacikanItems) {
+        if (!item?.namaObat?.trim()) continue;
         await tx.medicationRequest.create({
           data: {
             encounterId,
-            medication: medicationText,
+            medication: item.namaObat.trim(),
+            dosage: item.dosis?.trim() || null,
+            isRacikan: false,
+            bentukRacikan: item.bentukSediaan ?? null,
+            jumlahRacikan: typeof item.jumlah === 'number' ? item.jumlah : null,
+            aturanPakai: item.aturanPakai ?? null,
+            waktuKonsumsi: item.waktuKonsumsi ?? null,
+          },
+        });
+      }
+
+      // One row per container: `medication` holds the full ingredients array as
+      // JSON (single source of truth for ingredients), while the dedicated
+      // columns also get the container-level fields — kept in sync since the
+      // whole row is deleted+recreated on every save, so the two copies can't
+      // drift. The columns stay populated for any other reader that expects
+      // them directly (Item 13 rebuild, Option A container/ingredient split).
+      const racikanItems: RacikanContainer[] =
+        Array.isArray(plan?.medication?.racikanItems) ? plan.medication.racikanItems : [];
+      for (const item of racikanItems) {
+        const cleanIngredients = (item?.ingredients ?? []).filter((ing) => ing?.namaObat?.trim());
+        if (cleanIngredients.length === 0) continue;
+        await tx.medicationRequest.create({
+          data: {
+            encounterId,
+            medication: serializeRacikanContainer({ ...item, ingredients: cleanIngredients }),
+            isRacikan: true,
+            bentukRacikan: item.bentukSediaan ?? null,
+            jumlahRacikan: typeof item.jumlah === 'number' ? item.jumlah : null,
+            aturanPakai: item.aturanPakai ?? null,
+            waktuKonsumsi: item.waktuKonsumsi ?? null,
           },
         });
       }
@@ -281,9 +336,19 @@ export async function POST(
         where: { id: encounterId },
         data: {
           reasonCode: hasilPeriksaData?.keluhanUtama ?? null,
+          instruksiLab: plan?.labInstruction?.instruksiLab?.trim() ? plan.labInstruction.instruksiLab.trim() : null,
           riwayatPenyakitNotes: assessmentData?.catatanPenyakit?.trim() ? assessmentData.catatanPenyakit : null,
           riwayatAlergiNotes: assessmentData?.catatanAlergi?.trim() ? assessmentData.catatanAlergi : null,
           pengobatanRutinNotes: assessmentData?.catatanObat?.trim() ? assessmentData.catatanObat : null,
+          riwayatPenyakitKeluarga: serializeFamilyHistory(
+            assessmentData?.keluarga,
+            assessmentData?.tidakAdaKeluarga,
+            assessmentData?.catatanKeluarga
+          ),
+          asesmenKeperawatan: serializeNursingAssessment(
+            nursingData?.diagnoses,
+            nursingData?.catatan
+          ),
           status: "SELESAI",
           updatedAt: new Date(),
         },

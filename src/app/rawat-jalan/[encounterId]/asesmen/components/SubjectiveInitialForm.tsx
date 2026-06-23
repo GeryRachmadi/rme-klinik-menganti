@@ -51,6 +51,10 @@ const SUGGESTIONS_OBAT = [
   'Paracetamol', 'Amoxicillin', 'Metformin', 'Amlodipine', 'Simvastatin',
   'Omeprazole', 'Lansoprazole', 'Ibuprofen', 'Captopril', 'Antasida',
 ];
+const SUGGESTIONS_KELUARGA = [
+  'Hipertensi', 'Diabetes Melitus', 'Asma', 'Penyakit Jantung', 'Stroke',
+  'Kanker', 'Kolesterol Tinggi', 'Asam Urat (Gout)', 'Tuberkulosis (TBC)', 'Gangguan Ginjal',
+];
 
 function FieldErrorMessage({ message }: { message?: string }) {
   if (!message) return null;
@@ -101,12 +105,15 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
       penyakit: Array.from(new Set(defaultValues?.penyakit ?? [])),
       alergi: Array.from(new Set(defaultValues?.alergi ?? [])),
       obat: Array.from(new Set(defaultValues?.obat ?? [])),
+      keluarga: Array.from(new Set(defaultValues?.keluarga ?? [])),
       catatanPenyakit: defaultValues?.catatanPenyakit ?? '',
       catatanAlergi: defaultValues?.catatanAlergi ?? '',
       catatanObat: defaultValues?.catatanObat ?? '',
+      catatanKeluarga: defaultValues?.catatanKeluarga ?? '',
       tidakAdaPenyakit: defaultValues?.tidakAdaPenyakit ?? false,
       tidakAdaAlergi: defaultValues?.tidakAdaAlergi ?? false,
       tidakAdaObat: defaultValues?.tidakAdaObat ?? false,
+      tidakAdaKeluarga: defaultValues?.tidakAdaKeluarga ?? false,
     },
   });
 
@@ -125,12 +132,15 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
           penyakit: Array.from(new Set(data.penyakit ?? [])),
           alergi: Array.from(new Set(data.alergi ?? [])),
           obat: Array.from(new Set(data.obat ?? [])),
+          keluarga: Array.from(new Set(data.keluarga ?? [])),
           catatanPenyakit: data.catatanPenyakit ?? '',
           catatanAlergi: data.catatanAlergi ?? '',
           catatanObat: data.catatanObat ?? '',
+          catatanKeluarga: data.catatanKeluarga ?? '',
           tidakAdaPenyakit: data.tidakAdaPenyakit ?? false,
           tidakAdaAlergi: data.tidakAdaAlergi ?? false,
           tidakAdaObat: data.tidakAdaObat ?? false,
+          tidakAdaKeluarga: data.tidakAdaKeluarga ?? false,
         });
       }, 0);
     }
@@ -142,6 +152,7 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
   const isPenyakitNull = watch('tidakAdaPenyakit');
   const isAlergiNull = watch('tidakAdaAlergi');
   const isObatNull = watch('tidakAdaObat');
+  const isKeluargaNull = watch('tidakAdaKeluarga');
 
   return (
     <div className="relative w-full">
@@ -379,6 +390,61 @@ const SubjectiveInitialForm = forwardRef<SubjectiveInitialFormRef, SubjectiveIni
                 </button>
               )}
               <FieldErrorMessage message={errors.obat?.message} />
+            </div>
+
+            {/* SECTION: RIWAYAT PENYAKIT KELUARGA */}
+            <div className="flex flex-col">
+              <h3
+                className="text-sm font-bold text-[#0F766E] uppercase tracking-wider mb-3"
+                style={{ WebkitTextStroke: '0.2px #0F766E', fontFamily: '"Plus Jakarta Sans", sans-serif' }}
+              >
+                Riwayat Penyakit Keluarga
+              </h3>
+              <Controller
+                name="keluarga"
+                control={control}
+                render={({ field }) => (
+                  <ChipsInput
+                    mode="auto-commit"
+                    addLabel="Riwayat"
+                    value={field.value ?? []}
+                    suggestions={SUGGESTIONS_KELUARGA}
+                    disabled={isKeluargaNull || isReadOnly}
+                    negationLabel="Tidak ada riwayat penyakit keluarga"
+                    negationChecked={isKeluargaNull}
+                    onNegationChange={(checked) => {
+                      setValue('tidakAdaKeluarga', checked, { shouldValidate: true });
+                      if (checked) {
+                        setValue('keluarga', [], { shouldValidate: true });
+                      }
+                    }}
+                    onChange={(newVal) => {
+                      field.onChange(newVal);
+                      if (newVal.length > 0) setValue('tidakAdaKeluarga', false, { shouldValidate: true });
+                    }}
+                    placeholder="Contoh: Diabetes, Hipertensi"
+                  />
+                )}
+              />
+              <textarea
+                {...register('catatanKeluarga')}
+                disabled={isReadOnly}
+                placeholder={isReadOnly ? 'Tidak ada catatan' : 'Tambahkan Catatan Disini (Opsional)'}
+                className={`w-full mt-2 border rounded-xl p-4 text-sm font-sans resize-y focus:outline-none focus:ring-1 min-h-[100px] transition-colors
+                  ${errors.keluarga ? 'border-red-500 focus:ring-red-500' : 'focus:ring-[#0F766E] focus:border-[#0F766E] border-gray-200'}
+                  ${isReadOnly ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800 placeholder-gray-400'}`}
+                style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
+              />
+              {!isReadOnly && (
+                <button
+                  type="button"
+                  onClick={() => { setValue('keluarga', [], { shouldValidate: true }); setValue('catatanKeluarga', '', { shouldValidate: true }); }}
+                  className="text-blue-500 hover:text-blue-700 underline cursor-pointer font-medium text-sm mt-2 self-end italic"
+                >
+                  Kosongkan Input
+                </button>
+              )}
+              <FieldErrorMessage message={errors.keluarga?.message} />
             </div>
 
           </div>

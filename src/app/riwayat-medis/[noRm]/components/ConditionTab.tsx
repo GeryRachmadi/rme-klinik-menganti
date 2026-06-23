@@ -1,12 +1,15 @@
 import { MappedCondition } from '@/lib/mappers/medical-records-mapper';
+import type { FamilyHistory } from '@/lib/utils/family-history';
 import { ICD10_MOCK_DATA, CONDITION_NAME_TO_ICD10 } from '@/lib/constants/icd10-mock';
-import { Activity, Pencil, CheckCircle2 } from 'lucide-react';
+import { Activity, Pencil, CheckCircle2, Users } from 'lucide-react';
 import EmptyTabState from './EmptyTabState';
 
 interface ConditionTabProps {
   data?: MappedCondition[];
   sectionNote?: string | null;
   sectionNoteDate?: Date | string | null;
+  familyHistory?: FamilyHistory | null;
+  familyHistoryDate?: Date | string | null;
 }
 
 function formatDate(date: Date | string | null): string {
@@ -16,9 +19,11 @@ function formatDate(date: Date | string | null): string {
     .toUpperCase();
 }
 
-export default function ConditionTab({ data, sectionNote, sectionNoteDate }: ConditionTabProps) {
+export default function ConditionTab({ data, sectionNote, sectionNoteDate, familyHistory, familyHistoryDate }: ConditionTabProps) {
   const hasChips = data && data.length > 0;
   const hasNote = !!(sectionNote && sectionNote.trim());
+  const hasFamily = !!familyHistory &&
+    (familyHistory.chips.length > 0 || familyHistory.tidakAda || !!familyHistory.catatan.trim());
 
   return (
     <div className="w-full">
@@ -29,7 +34,7 @@ export default function ConditionTab({ data, sectionNote, sectionNoteDate }: Con
         Riwayat Penyakit
       </h2>
 
-      {!hasChips && !hasNote && (
+      {!hasChips && !hasNote && !hasFamily && (
         <EmptyTabState
           icon={Activity}
           title="Belum Ada Riwayat Penyakit"
@@ -176,6 +181,72 @@ export default function ConditionTab({ data, sectionNote, sectionNoteDate }: Con
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Riwayat Penyakit Keluarga (UAT Phase 2 Item 19) — subsection styled like
+          the Catatan Klinis card pattern above. */}
+      {hasFamily && familyHistory && (
+        <div className="mt-8">
+          <h3
+            className="text-[15px] font-bold text-[#006b5f] uppercase tracking-[0.4px] mb-4 flex items-center gap-2"
+            style={{ fontFamily: 'var(--font-jakarta)' }}
+          >
+            <Users className="w-[15px] h-[15px]" />
+            Riwayat Penyakit Keluarga
+          </h3>
+
+          <div className="bg-white border border-[#e5e7eb] rounded-[19.5px] shadow-[0px_0.812px_0.812px_rgba(0,0,0,0.05)] p-[21px] flex flex-col gap-[13px] max-w-[520px]">
+            {/* Date pill */}
+            <div className="bg-[rgba(216,226,255,0.3)] rounded-[19.5px] px-[13px] py-[9px] min-h-[35.7px] flex items-center">
+              <span
+                className="text-[#2170e4] text-[11px] font-bold uppercase"
+                style={{ fontFamily: 'var(--font-jakarta)' }}
+              >
+                Dicatat: {formatDate(familyHistoryDate ?? null)}
+              </span>
+            </div>
+
+            {/* Condition chips, or the negation statement when none */}
+            {familyHistory.chips.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {familyHistory.chips.map((chip, idx) => (
+                  <span
+                    key={`family-${idx}`}
+                    className="inline-flex items-center rounded-full px-3.5 py-1 text-[12px] font-bold border bg-[#E6F5F4] border-[#B2DFDB] text-[#0F766E]"
+                    style={{ fontFamily: 'var(--font-jakarta)' }}
+                  >
+                    {chip}
+                  </span>
+                ))}
+              </div>
+            ) : familyHistory.tidakAda && !familyHistory.catatan.trim() ? (
+              <span
+                className="text-[#334155] text-[12px] font-semibold"
+                style={{ fontFamily: 'var(--font-jakarta)' }}
+              >
+                Tidak ada riwayat penyakit keluarga.
+              </span>
+            ) : null}
+
+            {/* Catatan */}
+            {!!familyHistory.catatan.trim() && (
+              <div className="bg-[#f3f4f5] rounded-[19.5px] p-[13px] flex flex-col gap-[3.25px]">
+                <span
+                  className="text-[#94a3b8] text-[11px] font-bold uppercase"
+                  style={{ fontFamily: 'var(--font-jakarta)' }}
+                >
+                  Catatan Klinis
+                </span>
+                <span
+                  className="text-[#334155] text-[12px] font-semibold leading-[1.5]"
+                  style={{ fontFamily: 'var(--font-jakarta)' }}
+                >
+                  {familyHistory.catatan}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

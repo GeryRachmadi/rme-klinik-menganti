@@ -13,6 +13,13 @@ export const AssessmentSchema = z.object({
   obat: z.array(z.string()),
   tidakAdaObat: z.boolean(),
   catatanObat: z.string().max(500, ERROR_MESSAGES.catatanMax),
+
+  // Riwayat Penyakit Keluarga (UAT Phase 2 Item 19) — episodic chips stored as a
+  // JSON string on Encounter.riwayatPenyakitKeluarga. Mirrors the other 3
+  // sections' shape and mandatory one-of-three rule.
+  keluarga: z.array(z.string()),
+  tidakAdaKeluarga: z.boolean(),
+  catatanKeluarga: z.string().max(500, ERROR_MESSAGES.catatanMax),
 }).superRefine((data, ctx) => {
   // A section is valid if ANY ONE holds: has chips, OR negation checked,
   // OR has notes. Invalid only when all three are empty/false simultaneously —
@@ -50,6 +57,18 @@ export const AssessmentSchema = z.object({
       code: z.ZodIssueCode.custom,
       message: ERROR_MESSAGES.obat,
       path: ['obat'],
+    });
+  }
+
+  if (
+    data.keluarga.length === 0 &&
+    !data.tidakAdaKeluarga &&
+    data.catatanKeluarga.trim().length === 0
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: ERROR_MESSAGES.keluarga,
+      path: ['keluarga'],
     });
   }
 });
