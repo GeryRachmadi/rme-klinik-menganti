@@ -2,6 +2,8 @@ import type {
   RingkasanData,
   EpisodicData,
 } from "@/lib/mappers/medical-records-mapper";
+import { formatDoctorName } from "@/lib/utils/format-doctor-name";
+import MedicationDisplayCard from "./MedicationDisplayCard";
 
 const JAKARTA = { fontFamily: "var(--font-jakarta)" } as const;
 const MANROPE = { fontFamily: "var(--font-manrope)" } as const;
@@ -271,8 +273,12 @@ function InnerLabel({ children }: { children: React.ReactNode }) {
 function PerencanaanMedisCard({ episodic }: { episodic: EpisodicData | null }) {
   const medications = episodic?.medications ?? [];
   const anjuranText = episodic?.education ?? null;
+  const instruksiLab = episodic?.instruksiLab ?? null;
   const referral = episodic?.referral ?? null;
-  const doctor = episodic?.practitionerName ?? null;
+  const doctorRawName = episodic?.practitionerName ?? null;
+  const doctor = doctorRawName
+    ? formatDoctorName(doctorRawName, episodic?.practitionerSpeciality)
+    : null;
 
   return (
     <div className="bg-[rgba(225,227,228,0.5)] border border-[#bacac5] border-dashed rounded-[24px] p-[25px] flex flex-col gap-4">
@@ -284,17 +290,11 @@ function PerencanaanMedisCard({ episodic }: { episodic: EpisodicData | null }) {
       <div className="bg-white rounded-[24px] drop-shadow-[0px_1px_1px_rgba(0,0,0,0.05)] px-[20px] pt-[18.75px] pb-[20px] flex flex-col gap-4" style={JAKARTA}>
         <InnerLabel>Resep Obat</InnerLabel>
         {medications.length > 0 ? (
-          <ul className="list-disc pl-5 flex flex-col gap-1">
+          <div className="flex flex-col gap-3">
             {medications.map((m, i) => (
-              <li
-                key={`${m.name}-${i}`}
-                className="text-[#475569] text-[14px] leading-[22.75px]"
-              >
-                {m.name || "Obat"}
-                {m.dosage ? ` — ${m.dosage}` : ""}
-              </li>
+              <MedicationDisplayCard key={i} item={m} />
             ))}
-          </ul>
+          </div>
         ) : (
           <p className="italic text-[#94a3b8] text-[14px]">
             Tidak ada resep obat tercatat.
@@ -312,6 +312,20 @@ function PerencanaanMedisCard({ episodic }: { episodic: EpisodicData | null }) {
         ) : (
           <p className="italic text-[#94a3b8] text-[14px]">
             Tidak ada anjuran tercatat.
+          </p>
+        )}
+      </div>
+
+      {/* INNER CARD — Instruksi Lab / Penunjang Medis Eksternal (always show) */}
+      <div className="bg-white rounded-[24px] drop-shadow-[0px_1px_1px_rgba(0,0,0,0.05)] px-[20px] pt-[18.75px] pb-[20px] flex flex-col gap-4" style={JAKARTA}>
+        <InnerLabel>Instruksi Lab</InnerLabel>
+        {instruksiLab ? (
+          <p className="text-[#475569] text-[14px] leading-[22.75px]">
+            {instruksiLab}
+          </p>
+        ) : (
+          <p className="italic text-[#94a3b8] text-[14px]">
+            Tidak ada instruksi lab tercatat.
           </p>
         )}
       </div>
@@ -344,7 +358,7 @@ function PerencanaanMedisCard({ episodic }: { episodic: EpisodicData | null }) {
         <div className="flex items-center gap-2" style={JAKARTA}>
           <div className="bg-[#D8E2FF] rounded-full w-6 h-6 flex items-center justify-center shrink-0">
             <span className="text-[#001A42] font-bold text-[10px] uppercase">
-              {getInitials(doctor)}
+              {getInitials(doctorRawName!)}
             </span>
           </div>
           <span className="text-[#94a3b8] font-bold text-[12px] uppercase tracking-wide">

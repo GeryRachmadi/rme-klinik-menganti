@@ -1,5 +1,6 @@
 import type { Patient } from "@/generated/prisma";
 import MulaiAsesmenButton from "./MulaiAsesmenButton";
+import CetakButton from "./CetakButton";
 import { formatDob } from "@/lib/utils/format-dob";
 
 export default function PatientHeader({
@@ -35,6 +36,13 @@ export default function PatientHeader({
   const canStartAssessment = ["ADMIN", "DOKTER", "PERAWAT"].includes(
     (userRole ?? "").toUpperCase()
   );
+
+  // "Cetak" is for clinicians/admin only, and only once a completed (SELESAI)
+  // encounter exists. latestDiagnosis is a reliable proxy: it is non-null only
+  // when the latest visit produced a diagnosis (i.e. an assessment finished).
+  const canPrint =
+    ["ADMIN", "DOKTER"].includes((userRole ?? "").toUpperCase()) &&
+    !!latestDiagnosis;
 
   return (
     <div className="col-span-12 bg-white rounded-3xl px-10 py-7 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -116,11 +124,16 @@ export default function PatientHeader({
       </div>
 
       {/* Right Section */}
-      {canStartAssessment && (
-        <MulaiAsesmenButton
-          patientId={patient.id}
-          patientName={patient.namaLengkap}
-        />
+      {(canStartAssessment || canPrint) && (
+        <div className="flex items-center gap-3 shrink-0">
+          {canPrint && <CetakButton />}
+          {canStartAssessment && (
+            <MulaiAsesmenButton
+              patientId={patient.id}
+              patientName={patient.namaLengkap}
+            />
+          )}
+        </div>
       )}
     </div>
   );

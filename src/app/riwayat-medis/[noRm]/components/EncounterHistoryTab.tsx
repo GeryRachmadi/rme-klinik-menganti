@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { TimelineEncounter } from '@/lib/mappers/medical-records-mapper';
 import { ChevronDown, FileX } from 'lucide-react';
+import { formatDoctorName } from '@/lib/utils/format-doctor-name';
 import EmptyTabState from './EmptyTabState';
+import MedicationDisplayCard from './MedicationDisplayCard';
 
 // Project tokens: Manrope role → Poppins (headings), Inter role → Jakarta (body).
 const POPPINS = { fontFamily: 'var(--font-poppins)' } as const;
@@ -201,6 +203,52 @@ function DiagnosaUtama({ encounter }: { encounter: TimelineEncounter }) {
   );
 }
 
+// ── ASESMEN KEPERAWATAN (SDKI) — nurse's clinical judgment, per-visit ──
+function AsesmenKeperawatan({
+  nursingAssessment,
+}: {
+  nursingAssessment: TimelineEncounter['nursingAssessment'];
+}) {
+  if (!nursingAssessment || (nursingAssessment.diagnoses.length === 0 && !nursingAssessment.catatan)) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <SectionLabel>Asesmen Keperawatan</SectionLabel>
+      <div className="bg-[#f0fdfa] border border-[#99f6e4] rounded-[13px] p-[24px] flex flex-col gap-3">
+        <p
+          className="font-extrabold text-[11px] text-[#0d9488] uppercase tracking-wide"
+          style={POPPINS}
+        >
+          Diagnosis Keperawatan
+        </p>
+        {nursingAssessment.diagnoses.length > 0 ? (
+          <div className="flex flex-col gap-1.5">
+            {nursingAssessment.diagnoses.map((d, i) => (
+              <p
+                key={`${d.code}-${i}`}
+                className="font-bold text-[16px] text-[#0f766e]"
+                style={JAKARTA}
+              >
+                {formatCoded(d.code === 'MANUAL' ? null : d.code, d.display, 'Diagnosis')}
+              </p>
+            ))}
+          </div>
+        ) : (
+          <EmptyText>Tidak ada diagnosis keperawatan tercatat</EmptyText>
+        )}
+        {nursingAssessment.catatan && (
+          <p className="text-[13px] pt-1" style={JAKARTA}>
+            <span className="font-bold text-[#334155]">Catatan:</span>{' '}
+            <span className="font-normal text-[#475569]">{nursingAssessment.catatan}</span>
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── TINDAKAN ──
 function Tindakan({ procedures }: { procedures: TimelineEncounter['procedures'] }) {
   const primary = procedures[0] ?? null;
@@ -250,8 +298,9 @@ function Tindakan({ procedures }: { procedures: TimelineEncounter['procedures'] 
 function PerencanaanMedis({ encounter }: { encounter: TimelineEncounter }) {
   const medications = encounter.medications;
   const education = encounter.education;
+  const instruksiLab = encounter.instruksiLab;
 
-  if (medications.length === 0 && !education) return null;
+  if (medications.length === 0 && !education && !instruksiLab) return null;
 
   return (
     <div className="flex flex-col gap-3">
@@ -265,18 +314,11 @@ function PerencanaanMedis({ encounter }: { encounter: TimelineEncounter }) {
           >
             Resep Obat
           </p>
-          <ul className="list-disc ms-5 flex flex-col gap-1">
+          <div className="flex flex-col gap-3">
             {medications.map((m, i) => (
-              <li
-                key={`${m.name}-${i}`}
-                className="font-bold text-[17px] text-[#334155] leading-[26px]"
-                style={JAKARTA}
-              >
-                {m.name || 'Obat'}
-                {m.dosage ? ` — ${m.dosage}` : ''}
-              </li>
+              <MedicationDisplayCard key={i} item={m} />
             ))}
-          </ul>
+          </div>
         </div>
       )}
 
@@ -290,6 +332,20 @@ function PerencanaanMedis({ encounter }: { encounter: TimelineEncounter }) {
           </p>
           <p className="italic font-bold text-[17px] text-[#334155] leading-[26px]" style={JAKARTA}>
             &ldquo;{education}&rdquo;
+          </p>
+        </div>
+      )}
+
+      {instruksiLab && (
+        <div className="bg-[#f3f4f5] border border-dashed border-[#999] rounded-[13px] p-[23px] flex flex-col gap-2">
+          <p
+            className="font-extrabold text-[11px] text-[#94a3b8] uppercase tracking-wide"
+            style={POPPINS}
+          >
+            Instruksi Lab
+          </p>
+          <p className="font-bold text-[17px] text-[#334155] leading-[26px]" style={JAKARTA}>
+            {instruksiLab}
           </p>
         </div>
       )}
@@ -381,7 +437,9 @@ export function EncounterCard({
                 {encounter.poli}
               </span>
               <span className="font-medium text-[13px] text-[#3c4a46] truncate" style={JAKARTA}>
-                {encounter.practitionerName || 'Dokter Tidak Diketahui'} &mdash; {time} WIB
+                {encounter.practitionerName
+                  ? formatDoctorName(encounter.practitionerName, encounter.practitionerSpeciality)
+                  : 'Dokter Tidak Diketahui'} &mdash; {time} WIB
               </span>
             </div>
           </div>
@@ -441,6 +499,9 @@ export function EncounterCard({
 
                 {/* DIAGNOSA UTAMA */}
                 <DiagnosaUtama encounter={encounter} />
+
+                {/* ASESMEN KEPERAWATAN (SDKI) */}
+                <AsesmenKeperawatan nursingAssessment={encounter.nursingAssessment} />
 
                 {/* TINDAKAN */}
                 <Tindakan procedures={encounter.procedures} />

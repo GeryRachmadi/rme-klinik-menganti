@@ -34,3 +34,32 @@ input::-webkit-credentials-auto-fill-button {
   visibility: hidden;
   pointer-events: none;
 }
+
+/* ── Print layout (Cetak — Kunjungan Terakhir) ──────────────────────────────
+   PrintableDocument is portaled onto <body> with the `print-root` class, so it
+   is a top-level sibling of the app shell. Hiding every OTHER body child with
+   display:none (not visibility:hidden) removes their box height entirely, so
+   the printout is a single clean document with no trailing blank pages. */
+@media print {
+  /* Hide the ENTIRE app shell in one rule. PrintableDocument is portaled onto
+     <body> as `.print-root`, so the DashboardLayout wrapper (navbar, sidebar,
+     <main> → tabs, action buttons, Dx/Tx chips, every tab panel) is just a
+     sibling we remove outright. display:none (not visibility:hidden) also drops
+     box height, so there are no trailing blank pages. */
+  body > *:not(.print-root) {
+    display: none !important;
+  }
+
+  /* Honour card background colours in the printout (browsers strip them by
+     default). */
+  .print-root,
+  .print-root * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 15mm;
+  }
+}

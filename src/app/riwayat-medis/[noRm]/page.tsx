@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import Breadcrumb from "@/components/shared/Breadcrumb";
 import PatientHistoryTabs from "@/components/shared/PatientHistoryTabs";
 import PatientHeader from "./components/PatientHeader";
+import PrintableDocument from "./components/PrintableDocument";
 import { auth } from "@/lib/auth";
 import { mapPatientMedicalRecords, mapRingkasanData, mapEncounterTimeline } from "@/lib/mappers/medical-records-mapper";
 
@@ -52,9 +53,14 @@ export default async function RiwayatMedisPage({
   const latestDiagnosis = ringkasanData.episodic?.diagnoses?.[0]
     ? `${ringkasanData.episodic.diagnoses[0].code} — ${ringkasanData.episodic.diagnoses[0].display}`
     : null;
+  const firstMedication = ringkasanData.episodic?.medications?.[0] ?? null;
   const latestTreatment =
     ringkasanData.episodic?.procedures?.[0]?.display ??
-    ringkasanData.episodic?.medications?.[0]?.name ??
+    (firstMedication
+      ? firstMedication.type === "racikan"
+        ? firstMedication.namaRacikan
+        : firstMedication.namaObat
+      : null) ??
     null;
 
   // Components only need demographic scalars — strip the included clinical
@@ -77,6 +83,8 @@ export default async function RiwayatMedisPage({
         allergyNoteDate: mappedData.allergyNoteDate,
         medicationNote: mappedData.medicationNote,
         medicationNoteDate: mappedData.medicationNoteDate,
+        familyHistory: mappedData.familyHistory,
+        familyHistoryDate: mappedData.familyHistoryDate,
         ringkasan: ringkasanData,
       };
 
@@ -105,6 +113,13 @@ export default async function RiwayatMedisPage({
         userRole={userRole}
         {...clinicalProps}
       />
+
+      {/* Print-only document (portaled to <body>, shown via @media print).
+          Gated identically to the Cetak button: clinicians/admin + a completed
+          visit (latestDiagnosis non-null). */}
+      {!isPendaftaran && latestDiagnosis && (
+        <PrintableDocument patient={patientDemographic} data={ringkasanData} />
+      )}
 
     </div>
   );
