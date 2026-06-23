@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import QueueFilterDropdown from "./QueueFilterDropdown";
+import { formatJenisKelamin } from "@/lib/utils/format-gender";
 
 interface QueuePatient {
   namaLengkap: string;
@@ -57,10 +58,6 @@ const ACTION_LABEL: Record<Variant, string> = {
   dokter:      "Periksa",
 };
 
-const genderLabel: Record<string, string> = {
-  LAKI_LAKI: "Laki-laki",
-  PEREMPUAN: "Perempuan",
-};
 
 function formatWIB(date: Date): string {
   const d = new Date(date.getTime() + 7 * 60 * 60 * 1000);
@@ -236,7 +233,7 @@ export default function DashboardQueueTable({
               };
               const age    = enc.patient.tanggalLahir ? calcAge(enc.patient.tanggalLahir) : null;
               const gender = enc.patient.jenisKelamin
-                ? (genderLabel[enc.patient.jenisKelamin] ?? enc.patient.jenisKelamin)
+                ? formatJenisKelamin(enc.patient.jenisKelamin)
                 : null;
 
               return (

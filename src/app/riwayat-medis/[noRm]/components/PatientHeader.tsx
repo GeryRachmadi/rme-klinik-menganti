@@ -2,6 +2,7 @@ import type { Patient } from "@/generated/prisma";
 import MulaiAsesmenButton from "./MulaiAsesmenButton";
 import CetakButton from "./CetakButton";
 import { formatDob } from "@/lib/utils/format-dob";
+import { formatJenisKelamin } from "@/lib/utils/format-gender";
 
 export default function PatientHeader({
   patient,
@@ -20,7 +21,7 @@ export default function PatientHeader({
   const m = today.getMonth() - dob.getMonth();
   if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
 
-  const genderLabel = patient.jenisKelamin === "LAKI_LAKI" ? "Laki-laki" : "Perempuan";
+  const genderLabel = formatJenisKelamin(patient.jenisKelamin);
   const genderColor = patient.jenisKelamin === "LAKI_LAKI"
     ? "bg-blue-100 text-blue-700"
     : "bg-pink-100 text-pink-700";

@@ -1,5 +1,6 @@
 import { CreditCard, HeartPulse, MapPin, Phone, User } from "lucide-react";
 import type { Patient } from "@/generated/prisma";
+import { formatJenisKelamin } from "@/lib/utils/format-gender";
 
 // --- Helper Components & Functions ---
 function DetailRow({ label, value }: { label: string; value: string | null | undefined }) {
@@ -42,7 +43,6 @@ function calcAge(dob: Date | string): number {
   return age;
 }
 
-function genderLabel(g: string) { return g === "LAKI_LAKI" ? "Laki-laki" : "Perempuan"; }
 function maritalLabel(s: string) {
   const map: Record<string, string> = { BELUM_MENIKAH: "Belum Menikah", MENIKAH: "Menikah", CERAI_HIDUP: "Cerai Hidup", CERAI_MATI: "Cerai Mati" };
   return map[s] ?? s;
@@ -59,7 +59,7 @@ export default function PatientProfileTabContent({ patient }: { patient: Patient
       <Section title="Identitas Pasien" icon={<User size={18} strokeWidth={2} />}>
         <DetailRow label="NIK"               value={patient.nik} />
         <DetailRow label="IHS"               value={patient.ihs} />
-        <DetailRow label="Jenis Kelamin"     value={genderLabel(patient.jenisKelamin)} />
+        <DetailRow label="Jenis Kelamin"     value={formatJenisKelamin(patient.jenisKelamin)} />
         <DetailRow label="Tempat Lahir"      value={patient.tempatLahir} />
         <DetailRow label="Tanggal Lahir"     value={`${formatDate(patient.tanggalLahir)} (${calcAge(patient.tanggalLahir)} tahun)`} />
         <DetailRow label="Agama"             value={agamaLabel(patient.agama)} />

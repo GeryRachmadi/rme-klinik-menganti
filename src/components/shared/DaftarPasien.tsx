@@ -18,6 +18,7 @@ import PatientEditDrawer from "@/components/shared/PatientEditDrawer";
 import PatientDeleteModal from "@/components/shared/PatientDeleteModal";
 import type { ApiResponse, PaginatedData } from "@/types/api";
 import { formatDob } from "@/lib/utils/format-dob";
+import { formatJenisKelamin } from "@/lib/utils/format-gender";
 
 function calcAge(dob: Date): number {
   const today = new Date();
@@ -285,7 +286,7 @@ export default function DaftarPasien() {
                       className="text-xs text-gray-400 mt-0.5"
                       style={{ fontFamily: "var(--font-jakarta)" }}
                     >
-                      {patient.jenisKelamin} • {calcAge(new Date(patient.tanggalLahir))} thn
+                      {formatJenisKelamin(patient.jenisKelamin)} • {calcAge(new Date(patient.tanggalLahir))} thn
                     </p>
                   </td>
 
