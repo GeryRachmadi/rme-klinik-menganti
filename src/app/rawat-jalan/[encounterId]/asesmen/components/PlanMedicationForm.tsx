@@ -1,12 +1,42 @@
 'use client';
 
-import React, { useEffect, forwardRef, useImperativeHandle } from 'react';
-import { useForm } from 'react-hook-form';
+import React, { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Plus, FlaskConical } from 'lucide-react';
 import { MedicationFormSchema, type MedicationFormValues } from '@/lib/schemas/plan-schema';
 import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft';
+import RacikanItemRow from './RacikanItemRow';
+import NonRacikanItemRow from './NonRacikanItemRow';
+
+const JAKARTA = '"Plus Jakarta Sans", sans-serif';
 
 const getMedicationDraftKey = (encounterId: string) => `draft_medication_${encounterId}`;
+
+// Empty non-racikan row matching NonRacikanItemSchema's shape. jumlah starts at
+// 1 so the number input shows a sensible default; all text fields start blank
+// (mandatory).
+const emptyNonRacikanItem = () => ({
+  namaObat: '',
+  dosis: '',
+  jumlah: 1,
+  bentukSediaan: '',
+  aturanPakai: '',
+  waktuKonsumsi: '',
+});
+
+// Empty racikan container matching RacikanContainerSchema's shape. jumlah starts
+// at 1 so the number input shows a sensible default; all text fields start blank
+// (mandatory). Starts with one empty ingredient since a container needs at least
+// one (Item 13 rebuild, Option A container/ingredient restructure).
+const emptyRacikanItem = () => ({
+  namaRacikan: '',
+  bentukSediaan: '',
+  jumlah: 1,
+  aturanPakai: '',
+  waktuKonsumsi: '',
+  ingredients: [{ namaObat: '', dosis: '' }],
+});
 
 export interface PlanMedicationFormRef {
   submitForm: () => Promise<MedicationFormValues | null>;
@@ -17,10 +47,12 @@ export interface PlanMedicationFormRef {
 interface PlanMedicationFormProps {
   encounterId: string;
   isReadOnly?: boolean;
-  defaultValues?: { medicationText?: string };
+  defaultValues?: { nonRacikanItems?: MedicationFormValues['nonRacikanItems']; racikanItems?: MedicationFormValues['racikanItems'] };
   /** Validation error surfaced from the central PlanFormSchema (Resep is mandatory). */
   externalError?: string | null;
 }
+
+type MedicationTab = 'non-racikan' | 'racikan';
 
 const PlanMedicationForm = forwardRef<PlanMedicationFormRef, PlanMedicationFormProps>(({
   encounterId,
@@ -29,14 +61,19 @@ const PlanMedicationForm = forwardRef<PlanMedicationFormRef, PlanMedicationFormP
   externalError,
 }, ref) => {
   const draftKey = getMedicationDraftKey(encounterId);
+  const [activeTab, setActiveTab] = useState<MedicationTab>('non-racikan');
 
-  const { register, watch, reset, trigger, getValues, formState: { isDirty } } = useForm<MedicationFormValues>({
+  const { control, watch, reset, trigger, getValues, formState: { isDirty } } = useForm<MedicationFormValues>({
     resolver: zodResolver(MedicationFormSchema),
     mode: 'onChange',
     defaultValues: {
-      medicationText: defaultValues?.medicationText ?? '',
+      nonRacikanItems: defaultValues?.nonRacikanItems ?? [],
+      racikanItems: defaultValues?.racikanItems ?? [],
     },
   });
+
+  const { fields: nonRacikanFields, append: appendNonRacikan, remove: removeNonRacikan } = useFieldArray({ control, name: 'nonRacikanItems' });
+  const { fields: racikanFields, append: appendRacikan, remove: removeRacikan } = useFieldArray({ control, name: 'racikanItems' });
 
   useEffect(() => {
     if (isReadOnly) return;
@@ -54,10 +91,12 @@ const PlanMedicationForm = forwardRef<PlanMedicationFormRef, PlanMedicationFormP
     submitForm: async () => {
       const isValid = await trigger();
       if (!isValid) return null;
+      // Always return BOTH panels' data regardless of the active tab — content in
+      // the inactive panel is preserved (Item 13).
       return getValues();
     },
     resetForm: () => {
-      reset({ medicationText: '' });
+      reset({ nonRacikanItems: [], racikanItems: [] });
     },
     getValues: () => getValues(),
   }));
@@ -67,24 +106,114 @@ const PlanMedicationForm = forwardRef<PlanMedicationFormRef, PlanMedicationFormP
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-3">
         <h3
           className="text-sm font-bold text-[#0F766E] uppercase tracking-wider"
-          style={{ WebkitTextStroke: '0.2px #0F766E', fontFamily: '"Plus Jakarta Sans", sans-serif' }}
+          style={{ WebkitTextStroke: '0.2px #0F766E', fontFamily: JAKARTA }}
         >
           Resep Obat
           <span className="text-red-500 ml-1" style={{ WebkitTextStroke: '0' }}>*</span>
         </h3>
-        <textarea
-          {...register('medicationText')}
-          placeholder="Contoh: Paracetamol 500mg, 3x1 sehari, 7 hari"
-          rows={3}
-          disabled={isReadOnly}
-          className={`w-full border rounded-xl p-4 text-sm font-sans resize-y focus:outline-none focus:ring-1 min-h-[80px] transition-colors placeholder-gray-400 ${externalError ? 'border-red-500 focus:ring-red-500' : 'focus:ring-[#0F766E] focus:border-[#0F766E] border-gray-200'} ${isReadOnly ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800'}`}
-          style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
-        />
-        {externalError && <p className="text-red-500 text-[13px] mt-1.5">{externalError}</p>}
+
+        {/* Tab switcher (Figma 880:1769) — both panels keep their data simultaneously */}
+        <div className="inline-flex self-start gap-1 bg-[#e2e8f0] rounded-xl" style={{ padding: '5.153px' }}>
+          {([
+            { key: 'non-racikan', label: 'Non-Racikan' },
+            { key: 'racikan', label: 'Racikan' },
+          ] as const).map((tab) => {
+            const active = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-5 py-1.5 rounded-lg text-sm transition-all ${
+                  active
+                    ? 'bg-white text-[#0F766E] shadow-sm'
+                    : 'bg-transparent text-gray-500 hover:text-gray-700'
+                }`}
+                style={{ fontFamily: JAKARTA, fontWeight: active ? 700 : 500 }}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
+
+      {/* Non-Racikan panel — structured repeatable rows */}
+      {activeTab === 'non-racikan' && (
+        <div className="flex flex-col gap-3">
+          {nonRacikanFields.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-8 border border-dashed border-gray-200 rounded-xl text-center">
+              <FlaskConical size={28} className="text-gray-300" strokeWidth={1.5} />
+              <p className="text-sm text-gray-400" style={{ fontFamily: JAKARTA, fontWeight: 500 }}>
+                Belum ada obat non-racikan. Tambahkan obat di bawah.
+              </p>
+            </div>
+          ) : (
+            nonRacikanFields.map((field, index) => (
+              <NonRacikanItemRow
+                key={field.id}
+                index={index}
+                control={control}
+                onRemove={() => removeNonRacikan(index)}
+                isReadOnly={isReadOnly}
+              />
+            ))
+          )}
+
+          {!isReadOnly && (
+            <button
+              type="button"
+              onClick={() => appendNonRacikan(emptyNonRacikanItem())}
+              className="inline-flex self-start items-center gap-2 px-4 py-2 rounded-full border border-[#0F766E] text-[#0F766E] text-sm hover:bg-[#E6F5F4] transition-colors cursor-pointer"
+              style={{ fontFamily: JAKARTA, fontWeight: 700 }}
+            >
+              <Plus size={16} strokeWidth={2.5} />
+              Tambah Obat
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Racikan panel — structured repeatable rows */}
+      {activeTab === 'racikan' && (
+        <div className="flex flex-col gap-3">
+          {racikanFields.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-8 border border-dashed border-gray-200 rounded-xl text-center">
+              <FlaskConical size={28} className="text-gray-300" strokeWidth={1.5} />
+              <p className="text-sm text-gray-400" style={{ fontFamily: JAKARTA, fontWeight: 500 }}>
+                Belum ada obat racikan. Tambahkan komponen racikan di bawah.
+              </p>
+            </div>
+          ) : (
+            racikanFields.map((field, index) => (
+              <RacikanItemRow
+                key={field.id}
+                index={index}
+                control={control}
+                onRemove={() => removeRacikan(index)}
+                isReadOnly={isReadOnly}
+              />
+            ))
+          )}
+
+          {!isReadOnly && (
+            <button
+              type="button"
+              onClick={() => appendRacikan(emptyRacikanItem())}
+              className="inline-flex self-start items-center gap-2 px-4 py-2 rounded-full border border-[#0F766E] text-[#0F766E] text-sm hover:bg-[#E6F5F4] transition-colors cursor-pointer"
+              style={{ fontFamily: JAKARTA, fontWeight: 700 }}
+            >
+              <Plus size={16} strokeWidth={2.5} />
+              Tambah Obat
+            </button>
+          )}
+        </div>
+      )}
+
+      {externalError && <p className="text-red-500 text-[13px] mt-1">{externalError}</p>}
     </div>
   );
 });
