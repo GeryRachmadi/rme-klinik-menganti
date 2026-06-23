@@ -11,12 +11,14 @@ import {
   Search,
   Ticket,
   User,
+  UserCheck,
   UserX,
   X,
 } from "lucide-react";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import PatientRegistrationDrawer from "@/components/shared/PatientRegistrationDrawer";
 import { usePatientSearch } from "@/hooks/usePatientSearch";
+import { formatDoctorName } from "@/lib/utils/format-doctor-name";
 import { encounterRegistrationSchema, type EncounterRegistrationFormData } from "@/lib/validations/encounter";
 
 interface EncounterRegistrationDrawerProps {
@@ -24,6 +26,16 @@ interface EncounterRegistrationDrawerProps {
   onClose: () => void;
   onEncounterCreated?: () => Promise<void>;
 }
+
+// Practitioner.speciality is free-text ("Umum", "Poli Gigi") while policyType emits
+// enum values ("UMUM", "GIGI"). This map normalizes speciality → poli for the
+// Item-15 Poli→Dokter dependency filter. Case-insensitive; trim before lookup.
+const SPECIALITY_POLI_MAP: Record<string, string> = {
+  umum: "UMUM",
+  "poli umum": "UMUM",
+  gigi: "GIGI",
+  "poli gigi": "GIGI",
+};
 
 function PatientSummaryCard({ variant, patient }: { variant: "success" | "disabled"; patient: any }) {
   if (!patient) return null;
@@ -86,6 +98,8 @@ export default function EncounterRegistrationDrawer({
   const [rendered, setRendered] = useState(false);
   const [practitioners, setPractitioners] = useState<any[]>([]);
   const [isLoadingDoctors, setIsLoadingDoctors] = useState(false);
+  const [nurses, setNurses] = useState<any[]>([]);
+  const [isLoadingNurses, setIsLoadingNurses] = useState(false);
   const [isPatientDrawerOpen, setIsPatientDrawerOpen] = useState(false);
   const [successQueueNumber, setSuccessQueueNumber] = useState<string | null>(null);
   const [toast, setToast] = useState<{
@@ -112,6 +126,8 @@ export default function EncounterRegistrationDrawer({
     handleSubmit,
     formState: { errors, isSubmitting, isValid },
     reset,
+    watch,
+    setValue,
   } = useForm<EncounterRegistrationFormData>({
     resolver: zodResolver(encounterRegistrationSchema),
     mode: "onChange",
@@ -119,10 +135,21 @@ export default function EncounterRegistrationDrawer({
       patientType: "UMUM",
       reasonCode: "",
       practitionerId: "",
+      perawatId: "",
       priority: undefined,
       policyType: undefined,
     },
   });
+
+  // Item 15 — watch selected poli to drive the Dokter dependency filter
+  const selectedPoli = watch("policyType");
+  const filteredDoctors = selectedPoli
+    ? practitioners.filter(
+        (p) =>
+          SPECIALITY_POLI_MAP[p.speciality?.toLowerCase().trim() ?? ""] ===
+          selectedPoli
+      )
+    : practitioners;
 
   // Drawer mount/unmount animation
   useEffect(() => {
@@ -138,7 +165,7 @@ export default function EncounterRegistrationDrawer({
   useEffect(() => {
     if (!isOpen) return;
     setIsLoadingDoctors(true);
-    fetch("/api/accounts?role=DOKTER")
+    fetch("/api/accounts?role=DOKTER&limit=100")
       .then((res) => res.json())
       .then((json) => {
         const list = json.data?.accounts || json.data || json.accounts || (Array.isArray(json) ? json : []);
@@ -149,6 +176,28 @@ export default function EncounterRegistrationDrawer({
       .catch(() => {})
       .finally(() => setIsLoadingDoctors(false));
   }, [isOpen]);
+
+  // Fetch nurses when drawer opens (Item 17)
+  useEffect(() => {
+    if (!isOpen) return;
+    setIsLoadingNurses(true);
+    fetch("/api/accounts?role=PERAWAT&limit=100")
+      .then((res) => res.json())
+      .then((json) => {
+        const list = json.data?.accounts || json.data || json.accounts || (Array.isArray(json) ? json : []);
+        if (Array.isArray(list)) {
+          setNurses(list.filter((a: any) => a.practitioner).map((a: any) => a.practitioner));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setIsLoadingNurses(false));
+  }, [isOpen]);
+
+  // Item 15 — clear the selected doctor when poli changes so a doctor from a
+  // different poli is never silently submitted.
+  useEffect(() => {
+    setValue("practitionerId", "");
+  }, [selectedPoli, setValue]);
 
   // Reset all state when drawer closes
   useEffect(() => {
@@ -188,6 +237,7 @@ export default function EncounterRegistrationDrawer({
           patientType:    data.patientType,
           reasonCode:     data.reasonCode || null,
           practitionerId: data.practitionerId,
+          perawatId:      data.perawatId,
         }),
       });
       const json = await res.json();
@@ -594,18 +644,20 @@ export default function EncounterRegistrationDrawer({
                             />
                             <select
                               {...field}
-                              disabled={isLoadingDoctors}
+                              disabled={isLoadingDoctors || !selectedPoli}
                               className={`${inputBase} pl-10 appearance-none cursor-pointer ${errors.practitionerId ? "border-red-500" : "border-gray-200 focus:border-[#2BB5A0]"}`}
                             >
                               <option value="" disabled>
                                 {isLoadingDoctors
                                   ? "Memuat dokter…"
-                                  : practitioners.length === 0
-                                    ? "Tidak ada dokter tersedia"
-                                    : "Pilih Dokter…"}
+                                  : !selectedPoli
+                                    ? "Pilih poli terlebih dahulu…"
+                                    : filteredDoctors.length === 0
+                                      ? "Tidak ada dokter tersedia"
+                                      : "Pilih Dokter…"}
                               </option>
-                              {practitioners.map((p) => (
-                                <option key={p.id} value={p.id}>{p.name}</option>
+                              {filteredDoctors.map((p) => (
+                                <option key={p.id} value={p.id}>{formatDoctorName(p.name, p.speciality)}</option>
                               ))}
                             </select>
                             <ChevronDown
@@ -615,6 +667,50 @@ export default function EncounterRegistrationDrawer({
                             />
                           </div>
                           {errors.practitionerId && <p className="text-red-500 text-xs mt-1">{errors.practitionerId.message}</p>}
+                        </>
+                      )}
+                    />
+                  </div>
+
+                  {/* Perawat */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                      Perawat <span className="text-red-500">*</span>
+                    </label>
+                    <Controller
+                      name="perawatId"
+                      control={control}
+                      render={({ field }) => (
+                        <>
+                          <div className="relative">
+                            <UserCheck
+                              size={15}
+                              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 z-10"
+                              strokeWidth={2}
+                            />
+                            <select
+                              {...field}
+                              disabled={isLoadingNurses}
+                              className={`${inputBase} pl-10 appearance-none cursor-pointer ${errors.perawatId ? "border-red-500" : "border-gray-200 focus:border-[#2BB5A0]"}`}
+                            >
+                              <option value="" disabled>
+                                {isLoadingNurses
+                                  ? "Memuat perawat…"
+                                  : nurses.length === 0
+                                    ? "Tidak ada perawat tersedia"
+                                    : "Pilih Perawat…"}
+                              </option>
+                              {nurses.map((p) => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                              ))}
+                            </select>
+                            <ChevronDown
+                              size={15}
+                              strokeWidth={2}
+                              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                            />
+                          </div>
+                          {errors.perawatId && <p className="text-red-500 text-xs mt-1">{errors.perawatId.message}</p>}
                         </>
                       )}
                     />

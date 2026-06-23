@@ -35,6 +35,7 @@ interface AntreanData {
   jenisPasien: JenisPasien;
   poli: string;
   dokter: string;
+  perawat: string;
   prioritas: string;
   status: string;
   syncStatus?: string;
@@ -390,7 +391,8 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
                 {[
                   { label: "NO. ANTREAN",   width: "w-[10%]", align: "text-left"   },
                   { label: "PASIEN",        width: "w-[21%]", align: "text-left"   },
-                  { label: "POLI & DOKTER", width: "w-[15%]", align: "text-left"   },
+                  { label: "POLI & DOKTER", width: "w-[12%]", align: "text-left"   },
+                  { label: "PERAWAT",       width: "w-[13%]", align: "text-left"   },
                   { label: "PRIORITAS",     width: "w-[11%]", align: "text-center"  },
                   { label: "STATUS",        width: "w-[12%]", align: "text-center"  },
                   ...((canAssess || isAuthorized) ? [{ label: "ASESMEN", width: "w-[23%]", align: "text-center" }] : []),
@@ -408,7 +410,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={5 + ((canAssess || isAuthorized) ? 1 : 0) + (isAuthorized ? 1 : 0)} className="py-16 text-center">
+                  <td colSpan={6 + ((canAssess || isAuthorized) ? 1 : 0) + (isAuthorized ? 1 : 0)} className="py-16 text-center">
                     <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
                       <Loader2 size={16} className="animate-spin" /> Memuat data…
                     </div>
@@ -416,7 +418,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
                 </tr>
               ) : filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan={5 + ((canAssess || isAuthorized) ? 1 : 0) + (isAuthorized ? 1 : 0)} className="py-16 text-center">
+                  <td colSpan={6 + ((canAssess || isAuthorized) ? 1 : 0) + (isAuthorized ? 1 : 0)} className="py-16 text-center">
                     <p className="text-sm text-gray-400">
                       Tidak ada antrean yang ditemukan.
                     </p>
@@ -462,6 +464,10 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
                     <td className="py-4 px-2 align-top">
                       <p className="text-sm font-bold text-gray-800">{row.poli}</p>
                       <p className="text-xs text-gray-400 mt-0.5">{row.dokter}</p>
+                    </td>
+
+                    <td className="py-4 px-2 align-top">
+                      <p className="text-sm text-gray-600">{row.perawat ?? "-"}</p>
                     </td>
 
                     <td className="py-4 px-2 align-top text-center">

@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ChevronDown, CheckCircle2, Loader2, User, X } from "lucide-react";
 import { SectionTitle } from "@/components/ui/SectionTitle";
+import { formatDoctorName } from "@/lib/utils/format-doctor-name";
 
 const encounterEditSchema = z.object({
   priority: z.enum(["STABIL", "CUKUP_BERISIKO", "BERISIKO", "BERISIKO_TINGGI"], {
@@ -342,7 +343,7 @@ export default function EncounterEditDrawer({
                             </option>
                             {practitioners.map((p) => (
                               <option key={p.id} value={p.id}>
-                                {p.name}
+                                {formatDoctorName(p.name, p.speciality)}
                               </option>
                             ))}
                           </select>

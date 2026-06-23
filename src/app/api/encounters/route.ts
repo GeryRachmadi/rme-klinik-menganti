@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma";
 import { generateQueueNumber, type PolicyType } from "@/lib/queue-utils";
 import { writeActivityLog } from "@/lib/activity-log";
+import { formatDoctorName } from "@/lib/utils/format-doctor-name";
 
 function formatTitleCase(str: string): string {
   return str
@@ -50,6 +51,7 @@ export async function GET(req: Request) {
       include: {
         patient: true,
         practitioner: true,
+        perawat: { select: { name: true } },
       },
       orderBy: {
         periodStart: "desc",
@@ -78,7 +80,10 @@ export async function GET(req: Request) {
         noRm: enc.patient.noRm,
         jenisPasien: enc.patientType as "UMUM" | "BPJS",
         poli: enc.practitioner?.speciality ?? "-",
-        dokter: enc.practitioner?.name ?? "Belum ditentukan",
+        dokter: enc.practitioner?.name
+          ? formatDoctorName(enc.practitioner.name, enc.practitioner.speciality)
+          : "Belum ditentukan",
+        perawat: enc.perawat?.name ?? "-",
         prioritas: formatTitleCase(enc.priority),
         status: formatTitleCase(enc.status),
         syncStatus: enc.syncStatus,
@@ -129,12 +134,14 @@ export async function POST(req: Request) {
       reasonCode,
       patientType,
       practitionerId,
+      perawatId,
     } = body as Record<string, unknown>;
 
     // Validate that ALL required fields are present
     if (
       !patientId ||
       !practitionerId ||
+      !perawatId ||
       !policyType ||
       !priority ||
       !patientType ||
@@ -219,6 +226,7 @@ export async function POST(req: Request) {
           patientType: typeof patientType === "string" ? patientType : "UMUM",
           patientId,
           practitionerId: typeof practitionerId === "string" ? practitionerId : null,
+          perawatId: typeof perawatId === "string" ? perawatId : undefined,
           createdByAccountId: session.user.id,
         },
         select: {
@@ -258,7 +266,9 @@ export async function POST(req: Request) {
         const poli = newEncounter.practitioner.speciality
           ? ` (${newEncounter.practitioner.speciality})`
           : "";
-        logParts.push(`Ditugaskan ke ${newEncounter.practitioner.name}${poli}`);
+        logParts.push(
+          `Ditugaskan ke ${formatDoctorName(newEncounter.practitioner.name, newEncounter.practitioner.speciality)}${poli}`
+        );
       }
       writeActivityLog(
         session.user.id,

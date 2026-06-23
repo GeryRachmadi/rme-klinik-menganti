@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { writeActivityLog } from "@/lib/activity-log";
+import { formatDoctorName } from "@/lib/utils/format-doctor-name";
 
 export async function GET(
   _req: Request,
@@ -141,7 +142,7 @@ export async function PUT(
   ];
   if (encounter.practitioner) {
     const poli = encounter.practitioner.speciality ? ` (${encounter.practitioner.speciality})` : "";
-    putParts.push(`Ditugaskan ke ${encounter.practitioner.name}${poli}`);
+    putParts.push(`Ditugaskan ke ${formatDoctorName(encounter.practitioner.name, encounter.practitioner.speciality)}${poli}`);
   }
   writeActivityLog(
     session.user.id,
@@ -209,7 +210,7 @@ export async function DELETE(
   ];
   if (encounter.practitioner) {
     const poli = encounter.practitioner.speciality ? ` (${encounter.practitioner.speciality})` : "";
-    delParts.push(`Ditugaskan ke ${encounter.practitioner.name}${poli}`);
+    delParts.push(`Ditugaskan ke ${formatDoctorName(encounter.practitioner.name, encounter.practitioner.speciality)}${poli}`);
   }
   writeActivityLog(
     session.user.id,

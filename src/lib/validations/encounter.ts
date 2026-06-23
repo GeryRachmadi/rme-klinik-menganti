@@ -5,6 +5,7 @@ export const encounterRegistrationSchema = z.object({
     error: "Poli Tujuan wajib dipilih."
   }),
   practitionerId: z.string().min(1, "Dokter wajib dipilih."),
+  perawatId: z.string().min(1, "Perawat wajib dipilih."),
   priority: z.enum(["STABIL", "CUKUP_BERISIKO", "BERISIKO", "BERISIKO_TINGGI"], {
     error: "Prioritas wajib dipilih."
   }),
