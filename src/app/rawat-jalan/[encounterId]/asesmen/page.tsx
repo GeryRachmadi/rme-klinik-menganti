@@ -66,6 +66,19 @@ export default async function AsesmenPage({
     redirect("/rawat-jalan");
   }
 
+  // Item 17 data-isolation: a nurse may only open encounters explicitly
+  // assigned to them. ADMIN and DOKTER bypass this check. perawatId === null
+  // (unassigned) is correctly rejected by the strict !== comparison below.
+  if (userRole === "PERAWAT") {
+    const account = await prisma.account.findUnique({
+      where: { username: session.user?.username as string },
+      include: { practitioner: true },
+    });
+    if (encounter.perawatId !== account?.practitioner?.id) {
+      redirect("/");
+    }
+  }
+
   // CPPT history (Item 12) — past visit timeline for the auto-popup modal shown
   // to the doctor before assessing. mapEncounterTimeline filters to SELESAI/BATAL
   // only, so the current DIPERIKSA encounter is naturally excluded.

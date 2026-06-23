@@ -31,11 +31,17 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const role = searchParams.get("role")?.trim() ?? "";
 
-  // If requesting doctors specifically, just require basic authentication
-  // Otherwise, require full admin privileges
+  // If requesting doctors or nurses specifically, allow ADMIN and PENDAFTARAN
+  // to populate dropdowns (e.g. encounter registration). Otherwise, require
+  // full admin privileges.
   if (role === "DOKTER") {
     const session = await auth();
     if (!session) return errResponse("Akses ditolak: Tidak diizinkan.", 401);
+  } else if (role === "PERAWAT") {
+    const session = await auth();
+    if (!session || !["ADMIN", "PENDAFTARAN"].includes(session.user.role)) {
+      return errResponse("Akses ditolak: Tidak diizinkan.", 403);
+    }
   } else {
     const authResult = await requireAdminRole();
     if (!authResult.authorized) return errResponse(authResult.error, 403);
