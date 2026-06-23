@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { X, ChevronDown, CheckCircle2, AlertCircle, Loader2, Sparkles, PencilLine } from "lucide-react";
 import { SectionTitle } from "@/components/ui/SectionTitle";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
+import { INDONESIA_REGIONS } from "@/data/indonesia-regions";
 import {
   patientRegistrationSchema,
   type PatientRegistrationInput,
@@ -64,6 +66,8 @@ export default function PatientRegistrationDrawer({
     reset,
     setError,
     watch,
+    control,
+    setValue,
     formState: { errors, isValid },
   } = useForm<PatientRegistrationInput, any, PatientRegistrationOutput>({
     resolver: zodResolver(patientRegistrationSchema),
@@ -90,6 +94,22 @@ export default function PatientRegistrationDrawer({
       noHpWali: "",
     },
   });
+
+  // ── Item 16: cascading Provinsi → Kabupaten/Kota ──────────────────────────
+  const watchedProvinsi = watch("provinsi");
+  const kabupatenOptions = useMemo(
+    () => INDONESIA_REGIONS.find((r) => r.provinsi === watchedProvinsi)?.kabupaten ?? [],
+    [watchedProvinsi]
+  );
+  // Clear kabupatenKota only on a *user* province change — never on the first
+  // sync (register default "" / programmatic prefill), so existing values survive.
+  const prevProvinsi = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (prevProvinsi.current !== undefined && prevProvinsi.current !== watchedProvinsi) {
+      setValue("kabupatenKota", "");
+    }
+    prevProvinsi.current = watchedProvinsi;
+  }, [watchedProvinsi, setValue]);
 
   // Mount/unmount with slide animation; reset form and internal mode on each open
   useEffect(() => {
@@ -567,57 +587,39 @@ export default function PatientRegistrationDrawer({
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   Provinsi <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
-                  <select
-                    {...register("provinsi")}
-                    className={selCls(errors.provinsi)}
-                  >
-                    <option value="" disabled>
-                      Pilih provinsi...
-                    </option>
-                    <option value="Jawa Timur">Jawa Timur</option>
-                    <option value="Jawa Tengah">Jawa Tengah</option>
-                    <option value="Jawa Barat">Jawa Barat</option>
-                    <option value="DKI Jakarta">DKI Jakarta</option>
-                    <option value="DI Yogyakarta">DI Yogyakarta</option>
-                    <option value="Banten">Banten</option>
-                    <option value="Bali">Bali</option>
-                  </select>
-                  <ChevronDown
-                    size={15}
-                    strokeWidth={2}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                  />
-                </div>
+                <Controller
+                  name="provinsi"
+                  control={control}
+                  render={({ field }) => (
+                    <SearchableSelect
+                      options={INDONESIA_REGIONS.map((r) => r.provinsi)}
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                      placeholder="Pilih provinsi..."
+                      hasError={!!errors.provinsi}
+                    />
+                  )}
+                />
                 <FieldError message={errors.provinsi?.message} />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   Kabupaten / Kota <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
-                  <select
-                    {...register("kabupatenKota")}
-                    className={selCls(errors.kabupatenKota)}
-                  >
-                    <option value="" disabled>
-                      Pilih kab/kota...
-                    </option>
-                    <option value="Kabupaten Gresik">Kabupaten Gresik</option>
-                    <option value="Kota Surabaya">Kota Surabaya</option>
-                    <option value="Kabupaten Sidoarjo">
-                      Kabupaten Sidoarjo
-                    </option>
-                    <option value="Kabupaten Lamongan">
-                      Kabupaten Lamongan
-                    </option>
-                  </select>
-                  <ChevronDown
-                    size={15}
-                    strokeWidth={2}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                  />
-                </div>
+                <Controller
+                  name="kabupatenKota"
+                  control={control}
+                  render={({ field }) => (
+                    <SearchableSelect
+                      options={kabupatenOptions}
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                      placeholder="Pilih kabupaten/kota..."
+                      disabled={!watchedProvinsi}
+                      hasError={!!errors.kabupatenKota}
+                    />
+                  )}
+                />
                 <FieldError message={errors.kabupatenKota?.message} />
               </div>
             </div>
@@ -628,50 +630,26 @@ export default function PatientRegistrationDrawer({
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   Kecamatan <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
-                  <select
-                    {...register("kecamatan")}
-                    className={selCls(errors.kecamatan)}
-                  >
-                    <option value="" disabled>
-                      Pilih kecamatan...
-                    </option>
-                    <option value="Menganti">Menganti</option>
-                    <option value="Kedamean">Kedamean</option>
-                    <option value="Benjeng">Benjeng</option>
-                    <option value="Cerme">Cerme</option>
-                  </select>
-                  <ChevronDown
-                    size={15}
-                    strokeWidth={2}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                  />
-                </div>
+                <input
+                  {...register("kecamatan")}
+                  type="text"
+                  autoComplete="off"
+                  placeholder="Contoh: Menganti"
+                  className={cls(errors.kecamatan)}
+                />
                 <FieldError message={errors.kecamatan?.message} />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   Desa / Kelurahan <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
-                  <select
-                    {...register("desa")}
-                    className={selCls(errors.desa)}
-                  >
-                    <option value="" disabled>
-                      Pilih desa...
-                    </option>
-                    <option value="Menganti">Menganti</option>
-                    <option value="Sidowungu">Sidowungu</option>
-                    <option value="Hulaan">Hulaan</option>
-                    <option value="Randupadangan">Randupadangan</option>
-                  </select>
-                  <ChevronDown
-                    size={15}
-                    strokeWidth={2}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                  />
-                </div>
+                <input
+                  {...register("desa")}
+                  type="text"
+                  autoComplete="off"
+                  placeholder="Contoh: Sidowungu"
+                  className={cls(errors.desa)}
+                />
                 <FieldError message={errors.desa?.message} />
               </div>
             </div>
