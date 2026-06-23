@@ -39,6 +39,8 @@ interface AntreanData {
   prioritas: string;
   status: string;
   syncStatus?: string;
+  hasDoctorData?: boolean;
+  hasNurseData?: boolean;
 }
 
 interface DaftarAntreanProps {
@@ -435,6 +437,13 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
                         {row.noAntrean}
                       </p>
                       <p className="text-xs text-gray-400 mt-1">{row.waktu}</p>
+                      <p className="text-xs text-gray-300 mt-0.5">
+                        {new Date(row.tanggal).toLocaleDateString("id-ID", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </p>
                     </td>
 
                     <td className="py-4 px-2 align-top">
@@ -515,7 +524,9 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
                                 className="px-3 py-1.5 rounded-full text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white transition-colors cursor-pointer"
                                 style={{ fontFamily: "var(--font-poppins)" }}
                               >
-                                {row.status === "Diperiksa" ? "Edit Asesmen" : "Mulai Asesmen"}
+                                {(userRole === "PERAWAT" ? row.hasNurseData : row.hasDoctorData)
+                                  ? "Edit Asesmen"
+                                  : "Mulai Asesmen"}
                               </button>
                             ) : (
                               <span className="text-xs text-gray-300">—</span>

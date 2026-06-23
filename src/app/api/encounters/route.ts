@@ -42,6 +42,7 @@ export async function GET(req: Request) {
       };
     } else if (account.role === "PERAWAT") {
       whereCondition = {
+        perawatId: account.practitioner?.id,
         status: { in: ["MENUNGGU", "DIPERIKSA", "SELESAI"] },
       };
     }
@@ -52,6 +53,9 @@ export async function GET(req: Request) {
         patient: true,
         practitioner: true,
         perawat: { select: { name: true } },
+        _count: {
+          select: { conditionDiagnoses: true, procedures: true, medicationRequests: true, observations: true },
+        },
       },
       orderBy: {
         periodStart: "desc",
@@ -87,6 +91,17 @@ export async function GET(req: Request) {
         prioritas: formatTitleCase(enc.priority),
         status: formatTitleCase(enc.status),
         syncStatus: enc.syncStatus,
+        hasDoctorData:
+          enc._count.conditionDiagnoses > 0 ||
+          enc._count.procedures > 0 ||
+          enc._count.medicationRequests > 0,
+        hasNurseData:
+          enc._count.observations > 0 ||
+          !!enc.riwayatPenyakitNotes ||
+          !!enc.riwayatAlergiNotes ||
+          !!enc.pengobatanRutinNotes ||
+          !!enc.asesmenKeperawatan ||
+          !!enc.riwayatPenyakitKeluarga,
       };
     });
 
