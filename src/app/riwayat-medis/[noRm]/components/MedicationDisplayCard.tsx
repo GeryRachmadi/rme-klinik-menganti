@@ -40,6 +40,14 @@ function MetaLine({ parts }: { parts: (string | number | null | undefined)[] }) 
  * tabs render identically.
  */
 export default function MedicationDisplayCard({ item }: { item: MedicationDisplayItem }) {
+  if (item.type === "tidak-ada") {
+    return (
+      <p className="text-sm text-gray-400 italic" style={JAKARTA}>
+        Tidak ada resep obat untuk kunjungan ini.
+      </p>
+    );
+  }
+
   const isRacikan = item.type === "racikan";
   const aturanPakaiValue = [item.aturanPakai, item.waktuKonsumsi]
     .map((v) => (v ?? "").trim())

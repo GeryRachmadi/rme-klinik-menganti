@@ -42,6 +42,7 @@ export interface AsesmenDokterProps {
     procedures: Array<{ codeIcd9: string; display: string; notes: string }>;
     nonRacikanItems?: NonRacikanItem[];
     racikanItems?: RacikanContainer[];
+    tidakAdaResep?: boolean;
     anjuranEdukasi: string;
     instruksiLab: string;
     rujukan: { isActive: boolean; tujuanRujukan: string; alasanRujukan: string };
@@ -748,7 +749,7 @@ export default function AsesmenDokter({
 
           <div className="flex flex-col gap-6">
             <PlanProcedureForm ref={procedureRef} encounterId={encounterId} isReadOnly={isReadOnly} defaultValues={savedPlan?.procedures} externalError={planErrors.procedure} />
-            <PlanMedicationForm ref={medicationRef} encounterId={encounterId} isReadOnly={isReadOnly} defaultValues={{ nonRacikanItems: savedPlan?.nonRacikanItems ?? [], racikanItems: savedPlan?.racikanItems ?? [] }} externalError={planErrors.medication} />
+            <PlanMedicationForm ref={medicationRef} encounterId={encounterId} isReadOnly={isReadOnly} defaultValues={{ nonRacikanItems: savedPlan?.nonRacikanItems ?? [], racikanItems: savedPlan?.racikanItems ?? [], tidakAdaResep: savedPlan?.tidakAdaResep ?? false }} externalError={planErrors.medication} />
             <PlanEducationForm ref={educationRef} encounterId={encounterId} isReadOnly={isReadOnly} defaultValues={{ anjuranEdukasi: savedPlan?.anjuranEdukasi ?? '' }} externalError={planErrors.edukasi} />
             <PlanLabInstructionForm ref={labInstructionRef} encounterId={encounterId} isReadOnly={isReadOnly} defaultValues={{ instruksiLab: savedPlan?.instruksiLab ?? '' }} externalError={planErrors.instruksiLab} />
             <PlanReferralForm ref={referralRef} encounterId={encounterId} isReadOnly={isReadOnly} defaultValues={savedPlan?.rujukan} />

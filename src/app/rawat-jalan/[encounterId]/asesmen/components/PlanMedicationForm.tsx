@@ -47,7 +47,7 @@ export interface PlanMedicationFormRef {
 interface PlanMedicationFormProps {
   encounterId: string;
   isReadOnly?: boolean;
-  defaultValues?: { nonRacikanItems?: MedicationFormValues['nonRacikanItems']; racikanItems?: MedicationFormValues['racikanItems'] };
+  defaultValues?: { nonRacikanItems?: MedicationFormValues['nonRacikanItems']; racikanItems?: MedicationFormValues['racikanItems']; tidakAdaResep?: boolean };
   /** Validation error surfaced from the central PlanFormSchema (Resep is mandatory). */
   externalError?: string | null;
 }
@@ -63,14 +63,17 @@ const PlanMedicationForm = forwardRef<PlanMedicationFormRef, PlanMedicationFormP
   const draftKey = getMedicationDraftKey(encounterId);
   const [activeTab, setActiveTab] = useState<MedicationTab>('non-racikan');
 
-  const { control, watch, reset, trigger, getValues, formState: { isDirty } } = useForm<MedicationFormValues>({
+  const { control, watch, setValue, reset, trigger, getValues, formState: { isDirty } } = useForm<MedicationFormValues>({
     resolver: zodResolver(MedicationFormSchema),
     mode: 'onChange',
     defaultValues: {
       nonRacikanItems: defaultValues?.nonRacikanItems ?? [],
       racikanItems: defaultValues?.racikanItems ?? [],
+      tidakAdaResep: defaultValues?.tidakAdaResep ?? false,
     },
   });
+
+  const tidakAdaResep = watch('tidakAdaResep');
 
   const { fields: nonRacikanFields, append: appendNonRacikan, remove: removeNonRacikan } = useFieldArray({ control, name: 'nonRacikanItems' });
   const { fields: racikanFields, append: appendRacikan, remove: removeRacikan } = useFieldArray({ control, name: 'racikanItems' });
@@ -96,7 +99,7 @@ const PlanMedicationForm = forwardRef<PlanMedicationFormRef, PlanMedicationFormP
       return getValues();
     },
     resetForm: () => {
-      reset({ nonRacikanItems: [], racikanItems: [] });
+      reset({ nonRacikanItems: [], racikanItems: [], tidakAdaResep: false });
     },
     getValues: () => getValues(),
   }));
@@ -116,31 +119,53 @@ const PlanMedicationForm = forwardRef<PlanMedicationFormRef, PlanMedicationFormP
         </h3>
 
         {/* Tab switcher (Figma 880:1769) — both panels keep their data simultaneously */}
-        <div className="inline-flex self-start gap-1 bg-[#e2e8f0] rounded-xl" style={{ padding: '5.153px' }}>
-          {([
-            { key: 'non-racikan', label: 'Non-Racikan' },
-            { key: 'racikan', label: 'Racikan' },
-          ] as const).map((tab) => {
-            const active = activeTab === tab.key;
-            return (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => setActiveTab(tab.key)}
-                className={`px-5 py-1.5 rounded-lg text-sm transition-all ${
-                  active
-                    ? 'bg-white text-[#0F766E] shadow-sm'
-                    : 'bg-transparent text-gray-500 hover:text-gray-700'
-                }`}
-                style={{ fontFamily: JAKARTA, fontWeight: active ? 700 : 500 }}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
+        <div className="flex items-center justify-between gap-3">
+          {!tidakAdaResep && (
+            <div className="inline-flex self-start gap-1 bg-[#e2e8f0] rounded-xl" style={{ padding: '5.153px' }}>
+              {([
+                { key: 'non-racikan', label: 'Non-Racikan' },
+                { key: 'racikan', label: 'Racikan' },
+              ] as const).map((tab) => {
+                const active = activeTab === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`px-5 py-1.5 rounded-lg text-sm transition-all ${
+                      active
+                        ? 'bg-white text-[#0F766E] shadow-sm'
+                        : 'bg-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                    style={{ fontFamily: JAKARTA, fontWeight: active ? 700 : 500 }}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {!isReadOnly && (
+            <label className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer select-none ml-auto">
+              <input
+                type="checkbox"
+                checked={tidakAdaResep}
+                onChange={(e) => setValue('tidakAdaResep', e.target.checked, { shouldDirty: true, shouldValidate: true })}
+                className="w-4 h-4 accent-[#2BB5A0] cursor-pointer"
+              />
+              Tidak ada resep obat
+            </label>
+          )}
         </div>
       </div>
 
+      {tidakAdaResep ? (
+        <p className="text-sm text-gray-400 italic py-4 text-center">
+          Tidak ada resep obat untuk kunjungan ini.
+        </p>
+      ) : (
+        <>
       {/* Non-Racikan panel — structured repeatable rows */}
       {activeTab === 'non-racikan' && (
         <div className="flex flex-col gap-3">
@@ -211,6 +236,8 @@ const PlanMedicationForm = forwardRef<PlanMedicationFormRef, PlanMedicationFormP
             </button>
           )}
         </div>
+      )}
+        </>
       )}
 
       {externalError && <p className="text-red-500 text-[13px] mt-1">{externalError}</p>}

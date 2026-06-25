@@ -60,7 +60,8 @@ export async function POST(
       && plan.medication.nonRacikanItems.length > 0;
     const hasRacikan = Array.isArray(plan?.medication?.racikanItems)
       && plan.medication.racikanItems.length > 0;
-    if (!hasNonRacikan && !hasRacikan) {
+    const tidakAdaResep = plan?.medication?.tidakAdaResep === true;
+    if (!hasNonRacikan && !hasRacikan && !tidakAdaResep) {
       return Response.json({ error: "Resep Obat wajib diisi" }, { status: 400 });
     }
     if (!plan?.edukasi?.anjuranEdukasi?.trim()) {
@@ -261,6 +262,18 @@ export async function POST(
       // saves as one row PER container (isRacikan: true) — both can coexist
       // (Item 13 rebuild, Option A non-racikan/racikan field-array split).
       await tx.medicationRequest.deleteMany({ where: { encounterId } });
+      if (tidakAdaResep) {
+        // Sentinel row (Item: "Tidak ada resep obat") — explicit record that the
+        // doctor actively decided no medication was needed, distinct from an
+        // unfilled/blocked form (page.tsx hydration detects this exact shape).
+        await tx.medicationRequest.create({
+          data: {
+            encounterId,
+            medication: 'Tidak ada',
+            isRacikan: false,
+          },
+        });
+      } else {
       const nonRacikanItems: NonRacikanItem[] =
         Array.isArray(plan?.medication?.nonRacikanItems) ? plan.medication.nonRacikanItems : [];
       for (const item of nonRacikanItems) {
@@ -301,6 +314,7 @@ export async function POST(
             waktuKonsumsi: item.waktuKonsumsi ?? null,
           },
         });
+      }
       }
 
       // Step 5: Replace referral (delete existing; create only if isActive=true)

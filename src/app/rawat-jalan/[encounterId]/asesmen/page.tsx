@@ -231,6 +231,15 @@ export default async function AsesmenPage({
   })) ?? [];
 
   const firstRujukan = encounter.serviceRequests?.[0] ?? null;
+
+  // Sentinel detection (Item: "Tidak ada resep obat") — a strict triple check
+  // (exactly one row, exact medication text, not racikan) avoids misclassifying
+  // a real drug coincidentally named "Tidak ada" (acceptable edge case, thesis scope).
+  const isTidakAdaResep =
+    encounter.medicationRequests?.length === 1 &&
+    encounter.medicationRequests[0].medication === 'Tidak ada' &&
+    !encounter.medicationRequests[0].isRacikan;
+
   const savedPlan = {
     procedures: savedProcedures,
     // Non-Racikan: one MedicationRequest row per drug, flat (no JSON) — the
@@ -238,7 +247,7 @@ export default async function AsesmenPage({
     // under the old free-text textarea have no structured columns populated, so
     // they surface as a single item with the old text as namaObat and blank
     // structured fields (the doctor fills those in before resaving).
-    nonRacikanItems: encounter.medicationRequests
+    nonRacikanItems: isTidakAdaResep ? [] : encounter.medicationRequests
       ?.filter((m) => !m.isRacikan)
       .map((m) => ({
         namaObat: m.medication,
@@ -253,7 +262,7 @@ export default async function AsesmenPage({
     // Ingredients come from parsing `medication`: new rows hold the full
     // ingredients array as JSON; legacy rows fall back to a single ingredient
     // built from the old flat drug-name string (Item 13 rebuild).
-    racikanItems: encounter.medicationRequests
+    racikanItems: isTidakAdaResep ? [] : encounter.medicationRequests
       ?.filter((m) => m.isRacikan)
       .map((m) => {
         const parsed = parseRacikanContainer(m.medication);
@@ -266,6 +275,7 @@ export default async function AsesmenPage({
           ingredients: parsed?.ingredients ?? [{ namaObat: m.medication, dosis: '' }],
         };
       }) ?? [],
+    tidakAdaResep: isTidakAdaResep,
     anjuranEdukasi,
     instruksiLab: encounter.instruksiLab ?? '',
     rujukan: firstRujukan

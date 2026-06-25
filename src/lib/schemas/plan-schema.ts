@@ -47,6 +47,7 @@ export type NonRacikanItem = z.infer<typeof NonRacikanItemSchema>;
 export const MedicationFormSchema = z.object({
   nonRacikanItems: z.array(NonRacikanItemSchema).optional(),
   racikanItems: z.array(RacikanContainerSchema).optional(),
+  tidakAdaResep: z.boolean().optional(),
 });
 
 export const EducationFormSchema = z.object({
@@ -94,6 +95,7 @@ export const PlanFormSchema = z.object({
   medication: z.object({
     nonRacikanItems: z.array(z.any()).optional(),
     racikanItems: z.array(z.any()).optional(),
+    tidakAdaResep: z.boolean().optional(),
   }).optional(),
   edukasi: z.object({
     anjuranEdukasi: z.string().optional(),
@@ -120,7 +122,8 @@ export const PlanFormSchema = z.object({
   // Same message + path as before so the error still renders under the Resep panel.
   const hasNonRacikan = (data.medication?.nonRacikanItems?.length ?? 0) > 0;
   const hasRacikan = (data.medication?.racikanItems?.length ?? 0) > 0;
-  if (!hasNonRacikan && !hasRacikan) {
+  const tidakAdaResep = data.medication?.tidakAdaResep === true;
+  if (!hasNonRacikan && !hasRacikan && !tidakAdaResep) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["medication", "nonRacikanItems"], message: "Resep Obat wajib diisi" });
   }
   if (!data.edukasi?.anjuranEdukasi?.trim()) {
