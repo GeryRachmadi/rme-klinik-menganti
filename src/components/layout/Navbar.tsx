@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import Image from "next/image";
 import GlobalSearch from "@/components/shared/GlobalSearch";
 import NotificationDropdown from "@/components/shared/NotificationDropdown";
 
@@ -35,13 +35,14 @@ export default function Navbar({ name, role }: NavbarProps) {
       <div
         className="w-72 flex-shrink-0 flex items-center gap-3 px-5"
       >
-        <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{
-            background: "linear-gradient(135deg, #4DD9C0 0%, #2BB5A0 100%)",
-          }}
-        >
-          <Plus size={16} className="text-white" strokeWidth={3} />
+        <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0">
+          <Image
+            src="/images/clinic_logo.png"
+            alt="Logo Klinik Pratama Menganti"
+            width={36}
+            height={36}
+            className="w-full h-full object-cover"
+          />
         </div>
         <div>
           <p

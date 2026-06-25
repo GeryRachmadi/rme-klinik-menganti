@@ -278,7 +278,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
             onClick={() => setIsAddEncounterOpen(true)}
           >
             <UserPlus size={15} strokeWidth={2} />
-            + Tambah Kunjungan Baru
+            Tambah Kunjungan Baru
           </button>
         )}
       </div>

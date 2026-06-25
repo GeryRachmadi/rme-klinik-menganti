@@ -36,6 +36,9 @@ export const ICD10_MOCK_DATA = [
   { code: 'A15.9', display: 'Respiratory tuberculosis, unspecified' },
   { code: 'R41.844', display: 'Frontal lobe and executive function deficit' },
   { code: 'A01.00', display: 'Typhoid fever, unspecified' },
+  { code: 'R42', display: 'Dizziness and giddiness' },
+  { code: 'R51', display: 'Headache' },
+  { code: 'R53.83', display: 'Other fatigue' },
 ];
 
 /**

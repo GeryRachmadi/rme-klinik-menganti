@@ -88,7 +88,8 @@ export type MedicationDisplayItem =
       aturanPakai: string;
       waktuKonsumsi: string;
       ingredients: Array<{ namaObat: string; dosis: string }>;
-    };
+    }
+  | { type: "tidak-ada" };
 
 /**
  * Maps raw MedicationRequest rows into display-ready items. Non-Racikan rows
@@ -101,6 +102,10 @@ export type MedicationDisplayItem =
 function mapMedicationRequests(rows: any[]): MedicationDisplayItem[] {
   const items: MedicationDisplayItem[] = [];
   for (const m of rows) {
+    if (!m.isRacikan && m.medication === "Tidak ada" && rows.length === 1) {
+      items.push({ type: "tidak-ada" });
+      continue;
+    }
     if (!m.isRacikan) {
       items.push({
         type: "non-racikan",

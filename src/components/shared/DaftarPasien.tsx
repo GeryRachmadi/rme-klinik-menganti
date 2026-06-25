@@ -156,7 +156,7 @@ export default function DaftarPasien() {
           style={{ background: "#2BB5A0", fontFamily: "var(--font-jakarta)" }}
         >
           <UserPlus size={16} strokeWidth={2.5} />
-          + Tambah Pasien Baru
+          Tambah Pasien Baru
         </button>
       </div>
 
