@@ -66,7 +66,8 @@
       "PowerShell(npm install *)",
       "PowerShell(npm ls *)",
       "PowerShell(npx tsc --noEmit; \"EXIT: $LASTEXITCODE\")",
-      "mcp__plugin_figma_figma__get_design_context"
+      "mcp__plugin_figma_figma__get_design_context",
+      "Read(//tmp/**)"
     ]
   }
 }
