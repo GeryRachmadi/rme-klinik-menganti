@@ -271,7 +271,9 @@ export default function PrintableDocument({
                     key={i}
                     className={i > 0 ? "mt-1 border-t border-dashed border-black pt-1" : ""}
                   >
-                    {item.type === "non-racikan" ? (
+                    {item.type === "tidak-ada" ? (
+                      <p className="italic">Tidak ada resep obat untuk kunjungan ini.</p>
+                    ) : item.type === "non-racikan" ? (
                       <>
                         <p className="italic">
                           R/ {item.namaObat} {item.dosis} {item.bentukSediaan} No. {item.jumlah}

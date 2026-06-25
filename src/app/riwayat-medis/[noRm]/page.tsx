@@ -59,7 +59,9 @@ export default async function RiwayatMedisPage({
     (firstMedication
       ? firstMedication.type === "racikan"
         ? firstMedication.namaRacikan
-        : firstMedication.namaObat
+        : firstMedication.type === "non-racikan"
+          ? firstMedication.namaObat
+          : null
       : null) ??
     null;
 
