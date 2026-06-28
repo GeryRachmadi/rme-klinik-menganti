@@ -69,12 +69,12 @@ export default function PatientAssessmentHeader({
       : 'bg-pink-100 text-pink-700';
 
   return (
-    <div className="col-span-12 bg-white rounded-3xl px-8 py-6">
+    <div className="col-span-12 bg-[#009E95] rounded-3xl px-8 py-6">
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-5">
 
           <div className="flex items-start gap-4">
           <div
-            className="w-16 h-16 rounded-full border-2 border-teal-500 bg-teal-50 flex items-center justify-center text-teal-600 font-bold text-2xl flex-shrink-0"
+            className="w-16 h-16 rounded-full border-2 border-[#10B981] bg-white flex items-center justify-center text-[#10B981] font-bold text-2xl flex-shrink-0"
             style={{ fontFamily: 'var(--font-poppins)' }}
           >
             {initials}
@@ -82,7 +82,7 @@ export default function PatientAssessmentHeader({
 
           <div className="flex flex-col gap-2">
             <h1
-              className="text-lg font-semibold text-gray-900 leading-tight"
+              className="text-lg font-semibold text-white leading-tight"
               style={{ fontFamily: 'var(--font-poppins)' }}
             >
               {patient.namaLengkap}
@@ -90,20 +90,20 @@ export default function PatientAssessmentHeader({
 
             <div className="flex flex-wrap items-center gap-2">
               <span
-                className="bg-[#006B4E] text-white px-3 py-0.5 rounded-full text-xs font-semibold"
+                className="bg-white text-[#475569] px-3 py-0.5 rounded-full text-xs font-semibold"
                 style={{ fontFamily: 'var(--font-jakarta)' }}
               >
                 {patient.noRm}
               </span>
               <span
-                className="bg-gray-100 text-gray-600 px-3 py-0.5 rounded-full text-xs font-medium"
+                className="bg-white text-[#475569] px-3 py-0.5 rounded-full text-xs font-medium"
                 style={{ fontFamily: 'var(--font-jakarta)' }}
               >
                 NIK: {patient.nik}
               </span>
               {tanggalLahir && (
                 <span
-                  className="bg-blue-100 text-blue-700 px-3 py-0.5 rounded-full text-xs font-medium"
+                  className="bg-white text-[#475569] px-3 py-0.5 rounded-full text-xs font-medium"
                   style={{ fontFamily: 'var(--font-jakarta)' }}
                 >
                   {formatDob(tanggalLahir)}
@@ -113,13 +113,13 @@ export default function PatientAssessmentHeader({
 
             <div className="flex flex-wrap items-center gap-2">
               <span
-                className={`px-3 py-0.5 rounded-full text-xs font-medium ${genderColor}`}
+                className="px-3 py-0.5 rounded-full text-xs font-medium bg-white text-[#475569]"
                 style={{ fontFamily: 'var(--font-jakarta)' }}
               >
                 {genderLabel}
               </span>
               <span
-                className="bg-teal-50 text-teal-700 px-3 py-0.5 rounded-full text-xs font-medium"
+                className="bg-white text-[#475569] px-3 py-0.5 rounded-full text-xs font-medium"
                 style={{ fontFamily: 'var(--font-jakarta)' }}
               >
                 {age}
@@ -127,16 +127,16 @@ export default function PatientAssessmentHeader({
             </div>
 
             <div
-              className="mt-1 text-sm text-gray-500 space-y-0.5"
+              className="mt-1 text-sm text-white/80 space-y-0.5"
               style={{ fontFamily: 'var(--font-jakarta)' }}
             >
               <p>
-                <span className="font-medium text-gray-700">Kunjungan:</span>{' '}
+                <span className="font-medium text-white">Kunjungan:</span>{' '}
                 {formatEncounterDate(encounter.periodStart)}
               </p>
               {encounter.practitioner?.name && (
                 <p>
-                  <span className="font-medium text-gray-700">Dokter:</span>{' '}
+                  <span className="font-medium text-white">Dokter:</span>{' '}
                   {formatDoctorName(encounter.practitioner.name, encounter.practitioner.speciality)}
                 </p>
               )}
@@ -155,7 +155,7 @@ export default function PatientAssessmentHeader({
             href={`/riwayat-medis/${patient.noRm}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 text-base font-semibold text-white bg-[#006B4E] rounded-full hover:opacity-90 transition-opacity shrink-0"
+            className="inline-flex items-center gap-2 px-6 py-3 text-base font-semibold text-[#475569] bg-white rounded-full hover:opacity-90 transition-opacity shrink-0"
             style={{ fontFamily: 'var(--font-jakarta)' }}
           >
             <ExternalLink className="w-5 h-5" />

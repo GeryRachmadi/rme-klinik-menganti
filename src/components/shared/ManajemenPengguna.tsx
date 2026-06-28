@@ -320,12 +320,12 @@ export default function ManajemenPengguna({ role, currentUserId }: ManajemenPeng
       )}
 
       {/* Row 1: Page Header */}
-      <div className="col-span-12 bg-white rounded-3xl px-10 py-7 flex items-center justify-between">
+      <div className="col-span-12 bg-[#009E95] rounded-3xl px-10 py-7 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 leading-tight" style={{ fontFamily: "var(--font-poppins)" }}>
+          <h1 className="text-2xl font-bold text-white leading-tight" style={{ fontFamily: "var(--font-poppins)" }}>
             Manajemen Pengguna
           </h1>
-          <p className="text-sm text-gray-400 mt-1" style={{ fontFamily: "var(--font-jakarta)" }}>
+          <p className="text-sm text-white/80 mt-1" style={{ fontFamily: "var(--font-jakarta)" }}>
             Atur akses klinik dan peran administratif dari tiap akun
           </p>
         </div>
@@ -333,8 +333,8 @@ export default function ManajemenPengguna({ role, currentUserId }: ManajemenPeng
           <button
             type="button"
             onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-white text-sm font-semibold hover:opacity-90 transition-opacity"
-            style={{ background: "#2BB5A0", fontFamily: "var(--font-jakarta)" }}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-[#475569] text-sm font-semibold hover:opacity-90 transition-opacity"
+            style={{ background: "#FFFFFF", fontFamily: "var(--font-jakarta)" }}
           >
             <UserPlus size={16} strokeWidth={2.5} />
             Tambah Akun Baru
@@ -346,9 +346,10 @@ export default function ManajemenPengguna({ role, currentUserId }: ManajemenPeng
       <div className="col-span-12 bg-white rounded-3xl px-8 py-7">
 
         {/* Search / Filter Bar */}
-        <div className="flex items-end gap-5 mb-7">
+        <div className="bg-[#009E95] -mx-8 -mt-7 px-8 pt-7 pb-6 rounded-t-3xl mb-6">
+          <div className="flex items-end gap-5">
           <div className="flex-1">
-            <label className="block text-xs font-semibold tracking-widest text-gray-400 uppercase mb-2" style={{ fontFamily: "var(--font-jakarta)" }}>
+            <label className="block text-xs font-semibold tracking-widest text-white/80 uppercase mb-2" style={{ fontFamily: "var(--font-jakarta)" }}>
               Cari Akun
             </label>
             <div className="relative">
@@ -366,7 +367,7 @@ export default function ManajemenPengguna({ role, currentUserId }: ManajemenPeng
           </div>
 
           <div className="w-48">
-            <label className="block text-xs font-semibold tracking-widest text-gray-400 uppercase mb-2" style={{ fontFamily: "var(--font-jakarta)" }}>
+            <label className="block text-xs font-semibold tracking-widest text-white/80 uppercase mb-2" style={{ fontFamily: "var(--font-jakarta)" }}>
               Role
             </label>
             <select
@@ -384,7 +385,7 @@ export default function ManajemenPengguna({ role, currentUserId }: ManajemenPeng
           </div>
 
           <div className="w-48">
-            <label className="block text-xs font-semibold tracking-widest text-gray-400 uppercase mb-2" style={{ fontFamily: "var(--font-jakarta)" }}>
+            <label className="block text-xs font-semibold tracking-widest text-white/80 uppercase mb-2" style={{ fontFamily: "var(--font-jakarta)" }}>
               Status
             </label>
             <select
@@ -397,6 +398,7 @@ export default function ManajemenPengguna({ role, currentUserId }: ManajemenPeng
               <option value="aktif">Aktif</option>
               <option value="nonaktif">Nonaktif</option>
             </select>
+          </div>
           </div>
         </div>
 

@@ -113,11 +113,11 @@ export default function ActivityLogTable({ logs, total }: ActivityLogTableProps)
   return (
     <div className="bg-white rounded-3xl p-6" style={{ fontFamily: "var(--font-jakarta)" }}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between bg-[#009E95] -mx-6 -mt-6 px-6 py-3 mb-6 rounded-t-3xl">
         <div className="flex items-center gap-3">
-          <div className="w-1 h-5 rounded-full bg-[#2BB5A0]" />
+          <div className="w-1 h-5 rounded-full bg-transparent" />
           <h2
-            className="text-sm font-bold text-gray-800 tracking-widest"
+            className="text-sm font-bold text-white tracking-widest"
             style={{ fontFamily: "var(--font-poppins)" }}
           >
             LOG AKTIVITAS TERBARU
@@ -129,17 +129,13 @@ export default function ActivityLogTable({ logs, total }: ActivityLogTableProps)
           <button
             type="button"
             onClick={() => setFilterOpen((o) => !o)}
-            className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors border ${
-              filterOpen
-                ? "bg-gray-100 border-gray-300 text-gray-700"
-                : "border-gray-200 text-gray-500 hover:bg-gray-50"
-            }`}
+            className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-white border border-white/30 text-[#475569] hover:bg-white/80 transition-colors"
             style={{ fontFamily: "var(--font-jakarta)" }}
           >
             <SlidersHorizontal size={12} strokeWidth={2.5} />
             Filter
             {isFilterActive && (
-              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#2BB5A0]" />
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#2DD4BF]" />
             )}
           </button>
 

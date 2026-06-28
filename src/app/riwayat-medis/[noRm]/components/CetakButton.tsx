@@ -20,8 +20,8 @@ export default function CetakButton({ size = "sm" }: CetakButtonProps) {
     <button
       type="button"
       onClick={() => window.print()}
-      className={`flex items-center gap-2 rounded-full border border-[#2BB5A0] text-[#2BB5A0] font-semibold hover:bg-[#E6F5F4] transition-colors shrink-0 ${
-        isLg ? "px-6 py-3 text-base" : "px-4 py-2 text-sm"
+      className={`flex items-center gap-2 rounded-full bg-white text-[#475569] font-semibold hover:bg-white/90 transition-colors shrink-0 ${
+        isLg ? "px-6 py-3 text-base" : "px-5 py-2.5 text-sm"
       }`}
       style={{ fontFamily: "var(--font-poppins)" }}
     >

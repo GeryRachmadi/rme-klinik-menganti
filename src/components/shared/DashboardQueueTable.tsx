@@ -169,11 +169,11 @@ export default function DashboardQueueTable({
   return (
     <div className="col-span-8 bg-white rounded-3xl p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between bg-[#009E95] -mx-6 -mt-6 px-6 py-3 mb-6 rounded-t-3xl">
         <div className="flex items-center gap-3">
-          <div className="w-1 h-5 rounded-full bg-[#2BB5A0]" />
+          <div className="w-1 h-5 rounded-full bg-transparent" />
           <h2
-            className="text-sm font-bold text-gray-800 tracking-widest"
+            className="text-sm font-semibold text-white tracking-widest"
             style={{ fontFamily: "var(--font-poppins)" }}
           >
             {title}
@@ -183,8 +183,8 @@ export default function DashboardQueueTable({
           <QueueFilterDropdown onFilterChange={handleFilterChange} />
           <Link
             href="/rawat-jalan"
-            className="px-4 py-1.5 rounded-full text-sm text-white transition-colors hover:opacity-90"
-            style={{ background: "#2BB5A0", fontFamily: "var(--font-jakarta)" }}
+            className="px-4 py-1.5 rounded-full text-xs text-[#475569] transition-colors hover:opacity-90"
+            style={{ background: "#FFFFFF", fontFamily: "var(--font-jakarta)" }}
           >
             Selengkapnya
           </Link>

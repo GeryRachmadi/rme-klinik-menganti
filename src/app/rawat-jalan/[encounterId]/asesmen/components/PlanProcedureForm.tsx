@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, forwardRef, useImperativeHandle } from 'react';
+import React, { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
@@ -9,6 +9,7 @@ import { transformProcedurePayload } from '@/lib/utils/transform-procedure';
 import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft';
 import { useFormToast } from '@/hooks/useFormToast';
 import { PlanProcedureAutocomplete, type SelectedProcedure } from './PlanProcedureAutocomplete';
+import { ICD9CMCheatsheetModal } from '@/components/shared/ICD9CMCheatsheetModal';
 
 const getProcedureDraftKey = (encounterId: string) => `draft_procedure_${encounterId}`;
 
@@ -93,6 +94,8 @@ const PlanProcedureForm = forwardRef<PlanProcedureFormRef, PlanProcedureFormProp
   const currentFormData = watch();
   useAutoSaveDraft(draftKey, currentFormData, isReadOnly, isDirty);
 
+  const [isICD9CMCheatsheetOpen, setIsICD9CMCheatsheetOpen] = useState(false);
+
   const handleProcedureChange = (proc: SelectedProcedure) => {
     const updated: ProcedureItem[] = [...procedures, {
       codeIcd9: proc.code,
@@ -173,16 +176,34 @@ const PlanProcedureForm = forwardRef<PlanProcedureFormRef, PlanProcedureFormProp
 
       {!isReadOnly && (
         <>
+          <ICD9CMCheatsheetModal
+            isOpen={isICD9CMCheatsheetOpen}
+            onClose={() => setIsICD9CMCheatsheetOpen(false)}
+            onSelect={(code, display, category) => {
+              handleProcedureChange({ code, display, category: category ?? 'Lainnya', notes: '' });
+              setIsICD9CMCheatsheetOpen(false);
+            }}
+          />
           <PlanProcedureAutocomplete
             onProcedureChange={handleProcedureChange}
           />
-          <button
-            type="button"
-            onClick={() => setValue('procedures', [])}
-            className="text-blue-500 hover:text-blue-700 underline cursor-pointer font-medium text-sm mt-2 self-end italic"
-          >
-            Kosongkan Input
-          </button>
+          <div className="flex items-center justify-between mt-2">
+            <button
+              type="button"
+              onClick={() => setIsICD9CMCheatsheetOpen(true)}
+              className="text-sm px-3 py-1 rounded bg-[#0F766E] text-white hover:opacity-90 transition-opacity cursor-pointer"
+              style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
+            >
+              Lihat Daftar Kode ICD-9-CM
+            </button>
+            <button
+              type="button"
+              onClick={() => setValue('procedures', [])}
+              className="text-blue-500 hover:text-blue-700 underline cursor-pointer font-medium text-sm italic"
+            >
+              Kosongkan Input
+            </button>
+          </div>
         </>
       )}
 

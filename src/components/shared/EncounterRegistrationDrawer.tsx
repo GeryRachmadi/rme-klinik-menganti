@@ -55,7 +55,7 @@ function PatientSummaryCard({ variant, patient }: { variant: "success" | "disabl
     >
       <div
         className={`flex items-center justify-center w-12 h-12 rounded-full font-bold text-lg ${
-          isSuccess ? "bg-[#2BB5A0] text-white" : "bg-gray-200 text-gray-400"
+          isSuccess ? "bg-[#009E95] text-white" : "bg-gray-200 text-gray-400"
         }`}
       >
         {initials}
@@ -270,15 +270,15 @@ export default function EncounterRegistrationDrawer({
         style={{ fontFamily: "var(--font-jakarta)" }}
       >
         {/* Header */}
-        <div className="px-8 pt-8 pb-6 border-b border-gray-100 flex items-start justify-between flex-shrink-0">
+        <div className="px-8 pt-8 pb-6 bg-[#009E95] flex items-start justify-between flex-shrink-0">
           <div>
             <h2
-              className="text-xl font-bold text-gray-800 leading-tight"
+              className="text-xl font-bold text-white leading-tight"
               style={{ fontFamily: "var(--font-poppins)" }}
             >
               Tambah Kunjungan Baru
             </h2>
-            <p className="text-xs text-gray-400 mt-1.5 leading-relaxed">
+            <p className="text-xs text-white/70 mt-1.5 leading-relaxed">
               {successQueueNumber
                 ? "Kunjungan berhasil didaftarkan."
                 : "Lengkapi informasi dibawah untuk membuat kunjungan pasien baru hari ini"}
@@ -288,7 +288,7 @@ export default function EncounterRegistrationDrawer({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors mt-0.5 disabled:opacity-50"
+            className="p-1.5 rounded-lg text-white/70 hover:bg-white/10 hover:text-white transition-colors mt-0.5 disabled:opacity-50"
             title="Tutup"
           >
             <X size={18} strokeWidth={2} />
@@ -331,7 +331,7 @@ export default function EncounterRegistrationDrawer({
                 {/* ── Selected patient card (replaces search input) ── */}
                 {search.selectedPatient ? (
                   <div className="flex items-start gap-3 p-4 rounded-xl border bg-[#E6F5F4] border-[#4DD9C0]/50">
-                    <div className="w-10 h-10 rounded-full bg-[#2BB5A0] text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-[#009E95] text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
                       {search.selectedPatient.namaLengkap?.charAt(0).toUpperCase() ?? "?"}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -357,7 +357,7 @@ export default function EncounterRegistrationDrawer({
                     <button
                       type="button"
                       onClick={() => search.setSelectedPatient(null)}
-                      className="p-1.5 rounded-lg text-[#2BB5A0] hover:bg-[#2BB5A0]/10 transition-colors flex-shrink-0"
+                      className="p-1.5 rounded-lg text-[#2BB5A0] hover:bg-[#009E95]/10 transition-colors flex-shrink-0"
                       title="Ganti pasien"
                     >
                       <X size={16} strokeWidth={2} />
@@ -490,7 +490,7 @@ export default function EncounterRegistrationDrawer({
                                       }}
                                       className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#E6F5F4] transition-colors text-left border-b border-gray-50 last:border-0"
                                     >
-                                      <div className="w-9 h-9 rounded-full bg-[#2BB5A0] text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
+                                      <div className="w-9 h-9 rounded-full bg-[#009E95] text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
                                         {patient.namaLengkap?.charAt(0).toUpperCase() ?? "?"}
                                       </div>
                                       <div className="flex-1 min-w-0">

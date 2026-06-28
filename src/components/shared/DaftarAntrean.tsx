@@ -257,15 +257,15 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
 
   return (
     <div className="grid grid-cols-12 gap-6" style={{ fontFamily: "var(--font-jakarta)" }}>
-      <div className="col-span-12 bg-white rounded-3xl px-10 py-7 flex items-center justify-between">
+      <div className="col-span-12 bg-[#009E95] rounded-3xl px-10 py-7 flex items-center justify-between">
         <div>
           <h1
-            className="text-2xl font-bold text-gray-800 leading-tight"
+            className="text-2xl font-bold text-white leading-tight"
             style={{ fontFamily: "var(--font-poppins)" }}
           >
             Daftar Antrean dan Kunjungan
           </h1>
-          <p className="text-sm text-gray-400 mt-1">
+          <p className="text-sm text-white/80 mt-1">
             Kelola informasi dan rekam medis pasien
           </p>
         </div>
@@ -273,8 +273,8 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
         {isAuthorized && (
           <button
             type="button"
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-white text-sm font-semibold hover:opacity-90 transition-opacity"
-            style={{ background: "#2BB5A0" }}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-[#475569] text-sm font-semibold hover:opacity-90 transition-opacity"
+            style={{ background: "#FFFFFF", fontFamily: "var(--font-jakarta)" }}
             onClick={() => setIsAddEncounterOpen(true)}
           >
             <UserPlus size={15} strokeWidth={2} />
@@ -285,9 +285,10 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
 
       <div className="col-span-12 bg-white rounded-3xl px-8 py-7">
         {/* Filters */}
-        <div className="flex flex-wrap items-end gap-5 mb-7">
+        <div className="bg-[#009E95] -mx-8 -mt-7 px-8 pt-7 pb-6 rounded-t-3xl mb-6">
+          <div className="flex flex-wrap items-end gap-5">
           <div className="flex-1 min-w-[200px]">
-            <label className="block text-xs font-semibold tracking-widest text-gray-400 uppercase mb-2">
+            <label className="block text-xs font-semibold tracking-widest text-white/80 uppercase mb-2">
               Cari Pasien
             </label>
             <div className="relative">
@@ -304,7 +305,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
           </div>
 
           <div className="w-48">
-            <label className="block text-xs font-semibold tracking-widest text-gray-400 uppercase mb-2">
+            <label className="block text-xs font-semibold tracking-widest text-white/80 uppercase mb-2">
               Tanggal
             </label>
             <button
@@ -351,7 +352,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
           </div>
 
           <div className="w-48">
-            <label className="block text-xs font-semibold tracking-widest text-gray-400 uppercase mb-2">
+            <label className="block text-xs font-semibold tracking-widest text-white/80 uppercase mb-2">
               Prioritas
             </label>
             <select
@@ -368,7 +369,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
           </div>
 
           <div className="w-40">
-            <label className="block text-xs font-semibold tracking-widest text-gray-400 uppercase mb-2">
+            <label className="block text-xs font-semibold tracking-widest text-white/80 uppercase mb-2">
               Status
             </label>
             <select
@@ -382,6 +383,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
               <option value="Selesai">Selesai</option>
               <option value="Batal">Batal</option>
             </select>
+          </div>
           </div>
         </div>
 

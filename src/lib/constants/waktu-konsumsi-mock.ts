@@ -18,4 +18,5 @@ export const WAKTU_KONSUMSI_MOCK: WaktuKonsumsiEntry[] = [
   { display: 'Setiap 6 Jam' },
   { display: 'Setiap 8 Jam' },
   { display: 'Setiap 12 Jam' },
+  { display: 'Lainnya' },
 ];

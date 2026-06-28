@@ -104,7 +104,7 @@ export default function QueueFilterDropdown({ onFilterChange }: QueueFilterDropd
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
+        className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-white border border-white/30 text-[#475569] hover:bg-white/80 transition-colors"
         style={{ fontFamily: "var(--font-jakarta)" }}
       >
         <SlidersHorizontal size={12} strokeWidth={2.5} />

@@ -51,7 +51,7 @@ export default function MulaiAsesmenButton({
         type="button"
         onClick={handleClick}
         disabled={isLoading}
-        className="bg-teal-600 hover:bg-teal-700 disabled:opacity-60 disabled:cursor-not-allowed text-white px-5 py-2.5 rounded-xl flex items-center gap-2 font-medium shrink-0 transition-colors"
+        className="bg-white text-[#475569] hover:bg-white/90 disabled:opacity-60 disabled:cursor-not-allowed px-5 py-2.5 rounded-full flex items-center gap-2 font-semibold shrink-0 transition-colors"
         style={{ fontFamily: "var(--font-poppins)" }}
       >
         {isLoading ? (

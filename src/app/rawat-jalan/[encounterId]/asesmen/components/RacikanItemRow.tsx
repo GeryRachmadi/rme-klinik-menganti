@@ -6,12 +6,10 @@ import { Trash2, Plus } from "lucide-react";
 import type { MedicationFormValues } from "@/lib/schemas/plan-schema";
 import { MEDICATIONS_MOCK } from "@/lib/constants/medications-mock";
 import { BENTUK_SEDIAAN_MOCK } from "@/lib/constants/bentuk-sediaan-mock";
-import { WAKTU_KONSUMSI_MOCK } from "@/lib/constants/waktu-konsumsi-mock";
 import { CategorizedSearchableSelect } from "@/components/ui/CategorizedSearchableSelect";
-import { SearchableSelect } from "@/components/ui/SearchableSelect";
+import { WaktuKonsumsiField } from "./WaktuKonsumsiField";
 
 const JAKARTA = '"Plus Jakarta Sans", sans-serif';
-const WAKTU_KONSUMSI_OPTIONS = WAKTU_KONSUMSI_MOCK.map((w) => w.display);
 
 interface RacikanItemRowProps {
   index: number;
@@ -230,18 +228,12 @@ export default function RacikanItemRow({ index, control, onRemove, isReadOnly = 
           <label className="text-xs text-[#0F766E] uppercase tracking-wider" style={labelStyle}>
             Waktu Konsumsi
           </label>
-          <Controller
+          <WaktuKonsumsiField
             control={control}
             name={`racikanItems.${index}.waktuKonsumsi`}
-            render={({ field }) => (
-              <SearchableSelect
-                options={WAKTU_KONSUMSI_OPTIONS}
-                value={field.value ?? ""}
-                onChange={field.onChange}
-                disabled={isReadOnly}
-                placeholder="Pilih waktu..."
-              />
-            )}
+            isReadOnly={isReadOnly}
+            inputClassName={inputClass(isReadOnly)}
+            inputStyle={inputStyle}
           />
         </div>
       </div>

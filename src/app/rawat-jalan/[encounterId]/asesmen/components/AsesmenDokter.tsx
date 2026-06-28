@@ -7,6 +7,7 @@ import ObjectivePhysicalForm, { ObjectivePhysicalFormRef } from './ObjectivePhys
 import NursingDiagnosisForm, { NursingDiagnosisFormRef } from './NursingDiagnosisForm';
 import SubjectiveObjectiveExtendedForm, { SubjectiveObjectiveExtendedFormRef } from './SubjectiveObjectiveExtendedForm';
 import { AssessmentDiagnosisForm } from './AssessmentDiagnosisForm';
+import { ICD10CheatsheetModal } from '@/components/shared/ICD10CheatsheetModal';
 import PlanProcedureForm, { PlanProcedureFormRef } from './PlanProcedureForm';
 import PlanMedicationForm, { PlanMedicationFormRef } from './PlanMedicationForm';
 import PlanEducationForm, { PlanEducationFormRef } from './PlanEducationForm';
@@ -123,6 +124,7 @@ export default function AsesmenDokter({
 
   const [isSubmittingCentral, setIsSubmittingCentral] = useState(false);
   const [selectedDiagnoses, setSelectedDiagnoses] = useState<Array<{code: string, display: string, notes?: string}>>(savedDiagnoses ?? []);
+  const [isICD10CheatsheetOpen, setIsICD10CheatsheetOpen] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
   // Per-field Plan validation errors surfaced from the central PlanFormSchema
   // safeParse (Tindakan/Resep/Edukasi are all mandatory). Cleared on each submit
@@ -498,6 +500,11 @@ export default function AsesmenDokter({
 
   return (
     <div className="w-full space-y-10 font-jakarta">
+      <ICD10CheatsheetModal
+        isOpen={isICD10CheatsheetOpen}
+        onClose={() => setIsICD10CheatsheetOpen(false)}
+        onSelect={(code, display) => { handleSelectDiagnosis(code, display); setIsICD10CheatsheetOpen(false); }}
+      />
       {toast && (
         <div className={`fixed top-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl animate-in slide-in-from-top-5 duration-300 ${
           toast.type === 'success' ? 'bg-[#E6F5F4] border border-[#B2DFDB]' :
@@ -737,13 +744,23 @@ export default function AsesmenDokter({
               isReadOnly={isReadOnly}
             />
             {!isReadOnly && (
-              <button
-                type="button"
-                onClick={() => setSelectedDiagnoses([])}
-                className="text-blue-500 hover:text-blue-700 underline cursor-pointer font-medium text-sm mt-2 self-end italic"
-              >
-                Kosongkan Input
-              </button>
+              <div className="flex items-center justify-between mt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsICD10CheatsheetOpen(true)}
+                  className="text-sm px-3 py-1 rounded bg-[#0F766E] text-white hover:opacity-90 transition-opacity cursor-pointer"
+                  style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
+                >
+                  Lihat Daftar Kode ICD-10
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDiagnoses([])}
+                  className="text-blue-500 hover:text-blue-700 underline cursor-pointer font-medium text-sm italic"
+                >
+                  Kosongkan Input
+                </button>
+              </div>
             )}
           </div>
 

@@ -177,15 +177,15 @@ export default function EncounterEditDrawer({
         style={{ fontFamily: "var(--font-jakarta)" }}
       >
         {/* Header */}
-        <div className="px-8 pt-8 pb-6 border-b border-gray-100 flex items-start justify-between flex-shrink-0">
+        <div className="px-8 pt-8 pb-6 bg-[#009E95] flex items-start justify-between flex-shrink-0">
           <div>
             <h2
-              className="text-xl font-bold text-gray-800 leading-tight"
+              className="text-xl font-bold text-white leading-tight"
               style={{ fontFamily: "var(--font-poppins)" }}
             >
               Edit Kunjungan
             </h2>
-            <p className="text-xs text-gray-400 mt-1.5">
+            <p className="text-xs text-white/70 mt-1.5">
               Ubah informasi kunjungan pasien yang dipilih
             </p>
           </div>
@@ -193,7 +193,7 @@ export default function EncounterEditDrawer({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors mt-0.5 disabled:opacity-50"
+            className="p-1.5 rounded-lg text-white/70 hover:bg-white/10 hover:text-white transition-colors mt-0.5 disabled:opacity-50"
           >
             <X size={18} strokeWidth={2} />
           </button>
@@ -212,7 +212,7 @@ export default function EncounterEditDrawer({
                 <div className="space-y-4">
                   <SectionTitle>INFORMASI PASIEN</SectionTitle>
                   <div className="flex items-start gap-4 p-4 rounded-xl border bg-[#E6F5F4] border-[#4DD9C0]/50">
-                    <div className="flex items-center justify-center w-12 h-12 rounded-full font-bold text-lg bg-[#2BB5A0] text-white flex-shrink-0">
+                    <div className="flex items-center justify-center w-12 h-12 rounded-full font-bold text-lg bg-[#009E95] text-white flex-shrink-0">
                       {patient.namaLengkap.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1">

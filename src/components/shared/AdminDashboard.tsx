@@ -41,28 +41,28 @@ export default function AdminDashboard({
     <div className="grid grid-cols-12 gap-6">
 
       {/* ── Row 1: Welcome Card ── */}
-      <div className="col-span-12 bg-white rounded-3xl px-10 py-8 flex items-center justify-between overflow-hidden">
+      <div className="col-span-12 bg-[#009E95] rounded-3xl px-10 py-8 flex items-center justify-between overflow-hidden">
         <div>
           <p
-            className="text-xs font-bold tracking-widest text-gray-400 uppercase mb-3"
+            className="text-xs font-bold tracking-widest text-white uppercase mb-3"
             style={{ fontFamily: "var(--font-jakarta)" }}
           >
             DASHBOARD ADMIN
           </p>
           <h1
-            className="text-4xl font-bold mb-3 leading-tight"
-            style={{ fontFamily: "var(--font-poppins)", color: "#DA567B" }}
+            className="text-4xl font-bold mb-3 leading-tight text-white"
+            style={{ fontFamily: "var(--font-poppins)" }}
           >
             {greeting}, {name}!
           </h1>
           <p
-            className="text-gray-500 text-sm"
+            className="text-white text-sm"
             style={{ fontFamily: "var(--font-jakarta)" }}
           >
             Selamat Bertugas! Apa yang ingin anda lakukan saat ini?
           </p>
         </div>
-        <div className="flex-shrink-0 opacity-20 select-none" style={{ color: "#2BB5A0" }}>
+        <div className="flex-shrink-0 opacity-20 select-none text-white">
           <Stethoscope size={140} strokeWidth={2} />
         </div>
       </div>
@@ -135,10 +135,10 @@ export default function AdminDashboard({
 
       {/* ── Row 3 Right: Kesehatan Sistem ── */}
       <div className="col-span-4 bg-white rounded-3xl p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-1 h-5 rounded-full bg-[#2BB5A0]" />
+        <div className="flex items-center gap-3 bg-[#009E95] -mx-6 -mt-6 px-6 py-4 mb-6 rounded-t-3xl">
+          <div className="w-1 h-5 rounded-full bg-transparent" />
           <h2
-            className="text-sm font-bold text-gray-800 tracking-widest"
+            className="text-sm font-semibold text-white tracking-widest"
             style={{ fontFamily: "var(--font-poppins)" }}
           >
             KESEHATAN SISTEM

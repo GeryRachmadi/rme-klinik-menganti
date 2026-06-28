@@ -148,15 +148,15 @@ export default function AccountFormModal({ isOpen, onClose, onSave, user }: Acco
         style={{ fontFamily: "var(--font-jakarta)" }}
       >
         {/* Header */}
-        <div className="px-8 pt-8 pb-6 border-b border-gray-100 flex items-start justify-between flex-shrink-0">
+        <div className="px-8 pt-8 pb-6 bg-[#009E95] flex items-start justify-between flex-shrink-0">
           <div>
             <h2
-              className="text-xl font-bold text-gray-800 leading-tight"
+              className="text-xl font-bold text-white leading-tight"
               style={{ fontFamily: "var(--font-poppins)" }}
             >
               {isEditMode ? "Edit Akun" : "Tambah Akun Baru"}
             </h2>
-            <p className="text-xs text-gray-400 mt-1.5 leading-relaxed">
+            <p className="text-xs text-white/70 mt-1.5 leading-relaxed">
               {isEditMode
                 ? "Perbarui informasi akun pengguna"
                 : "Lengkapi informasi dibawah untuk membuat akun baru"}
@@ -165,7 +165,7 @@ export default function AccountFormModal({ isOpen, onClose, onSave, user }: Acco
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors mt-0.5"
+            className="p-1.5 rounded-lg text-white/70 hover:bg-white/10 hover:text-white transition-colors mt-0.5"
           >
             <X size={18} strokeWidth={2} />
           </button>

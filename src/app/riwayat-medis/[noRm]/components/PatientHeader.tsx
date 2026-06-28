@@ -46,18 +46,18 @@ export default function PatientHeader({
     !!latestDiagnosis;
 
   return (
-    <div className="col-span-12 bg-white rounded-3xl px-10 py-7 flex flex-col md:flex-row justify-between items-center gap-4">
+    <div className="col-span-12 bg-[#009E95] rounded-3xl px-10 py-7 flex flex-col md:flex-row justify-between items-center gap-4">
       {/* Left Section */}
       <div className="flex items-center gap-4 w-full md:w-auto">
         {/* Avatar */}
-        <div className="w-16 h-16 rounded-full border-2 border-teal-500 bg-teal-50 flex items-center justify-center text-teal-600 font-bold text-2xl flex-shrink-0">
+        <div className="w-16 h-16 rounded-full border-2 border-[#10B981] bg-white flex items-center justify-center text-[#10B981] font-bold text-2xl flex-shrink-0">
           {initials}
         </div>
         
         {/* Info */}
         <div className="flex flex-col gap-2">
           <h1
-            className="text-2xl font-bold text-gray-900 leading-tight"
+            className="text-2xl font-bold text-white leading-tight"
             style={{ fontFamily: "var(--font-poppins)" }}
           >
             {patient.namaLengkap}
@@ -65,20 +65,20 @@ export default function PatientHeader({
 
           <div className="flex flex-wrap items-center gap-2">
             <span
-              className="bg-[#006B4E] text-white px-3 py-0.5 rounded-full text-xs font-semibold"
+              className="bg-white text-[#475569] px-3 py-0.5 rounded-full text-xs font-semibold"
               style={{ fontFamily: "var(--font-jakarta)" }}
             >
               {patient.noRm}
             </span>
             <span
-              className="bg-gray-100 text-gray-600 px-3 py-0.5 rounded-full text-xs font-medium"
+              className="bg-white text-[#475569] px-3 py-0.5 rounded-full text-xs font-medium"
               style={{ fontFamily: "var(--font-jakarta)" }}
             >
               NIK: {patient.nik}
             </span>
             {patient.tanggalLahir && (
               <span
-                className="bg-blue-100 text-blue-700 px-3 py-0.5 rounded-full text-xs font-medium"
+                className="bg-white text-[#475569] px-3 py-0.5 rounded-full text-xs font-medium"
                 style={{ fontFamily: "var(--font-jakarta)" }}
               >
                 {formatDob(patient.tanggalLahir)}
@@ -88,13 +88,13 @@ export default function PatientHeader({
 
           <div className="flex flex-wrap items-center gap-2">
             <span
-              className={`px-3 py-0.5 rounded-full text-xs font-medium ${genderColor}`}
+              className="px-3 py-0.5 rounded-full text-xs font-medium bg-white text-[#475569]"
               style={{ fontFamily: "var(--font-jakarta)" }}
             >
               {genderLabel}
             </span>
             <span
-              className="bg-teal-50 text-teal-700 px-3 py-0.5 rounded-full text-xs font-medium"
+              className="bg-white text-[#475569] px-3 py-0.5 rounded-full text-xs font-medium"
               style={{ fontFamily: "var(--font-jakarta)" }}
             >
               {age} tahun
@@ -105,7 +105,7 @@ export default function PatientHeader({
             <div className="flex flex-wrap items-center gap-2">
               {latestDiagnosis && (
                 <span
-                  className="bg-red-50 text-red-700 border border-red-700 px-4 py-1 rounded-full text-sm font-medium"
+                  className="bg-white text-[#475569] border border-[#E2E8F0] px-4 py-1 rounded-full text-sm font-medium"
                   style={{ fontFamily: "var(--font-jakarta)" }}
                 >
                   Dx: {latestDiagnosis}
@@ -113,7 +113,7 @@ export default function PatientHeader({
               )}
               {latestTreatment && (
                 <span
-                  className="bg-purple-50 text-purple-700 border border-purple-700 px-4 py-1 rounded-full text-sm font-medium"
+                  className="bg-white text-[#475569] border border-[#E2E8F0] px-4 py-1 rounded-full text-sm font-medium"
                   style={{ fontFamily: "var(--font-jakarta)" }}
                 >
                   Tx: {latestTreatment}
