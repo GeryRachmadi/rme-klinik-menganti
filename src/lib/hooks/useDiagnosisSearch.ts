@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ICD10_MOCK_DATA } from '../constants/icd10-mock';
 
 export interface ICD10Entry {
+  id: string;
   code: string;
   display: string;
+  display_id: string | null;
 }
 
 export interface UseDiagnosisSearchResult {
@@ -17,18 +18,16 @@ export function useDiagnosisSearch(searchQuery: string): UseDiagnosisSearchResul
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Debounce logic
   const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(searchQuery);
     }, 300);
-
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const performSearch = useCallback((query: string) => {
+  const performSearch = useCallback(async (query: string) => {
     if (!query || query.length < 3) {
       setResults([]);
       setIsLoading(false);
@@ -39,34 +38,14 @@ export function useDiagnosisSearch(searchQuery: string): UseDiagnosisSearchResul
     setError(null);
 
     try {
-      const lowerQuery = query.toLowerCase();
-      
-      const matched = ICD10_MOCK_DATA.filter(
-        (item) =>
-          item.code.toLowerCase().includes(lowerQuery) ||
-          item.display.toLowerCase().includes(lowerQuery)
-      );
-
-      // Sort exact matches first, then partial matches
-      matched.sort((a, b) => {
-        const aCodeExact = a.code.toLowerCase() === lowerQuery;
-        const bCodeExact = b.code.toLowerCase() === lowerQuery;
-        
-        if (aCodeExact && !bCodeExact) return -1;
-        if (!aCodeExact && bCodeExact) return 1;
-        
-        const aDisplayExact = a.display.toLowerCase() === lowerQuery;
-        const bDisplayExact = b.display.toLowerCase() === lowerQuery;
-        
-        if (aDisplayExact && !bDisplayExact) return -1;
-        if (!aDisplayExact && bDisplayExact) return 1;
-
-        return 0;
+      const res = await fetch(`/api/icd10?q=${encodeURIComponent(query)}`, {
+        cache: 'no-store',
       });
-
-      setResults(matched);
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      const data: ICD10Entry[] = await res.json();
+      setResults(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unknown error occurred during search');
+      setError(err instanceof Error ? err.message : 'Terjadi kesalahan saat mencari data.');
       setResults([]);
     } finally {
       setIsLoading(false);

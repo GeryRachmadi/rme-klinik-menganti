@@ -1,5 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ICD9CM_MOCK, Icd9CmEntry } from '../constants/icd9cm-mock';
+
+export interface Icd9CmEntry {
+  id: string;
+  code: string;
+  display: string;
+  category: string | null;
+}
 
 export interface UseProcedureSearchResult {
   results: Icd9CmEntry[];
@@ -18,11 +24,10 @@ export function useProcedureSearch(query: string): UseProcedureSearchResult {
     const timer = setTimeout(() => {
       setDebouncedQuery(query);
     }, 300);
-
     return () => clearTimeout(timer);
   }, [query]);
 
-  const performSearch = useCallback((searchQuery: string) => {
+  const performSearch = useCallback(async (searchQuery: string) => {
     if (!searchQuery || searchQuery.length < 3) {
       setResults([]);
       setIsLoading(false);
@@ -33,35 +38,14 @@ export function useProcedureSearch(query: string): UseProcedureSearchResult {
     setError(null);
 
     try {
-      const lowerQuery = searchQuery.toLowerCase();
-
-      const matched = ICD9CM_MOCK.filter((item) => {
-        const matchCode = item.code.toLowerCase().includes(lowerQuery);
-        const matchDisplay = item.display.toLowerCase().includes(lowerQuery);
-        const matchCategory = item.category?.toLowerCase().includes(lowerQuery) ?? false;
-
-        return matchCode || matchDisplay || matchCategory;
+      const res = await fetch(`/api/icd9cm?q=${encodeURIComponent(searchQuery)}`, {
+        cache: 'no-store',
       });
-
-      matched.sort((a, b) => {
-        const aCodeExact = a.code.toLowerCase() === lowerQuery;
-        const bCodeExact = b.code.toLowerCase() === lowerQuery;
-
-        if (aCodeExact && !bCodeExact) return -1;
-        if (!aCodeExact && bCodeExact) return 1;
-
-        const aDisplayExact = a.display.toLowerCase() === lowerQuery;
-        const bDisplayExact = b.display.toLowerCase() === lowerQuery;
-
-        if (aDisplayExact && !bDisplayExact) return -1;
-        if (!aDisplayExact && bDisplayExact) return 1;
-
-        return 0;
-      });
-
-      setResults(matched);
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      const data: Icd9CmEntry[] = await res.json();
+      setResults(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unknown error occurred during search');
+      setError(err instanceof Error ? err.message : 'Terjadi kesalahan saat mencari data.');
       setResults([]);
     } finally {
       setIsLoading(false);
