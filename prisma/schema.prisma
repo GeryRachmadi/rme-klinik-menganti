@@ -145,7 +145,6 @@ model Encounter {
   practitioner       Practitioner? @relation("EncounterDokter", fields: [practitionerId], references: [id])
   perawatId               String?
   perawat                 Practitioner? @relation("EncounterPerawat", fields: [perawatId], references: [id])
-  jenisPenjamin           String?
   instruksiLab            String?       @db.Text
   asesmenKeperawatan      String?       @db.Text
   riwayatPenyakitKeluarga String?       @db.Text
@@ -293,15 +292,17 @@ model ServiceRequest {
 // ============================================
 
 model ICD10Reference {
-  id      String @id @default(cuid())
-  code    String @unique
-  display String
+  id         String  @id @default(cuid())
+  code       String  @unique
+  display    String
+  display_id String?
 }
 
-model ICD9Reference {
-  id      String @id @default(cuid())
-  code    String @unique
-  display String
+model ICD9CMReference {
+  id       String  @id @default(cuid())
+  code     String  @unique
+  display  String
+  category String?
 }
 
 // ============================================
