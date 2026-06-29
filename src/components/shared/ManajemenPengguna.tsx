@@ -72,6 +72,7 @@ export default function ManajemenPengguna({ role, currentUserId }: ManajemenPeng
   // ── Modal state ───────────────────────────────────────────────────────────
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [userToEdit, setUserToEdit] = useState<Account | null>(null);
+  const [userToView, setUserToView] = useState<Account | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<Account | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -247,6 +248,24 @@ export default function ManajemenPengguna({ role, currentUserId }: ManajemenPeng
             nik: userToEdit.practitioner?.identifierStr ?? "",
             name: userToEdit.practitioner?.name ?? "",
             speciality: userToEdit.practitioner?.speciality ?? null,
+          },
+        } : undefined}
+      />
+
+      <AccountFormModal
+        isOpen={!!userToView}
+        onClose={() => setUserToView(null)}
+        onSave={async () => null}
+        readOnly
+        user={userToView ? {
+          id: userToView.id,
+          username: userToView.username,
+          role: userToView.role,
+          isActive: userToView.isActive,
+          practitioner: {
+            nik: userToView.practitioner?.identifierStr ?? "",
+            name: userToView.practitioner?.name ?? "",
+            speciality: userToView.practitioner?.speciality ?? null,
           },
         } : undefined}
       />
@@ -523,7 +542,7 @@ export default function ManajemenPengguna({ role, currentUserId }: ManajemenPeng
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
-                        onClick={() => console.log("View user - coming soon")}
+                        onClick={() => setUserToView(account)}
                         className="cursor-pointer p-2 rounded-lg text-gray-400 hover:bg-blue-50 hover:text-blue-500 transition-colors"
                         title="Lihat detail"
                       >

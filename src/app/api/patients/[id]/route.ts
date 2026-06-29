@@ -38,7 +38,7 @@ export async function PUT(
   if (!session) return errResponse("Unauthorized", 401);
   
   // Ensure only authorized roles can update
-  const allowedRoles = ["ADMIN", "PENDAFTARAN", "PERAWAT", "DOKTER"];
+  const allowedRoles = ["ADMIN", "PENDAFTARAN"];
   if (!allowedRoles.includes(session.user.role)) {
     return errResponse("Forbidden", 403);
   }
@@ -133,7 +133,12 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse<ApiResponse<null>>> {
-  const session = await auth().catch(() => null);
+  const session = await auth();
+  if (!session) return errResponse("Unauthorized", 401);
+  if (!["ADMIN", "PENDAFTARAN"].includes(session.user.role)) {
+    return errResponse("Forbidden", 403);
+  }
+
   const { id } = await params;
 
   let existing: { id: string; namaLengkap: string; noRm: string } | null;

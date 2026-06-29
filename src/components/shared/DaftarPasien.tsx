@@ -38,8 +38,9 @@ function getPageNumbers(current: number, total: number): (number | "…")[] {
   return [1, "…", current - 1, current, current + 1, "…", total];
 }
 
-export default function DaftarPasien() {
+export default function DaftarPasien({ role }: { role?: string }) {
   const router = useRouter();
+  const canMutate = role === "ADMIN" || role === "PENDAFTARAN";
 
   // ── Data state ──────────────────────────────────────────────────────────────
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -349,22 +350,26 @@ export default function DaftarPasien() {
                       >
                         <Eye size={15} strokeWidth={2} />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => handleEditOpen(patient)}
-                        className="cursor-pointer p-2 bg-gray-50 rounded-lg text-gray-400 hover:bg-amber-50 hover:text-amber-500 transition-colors"
-                        title="Edit data pasien"
-                      >
-                        <Pencil size={15} strokeWidth={2} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteOpen(patient)}
-                        className="cursor-pointer p-2 bg-gray-50 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
-                        title="Hapus data pasien"
-                      >
-                        <Trash2 size={15} strokeWidth={2} />
-                      </button>
+                      {canMutate && (
+                        <button
+                          type="button"
+                          onClick={() => handleEditOpen(patient)}
+                          className="cursor-pointer p-2 bg-gray-50 rounded-lg text-gray-400 hover:bg-amber-50 hover:text-amber-500 transition-colors"
+                          title="Edit data pasien"
+                        >
+                          <Pencil size={15} strokeWidth={2} />
+                        </button>
+                      )}
+                      {canMutate && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteOpen(patient)}
+                          className="cursor-pointer p-2 bg-gray-50 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                          title="Hapus data pasien"
+                        >
+                          <Trash2 size={15} strokeWidth={2} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

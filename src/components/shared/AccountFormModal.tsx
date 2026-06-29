@@ -17,6 +17,7 @@ interface AccountFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (data: AccountSavePayload) => Promise<string | null>;
+  readOnly?: boolean;
   user?: {
     id: string;
     username: string;
@@ -39,7 +40,7 @@ interface FormErrors {
   spesialisasi?: string;
 }
 
-export default function AccountFormModal({ isOpen, onClose, onSave, user }: AccountFormModalProps) {
+export default function AccountFormModal({ isOpen, onClose, onSave, user, readOnly = false }: AccountFormModalProps) {
   const isEditMode = !!user;
 
   const [username, setUsername] = useState("");
@@ -154,10 +155,12 @@ export default function AccountFormModal({ isOpen, onClose, onSave, user }: Acco
               className="text-xl font-bold text-white leading-tight"
               style={{ fontFamily: "var(--font-poppins)" }}
             >
-              {isEditMode ? "Edit Akun" : "Tambah Akun Baru"}
+              {readOnly ? "Detail Akun" : isEditMode ? "Edit Akun" : "Tambah Akun Baru"}
             </h2>
             <p className="text-xs text-white/70 mt-1.5 leading-relaxed">
-              {isEditMode
+              {readOnly
+                ? "Informasi detail akun pengguna"
+                : isEditMode
                 ? "Perbarui informasi akun pengguna"
                 : "Lengkapi informasi dibawah untuk membuat akun baru"}
             </p>
@@ -188,32 +191,35 @@ export default function AccountFormModal({ isOpen, onClose, onSave, user }: Acco
                 autoComplete="off"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                disabled={readOnly}
                 className={errors.username ? inputError : inputNormal}
               />
               {errors.username && <p className="mt-1.5 text-xs text-red-500 font-medium">{errors.username}</p>}
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder={isEditMode ? "Kosongkan jika tidak ingin mengubah" : "Masukkan password"}
-                  autoComplete="new-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={`pr-11 ${errors.password ? inputError : inputNormal}`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors"
-                >
-                  {showPassword ? <Eye size={16} strokeWidth={2} /> : <EyeOff size={16} strokeWidth={2} />}
-                </button>
+            {!readOnly && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder={isEditMode ? "Kosongkan jika tidak ingin mengubah" : "Masukkan password"}
+                    autoComplete="new-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={`pr-11 ${errors.password ? inputError : inputNormal}`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors"
+                  >
+                    {showPassword ? <Eye size={16} strokeWidth={2} /> : <EyeOff size={16} strokeWidth={2} />}
+                  </button>
+                </div>
+                {errors.password && <p className="mt-1.5 text-xs text-red-500 font-medium">{errors.password}</p>}
               </div>
-              {errors.password && <p className="mt-1.5 text-xs text-red-500 font-medium">{errors.password}</p>}
-            </div>
+            )}
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Role</label>
@@ -221,7 +227,8 @@ export default function AccountFormModal({ isOpen, onClose, onSave, user }: Acco
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
-                  className={`appearance-none cursor-pointer ${errors.role ? inputError : inputNormal} ${!role ? "text-gray-300" : "text-gray-700"}`}
+                  disabled={readOnly}
+                  className={`appearance-none ${readOnly ? "cursor-default" : "cursor-pointer"} ${errors.role ? inputError : inputNormal} ${!role ? "text-gray-300" : "text-gray-700"}`}
                 >
                   <option value="" disabled>Pilih role…</option>
                   <option value="ADMIN">Admin</option>
@@ -252,6 +259,7 @@ export default function AccountFormModal({ isOpen, onClose, onSave, user }: Acco
                 maxLength={16}
                 value={nik}
                 onChange={(e) => setNik(e.target.value.replace(/\D/g, ""))}
+                disabled={readOnly}
                 className={errors.nik ? inputError : inputNormal}
               />
               {errors.nik && <p className="mt-1.5 text-xs text-red-500 font-medium">{errors.nik}</p>}
@@ -265,6 +273,7 @@ export default function AccountFormModal({ isOpen, onClose, onSave, user }: Acco
                 autoComplete="off"
                 value={namaLengkap}
                 onChange={(e) => setNamaLengkap(e.target.value)}
+                disabled={readOnly}
                 className={errors.namaLengkap ? inputError : inputNormal}
               />
               {errors.namaLengkap && <p className="mt-1.5 text-xs text-red-500 font-medium">{errors.namaLengkap}</p>}
@@ -276,7 +285,8 @@ export default function AccountFormModal({ isOpen, onClose, onSave, user }: Acco
                 <select
                   value={spesialisasi}
                   onChange={(e) => setSpesialisasi(e.target.value)}
-                  className={`appearance-none cursor-pointer ${errors.spesialisasi ? inputError : inputNormal} ${!spesialisasi ? "text-gray-300" : "text-gray-700"}`}
+                  disabled={readOnly}
+                  className={`appearance-none ${readOnly ? "cursor-default" : "cursor-pointer"} ${errors.spesialisasi ? inputError : inputNormal} ${!spesialisasi ? "text-gray-300" : "text-gray-700"}`}
                 >
                   <option value="" disabled>Pilih poli…</option>
                   <option value="Umum">Umum</option>
@@ -289,7 +299,7 @@ export default function AccountFormModal({ isOpen, onClose, onSave, user }: Acco
           </div>
 
           {/* Validation error toast */}
-          {showValidationToast && (
+          {!readOnly && showValidationToast && (
             <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-2xl px-4 py-3">
               <AlertCircle size={18} strokeWidth={2} className="text-red-500 flex-shrink-0" />
               <p className="text-sm text-red-600 font-medium">Informasi tidak lengkap atau tidak valid.</p>
@@ -297,7 +307,7 @@ export default function AccountFormModal({ isOpen, onClose, onSave, user }: Acco
           )}
 
           {/* API error */}
-          {apiError && (
+          {!readOnly && apiError && (
             <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-2xl px-4 py-3">
               <AlertCircle size={18} strokeWidth={2} className="text-red-500 flex-shrink-0" />
               <p className="text-sm text-red-600 font-medium">{apiError}</p>
@@ -307,25 +317,27 @@ export default function AccountFormModal({ isOpen, onClose, onSave, user }: Acco
         </div>
 
         {/* Footer */}
-        <div className="px-8 py-5 border-t border-gray-100 flex items-center gap-3 flex-shrink-0">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSaving}
-            className="flex-1 px-5 py-2.5 rounded-full text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-50"
-          >
-            Batal
-          </button>
-          <button
-            type="button"
-            onClick={handleSimpan}
-            disabled={isSaving}
-            className="flex-1 px-5 py-2.5 rounded-full text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-70 cursor-pointer"
-            style={{ background: "#2BB5A0" }}
-          >
-            {isSaving ? "Menyimpan…" : "Simpan"}
-          </button>
-        </div>
+        {!readOnly && (
+          <div className="px-8 py-5 border-t border-gray-100 flex items-center gap-3 flex-shrink-0">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSaving}
+              className="flex-1 px-5 py-2.5 rounded-full text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              onClick={handleSimpan}
+              disabled={isSaving}
+              className="flex-1 px-5 py-2.5 rounded-full text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-70 cursor-pointer"
+              style={{ background: "#2BB5A0" }}
+            >
+              {isSaving ? "Menyimpan…" : "Simpan"}
+            </button>
+          </div>
+        )}
       </div>
     </>
   );
