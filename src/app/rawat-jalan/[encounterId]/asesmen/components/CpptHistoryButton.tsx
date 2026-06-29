@@ -32,7 +32,7 @@ export default function CpptHistoryButton({ data, encounterStatus }: CpptHistory
       <button
         type="button"
         onClick={() => setShowCpptModal(true)}
-        className="inline-flex items-center gap-2 px-6 py-3 text-base font-semibold text-[#006B4E] border border-[#006B4E] rounded-full hover:bg-[#E6F5F4] transition-colors shrink-0 cursor-pointer"
+        className="inline-flex items-center gap-2 px-6 py-3 text-base font-semibold text-[#475569] bg-white rounded-full hover:opacity-90 transition-opacity shrink-0 cursor-pointer"
         style={{ fontFamily: 'var(--font-jakarta)' }}
       >
         <History className="w-5 h-5" />

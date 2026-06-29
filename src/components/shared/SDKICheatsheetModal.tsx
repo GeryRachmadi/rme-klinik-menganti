@@ -1,54 +1,30 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Search, Loader2 } from 'lucide-react';
+import { X, Search } from 'lucide-react';
+import { SDKI_MOCK, type SdkiEntry } from '@/lib/constants/sdki-mock';
 
-interface ICD9CMRow {
-  id: string;
-  code: string;
-  display: string;
-  category: string | null;
-}
-
-interface ICD9CMCheatsheetModalProps {
+interface SDKICheatsheetModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (code: string, display: string, category: string | null) => void;
+  onSelect: (code: string, display: string, category: string) => void;
 }
 
 const CATEGORY_ORDER = [
-  'Consultation',
-  'Laboratory',
-  'Imaging',
-  'Cardiology',
-  'Minor Procedures',
-  'Dental Procedures',
-  'Gynaecology',
+  'Fisiologis',
+  'Psikologis',
+  'Perilaku',
+  'Relasional',
+  'Lingkungan',
 ];
 
-export function ICD9CMCheatsheetModal({ isOpen, onClose, onSelect }: ICD9CMCheatsheetModalProps) {
-  const [allRows, setAllRows]         = useState<ICD9CMRow[]>([]);
+export function SDKICheatsheetModal({ isOpen, onClose, onSelect }: SDKICheatsheetModalProps) {
   const [filterQuery, setFilterQuery] = useState('');
-  const [isLoading, setIsLoading]     = useState(false);
-  const [error, setError]             = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
-
     setFilterQuery('');
-    setIsLoading(true);
-    setError(null);
-
-    fetch('/api/icd9cm?all=true', { cache: 'no-store' })
-      .then((res) => {
-        if (!res.ok) throw new Error(`Server error: ${res.status}`);
-        return res.json() as Promise<ICD9CMRow[]>;
-      })
-      .then((data) => setAllRows(data))
-      .catch((err) => setError(err instanceof Error ? err.message : 'Gagal memuat data.'))
-      .finally(() => setIsLoading(false));
-
     setTimeout(() => searchRef.current?.focus(), 100);
   }, [isOpen]);
 
@@ -64,18 +40,18 @@ export function ICD9CMCheatsheetModal({ isOpen, onClose, onSelect }: ICD9CMCheat
   if (!isOpen) return null;
 
   const q = filterQuery.toLowerCase();
-  const filtered = q.length === 0 ? allRows : allRows.filter(
-    (row) =>
-      row.code.toLowerCase().includes(q) ||
-      row.display.toLowerCase().includes(q) ||
-      (row.category ?? '').toLowerCase().includes(q)
-  );
+  const filtered: SdkiEntry[] = q.length === 0
+    ? SDKI_MOCK
+    : SDKI_MOCK.filter(
+        (row) =>
+          row.code.toLowerCase().includes(q) ||
+          row.display.toLowerCase().includes(q) ||
+          row.category.toLowerCase().includes(q)
+      );
 
-  // Group by category, respecting CATEGORY_ORDER
-  const grouped = filtered.reduce<Record<string, ICD9CMRow[]>>((acc, row) => {
-    const cat = row.category ?? 'Lainnya';
-    if (!acc[cat]) acc[cat] = [];
-    acc[cat].push(row);
+  const grouped = filtered.reduce<Record<string, SdkiEntry[]>>((acc, row) => {
+    if (!acc[row.category]) acc[row.category] = [];
+    acc[row.category].push(row);
     return acc;
   }, {});
 
@@ -84,12 +60,10 @@ export function ICD9CMCheatsheetModal({ isOpen, onClose, onSelect }: ICD9CMCheat
     ...Object.keys(grouped).filter((c) => !CATEGORY_ORDER.includes(c)),
   ];
 
-  const handleSelect = (row: ICD9CMRow) => {
+  const handleSelect = (row: SdkiEntry) => {
     onSelect(row.code, row.display, row.category);
     onClose();
   };
-
-  const totalCount = filtered.length;
 
   return (
     <div
@@ -105,7 +79,7 @@ export function ICD9CMCheatsheetModal({ isOpen, onClose, onSelect }: ICD9CMCheat
           style={{ backgroundColor: '#0F766E' }}
         >
           <h2 className="text-base font-semibold text-white" style={{ fontFamily: '"Poppins", sans-serif' }}>
-            Daftar Kode ICD-9-CM
+            Daftar Kode SDKI
           </h2>
           <button
             type="button"
@@ -126,29 +100,20 @@ export function ICD9CMCheatsheetModal({ isOpen, onClose, onSelect }: ICD9CMCheat
               type="text"
               value={filterQuery}
               onChange={(e) => setFilterQuery(e.target.value)}
-              placeholder="Cari kode, nama tindakan, atau kategori…"
+              placeholder="Cari kode, nama diagnosis, atau kategori…"
               className="w-full pl-9 pr-4 py-2 text-sm text-gray-700 border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] transition-colors"
               autoComplete="off"
             />
           </div>
-          {!isLoading && (
-            <p className="text-xs text-gray-400 mt-1.5">
-              {totalCount} tindakan ditemukan
-            </p>
-          )}
+          <p className="text-xs text-gray-400 mt-1.5">
+            {filtered.length} diagnosis ditemukan
+          </p>
         </div>
 
         {/* Body */}
         <div className="overflow-y-auto flex-1">
-          {isLoading ? (
-            <div className="flex items-center justify-center gap-2 py-12 text-sm text-gray-500">
-              <Loader2 className="animate-spin h-5 w-5 text-[#0F766E]" />
-              Memuat data…
-            </div>
-          ) : error ? (
-            <div className="px-5 py-8 text-sm text-red-500 text-center">{error}</div>
-          ) : totalCount === 0 ? (
-            <div className="px-5 py-8 text-sm text-gray-400 text-center">Tidak ada tindakan yang cocok.</div>
+          {filtered.length === 0 ? (
+            <div className="px-5 py-8 text-sm text-gray-400 text-center">Tidak ada diagnosis yang cocok.</div>
           ) : (
             <div>
               {sortedCategories.map((cat) => (
@@ -161,7 +126,7 @@ export function ICD9CMCheatsheetModal({ isOpen, onClose, onSelect }: ICD9CMCheat
                   <ul className="divide-y divide-gray-50">
                     {grouped[cat].map((row) => (
                       <li
-                        key={row.id}
+                        key={row.code}
                         onClick={() => handleSelect(row)}
                         className="flex items-center gap-3 px-5 py-3 cursor-pointer hover:bg-[#E6F5F4] transition-colors group"
                       >
@@ -186,7 +151,7 @@ export function ICD9CMCheatsheetModal({ isOpen, onClose, onSelect }: ICD9CMCheat
         {/* Footer */}
         <div className="px-5 py-3 border-t border-gray-100 flex-shrink-0">
           <p className="text-xs text-gray-400 text-center">
-            Klik baris untuk mengisi kolom tindakan secara otomatis
+            Klik baris untuk mengisi kolom diagnosis keperawatan secara otomatis
           </p>
         </div>
       </div>

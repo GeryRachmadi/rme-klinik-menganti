@@ -102,7 +102,7 @@ export function ICD10CheatsheetModal({ isOpen, onClose, onSelect }: ICD10Cheatsh
               value={filterQuery}
               onChange={(e) => setFilterQuery(e.target.value)}
               placeholder="Cari kode, nama Indonesia, atau nama Inggris…"
-              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] transition-colors"
+              className="w-full pl-9 pr-4 py-2 text-sm text-gray-700 border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] transition-colors"
               autoComplete="off"
             />
           </div>

@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { toFHIRDateTime, formatVitalSign } from '@/lib/satusehat';
+import { parseFamilyHistory } from '@/lib/utils/family-history';
 
 export type FHIRBundle = {
   resourceType: 'Bundle';
@@ -166,16 +167,17 @@ export async function buildSatuSehatBundle(encounterId: string): Promise<FHIRBun
     });
   }
 
-  // ── MedicationRequest ────────────────────────────────────────
-  const medReq = encounter.medicationRequests[0];
-  if (medReq?.medication) {
+  // ── Medication + MedicationRequest (paired) ─────────────────
+  for (const medReq of encounter.medicationRequests) {
+    if (!medReq.medication) continue;
+    const medicationUuid = crypto.randomUUID();
+    const medicationRef = `urn:uuid:${medicationUuid}`;
+
     entries.push({
-      fullUrl: `urn:uuid:${crypto.randomUUID()}`,
+      fullUrl: medicationRef,
       resource: {
-        resourceType: 'MedicationRequest',
-        status: 'active',
-        intent: 'order',
-        medicationCodeableConcept: {
+        resourceType: 'Medication',
+        code: {
           coding: [
             {
               system: 'http://sys-ids.kemkes.go.id/kfa',
@@ -184,6 +186,17 @@ export async function buildSatuSehatBundle(encounterId: string): Promise<FHIRBun
           ],
           text: medReq.medication,
         },
+      },
+      request: { method: 'POST', url: 'Medication' },
+    });
+
+    entries.push({
+      fullUrl: `urn:uuid:${crypto.randomUUID()}`,
+      resource: {
+        resourceType: 'MedicationRequest',
+        status: 'active',
+        intent: 'order',
+        medicationReference: { reference: medicationRef },
         subject: { reference: patientRef },
         encounter: { reference: encounterRef },
       },
@@ -205,6 +218,44 @@ export async function buildSatuSehatBundle(encounterId: string): Promise<FHIRBun
         note: [{ text: svcReq.note ?? '' }],
       },
       request: { method: 'POST', url: 'ServiceRequest' },
+    });
+  }
+
+  // ── FamilyMemberHistory ──────────────────────────────────────
+  const familyHistory = parseFamilyHistory(encounter.riwayatPenyakitKeluarga);
+
+  if (familyHistory !== null) {
+    const conditions =
+      !familyHistory.tidakAda && familyHistory.chips.length > 0
+        ? familyHistory.chips.map((item: string) => ({ code: { text: item } }))
+        : [];
+
+    const notes: { text: string }[] = [];
+    if (familyHistory.tidakAda || familyHistory.chips.length === 0) {
+      notes.push({ text: 'Tidak ada riwayat penyakit keluarga' });
+    } else if (familyHistory.catatan) {
+      notes.push({ text: familyHistory.catatan });
+    }
+
+    entries.push({
+      fullUrl: `urn:uuid:${crypto.randomUUID()}`,
+      resource: {
+        resourceType: 'FamilyMemberHistory',
+        status: 'completed',
+        patient: { reference: patientRef },
+        relationship: {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
+              code: 'FAMMEMB',
+              display: 'family member',
+            },
+          ],
+        },
+        condition: conditions,
+        ...(notes.length > 0 && { note: notes }),
+      },
+      request: { method: 'POST', url: 'FamilyMemberHistory' },
     });
   }
 

@@ -169,7 +169,7 @@ export default function DashboardQueueTable({
   return (
     <div className="col-span-8 bg-white rounded-3xl p-6">
       {/* Header */}
-      <div className="flex items-center justify-between bg-[#009E95] -mx-6 -mt-6 px-6 py-3 mb-6 rounded-t-3xl">
+      <div className="flex items-center justify-between bg-[#009E95] -mx-6 -mt-6 px-6 py-4 mb-6 rounded-t-3xl">
         <div className="flex items-center gap-3">
           <div className="w-1 h-5 rounded-full bg-transparent" />
           <h2
@@ -314,8 +314,15 @@ export default function DashboardQueueTable({
                   {showAction && (
                     <td className="py-3">
                       {enc.status === "BATAL" ? (
-                        // Cancelled encounters carry no assessable action.
                         <span className="text-xs text-gray-300">—</span>
+                      ) : enc.status === "SELESAI" ? (
+                        <Link
+                          href={`/rawat-jalan/${enc.id}/asesmen`}
+                          className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold text-white hover:opacity-90 transition-opacity"
+                          style={{ background: "#3B82F6", fontFamily: "var(--font-jakarta)" }}
+                        >
+                          Edit
+                        </Link>
                       ) : (
                         <Link
                           href={`/rawat-jalan/${enc.id}/asesmen`}

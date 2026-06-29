@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft';
 import { NursingDiagnosisAutocomplete, type SelectedNursingDiagnosis } from './NursingDiagnosisAutocomplete';
 import type { NursingAssessment, NursingDiagnosisItem } from '@/lib/utils/nursing-assessment';
+import { SDKICheatsheetModal } from '@/components/shared/SDKICheatsheetModal';
 
 const getNursingDraftKey = (encounterId: string) => `draft_nursing_${encounterId}`;
 
@@ -39,6 +40,7 @@ const NursingDiagnosisForm = forwardRef<NursingDiagnosisFormRef, NursingDiagnosi
 }, ref) => {
   const draftKey = getNursingDraftKey(encounterId);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [isCheatsheetOpen, setIsCheatsheetOpen] = useState(false);
 
   const {
     watch,
@@ -163,13 +165,31 @@ const NursingDiagnosisForm = forwardRef<NursingDiagnosisFormRef, NursingDiagnosi
         {!isReadOnly && (
           <>
             <NursingDiagnosisAutocomplete onDiagnosisChange={handleDiagnosisChange} />
-            <button
-              type="button"
-              onClick={() => setValue('diagnoses', [], { shouldDirty: true })}
-              className="text-blue-500 hover:text-blue-700 underline cursor-pointer font-medium text-sm mt-1 self-end italic"
-            >
-              Kosongkan Input
-            </button>
+            <div className="flex items-center justify-between mt-2">
+              <button
+                type="button"
+                onClick={() => setIsCheatsheetOpen(true)}
+                className="text-sm px-3 py-1 rounded bg-[#0F766E] text-white hover:opacity-90 transition-opacity cursor-pointer"
+                style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
+              >
+                Lihat Daftar Kode SDKI
+              </button>
+              <button
+                type="button"
+                onClick={() => setValue('diagnoses', [], { shouldDirty: true })}
+                className="text-blue-500 hover:text-blue-700 underline cursor-pointer font-medium text-sm italic"
+              >
+                Kosongkan Input
+              </button>
+            </div>
+
+            <SDKICheatsheetModal
+              isOpen={isCheatsheetOpen}
+              onClose={() => setIsCheatsheetOpen(false)}
+              onSelect={(code, display, category) => {
+                handleDiagnosisChange({ code, display, category });
+              }}
+            />
           </>
         )}
 
