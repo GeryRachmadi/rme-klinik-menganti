@@ -90,12 +90,26 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
   const [filterStatus, setFilterStatus] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
+  const [prioritasOpen, setPrioritasOpen] = useState(false);
+  const [statusOpen, setStatusOpen] = useState(false);
+  const prioritasRef = useRef<HTMLDivElement>(null);
+  const statusRef = useRef<HTMLDivElement>(null);
+
   const [mounted, setMounted]           = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [calendarPos, setCalendarPos]   = useState<{ top: number; left: number } | null>(null);
   const tanggalBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => { setMounted(true); }, []);
+
+  useEffect(() => {
+    function onDown(e: MouseEvent) {
+      if (prioritasRef.current && !prioritasRef.current.contains(e.target as Element)) setPrioritasOpen(false);
+      if (statusRef.current && !statusRef.current.contains(e.target as Element)) setStatusOpen(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, []);
 
   // Close calendar on outside click
   useEffect(() => {
@@ -351,38 +365,76 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
             )}
           </div>
 
-          <div className="w-48">
+          <div className="w-48 relative" ref={prioritasRef}>
             <label className="block text-xs font-semibold tracking-widest text-white/80 uppercase mb-2">
               Prioritas
             </label>
-            <select
-              value={filterPrioritas}
-              onChange={(e) => { setFilterPrioritas(e.target.value); setCurrentPage(1); }}
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 bg-white outline-none appearance-none cursor-pointer focus:border-[#2BB5A0]"
+            <button
+              type="button"
+              onClick={() => setPrioritasOpen((o) => !o)}
+              className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border text-sm cursor-pointer transition-colors ${
+                filterPrioritas !== ""
+                  ? "border-[#2BB5A0] bg-[#E6F5F4] text-[#2BB5A0] font-semibold"
+                  : "border-gray-200 bg-white text-gray-600 hover:border-[#2BB5A0]"
+              }`}
             >
-              <option value="">Semua</option>
-              <option value="Stabil">Stabil</option>
-              <option value="Cukup Berisiko">Cukup Berisiko</option>
-              <option value="Berisiko">Berisiko</option>
-              <option value="Berisiko Tinggi">Berisiko Tinggi</option>
-            </select>
+              <span>{filterPrioritas || "Semua"}</span>
+              <ChevronDown size={14} strokeWidth={2} className={`ml-2 flex-shrink-0 transition-transform ${prioritasOpen ? "rotate-180" : ""}`} />
+            </button>
+            {prioritasOpen && (
+              <div className="absolute left-0 top-full mt-2 z-30 bg-white border border-gray-100 rounded-2xl shadow-lg p-2 w-full" style={{ fontFamily: "var(--font-jakarta)" }}>
+                {(["", "Stabil", "Cukup Berisiko", "Berisiko", "Berisiko Tinggi"] as const).map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => { setFilterPrioritas(opt); setCurrentPage(1); setPrioritasOpen(false); }}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                      filterPrioritas === opt
+                        ? "bg-[#2DD4BF]/10 border border-[#2DD4BF]/30 text-[#006B5F] font-semibold"
+                        : "text-gray-600 hover:bg-[#F4F4F4] hover:text-[#50555C]"
+                    }`}
+                  >
+                    {opt || "Semua"}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div className="w-40">
+          <div className="w-40 relative" ref={statusRef}>
             <label className="block text-xs font-semibold tracking-widest text-white/80 uppercase mb-2">
               Status
             </label>
-            <select
-              value={filterStatus}
-              onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 bg-white outline-none appearance-none cursor-pointer focus:border-[#2BB5A0]"
+            <button
+              type="button"
+              onClick={() => setStatusOpen((o) => !o)}
+              className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border text-sm cursor-pointer transition-colors ${
+                filterStatus !== ""
+                  ? "border-[#2BB5A0] bg-[#E6F5F4] text-[#2BB5A0] font-semibold"
+                  : "border-gray-200 bg-white text-gray-600 hover:border-[#2BB5A0]"
+              }`}
             >
-              <option value="">Semua</option>
-              <option value="Menunggu">Menunggu</option>
-              <option value="Diperiksa">Diperiksa</option>
-              <option value="Selesai">Selesai</option>
-              <option value="Batal">Batal</option>
-            </select>
+              <span>{filterStatus || "Semua"}</span>
+              <ChevronDown size={14} strokeWidth={2} className={`ml-2 flex-shrink-0 transition-transform ${statusOpen ? "rotate-180" : ""}`} />
+            </button>
+            {statusOpen && (
+              <div className="absolute left-0 top-full mt-2 z-30 bg-white border border-gray-100 rounded-2xl shadow-lg p-2 w-full" style={{ fontFamily: "var(--font-jakarta)" }}>
+                {(["", "Menunggu", "Diperiksa", "Selesai", "Batal"] as const).map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => { setFilterStatus(opt); setCurrentPage(1); setStatusOpen(false); }}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                      filterStatus === opt
+                        ? "bg-[#2DD4BF]/10 border border-[#2DD4BF]/30 text-[#006B5F] font-semibold"
+                        : "text-gray-600 hover:bg-[#F4F4F4] hover:text-[#50555C]"
+                    }`}
+                  >
+                    {opt || "Semua"}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           </div>
         </div>

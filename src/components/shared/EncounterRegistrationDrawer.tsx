@@ -742,7 +742,7 @@ export default function EncounterRegistrationDrawer({
                   {/* Jenis Pasien */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Jenis Pasien <span className="text-red-500">*</span>
+                      Jenis Penjamin <span className="text-red-500">*</span>
                     </label>
                     <Controller
                       name="patientType"

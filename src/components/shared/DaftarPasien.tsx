@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -11,7 +11,15 @@ import {
   ChevronRight,
   UserPlus,
   Loader2,
+  ChevronDown,
 } from "lucide-react";
+
+const JENIS_KELAMIN_LABELS: Record<string, string> = {
+  "": "Semua", LAKI_LAKI: "Laki-laki", PEREMPUAN: "Perempuan",
+};
+const JENIS_PASIEN_LABELS: Record<string, string> = {
+  "": "Semua", UMUM: "UMUM", BPJS: "BPJS",
+};
 import { Patient } from "@/generated/prisma";
 import PatientRegistrationDrawer from "@/components/shared/PatientRegistrationDrawer";
 import PatientEditDrawer from "@/components/shared/PatientEditDrawer";
@@ -52,6 +60,12 @@ export default function DaftarPasien({ role }: { role?: string }) {
   const [jenisPasienFilter, setJenisPasienFilter]   = useState("");
   const [currentPage, setCurrentPage]               = useState(1);
 
+  // ── Filter dropdown open state ───────────────────────────────────────────────
+  const [jenisKelaminOpen, setJenisKelaminOpen] = useState(false);
+  const [jenisPasienOpen, setJenisPasienOpen] = useState(false);
+  const jenisKelaminRef = useRef<HTMLDivElement>(null);
+  const jenisPasienRef = useRef<HTMLDivElement>(null);
+
   // ── Modal / drawer state ────────────────────────────────────────────────────
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isEditOpen,   setIsEditOpen]   = useState(false);
@@ -76,6 +90,15 @@ export default function DaftarPasien({ role }: { role?: string }) {
   useEffect(() => {
     fetchPatients();
   }, [fetchPatients]);
+
+  useEffect(() => {
+    function onMouseDown(e: MouseEvent) {
+      if (jenisKelaminRef.current && !jenisKelaminRef.current.contains(e.target as Node)) setJenisKelaminOpen(false);
+      if (jenisPasienRef.current && !jenisPasienRef.current.contains(e.target as Node)) setJenisPasienOpen(false);
+    }
+    document.addEventListener("mousedown", onMouseDown);
+    return () => document.removeEventListener("mousedown", onMouseDown);
+  }, []);
 
   // ── Reset page on filter/search change ───────────────────────────────────────
   useEffect(() => {
@@ -192,42 +215,84 @@ export default function DaftarPasien({ role }: { role?: string }) {
             </div>
           </div>
 
-          <div className="w-48">
+          <div className="w-48 relative" ref={jenisKelaminRef}>
             <label
               className="block text-xs font-semibold tracking-widest text-white/80 uppercase mb-2"
               style={{ fontFamily: "var(--font-jakarta)" }}
             >
               Jenis Kelamin
             </label>
-            <select
-              value={jenisKelaminFilter}
-              onChange={handleFilterChange(setJenisKelaminFilter)}
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 bg-gray-50 outline-none appearance-none cursor-pointer focus:border-[#2BB5A0]"
+            <button
+              type="button"
+              onClick={() => setJenisKelaminOpen((o) => !o)}
+              className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border text-sm cursor-pointer transition-colors ${
+                jenisKelaminFilter !== ""
+                  ? "border-[#2BB5A0] bg-[#E6F5F4] text-[#2BB5A0] font-semibold"
+                  : "border-gray-200 bg-white text-gray-600 hover:border-[#2BB5A0]"
+              }`}
               style={{ fontFamily: "var(--font-jakarta)" }}
             >
-              <option value="">Semua</option>
-              <option value="LAKI_LAKI">Laki-laki</option>
-              <option value="PEREMPUAN">Perempuan</option>
-            </select>
+              <span>{JENIS_KELAMIN_LABELS[jenisKelaminFilter] ?? "Semua"}</span>
+              <ChevronDown size={14} strokeWidth={2} className={`ml-2 flex-shrink-0 transition-transform ${jenisKelaminOpen ? "rotate-180" : ""}`} />
+            </button>
+            {jenisKelaminOpen && (
+              <div className="absolute left-0 top-full mt-2 z-30 bg-white border border-gray-100 rounded-2xl shadow-lg p-2 w-full" style={{ fontFamily: "var(--font-jakarta)" }}>
+                {(["", "LAKI_LAKI", "PEREMPUAN"] as const).map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => { setJenisKelaminFilter(opt); setJenisKelaminOpen(false); }}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                      jenisKelaminFilter === opt
+                        ? "bg-[#2DD4BF]/10 border border-[#2DD4BF]/30 text-[#006B5F] font-semibold"
+                        : "text-gray-600 hover:bg-[#F4F4F4] hover:text-[#50555C]"
+                    }`}
+                  >
+                    {JENIS_KELAMIN_LABELS[opt]}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div className="w-48">
+          <div className="w-48 relative" ref={jenisPasienRef}>
             <label
               className="block text-xs font-semibold tracking-widest text-white/80 uppercase mb-2"
               style={{ fontFamily: "var(--font-jakarta)" }}
             >
-              Jenis Pasien
+              Jenis Penjamin
             </label>
-            <select
-              value={jenisPasienFilter}
-              onChange={handleFilterChange(setJenisPasienFilter)}
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 bg-gray-50 outline-none appearance-none cursor-pointer focus:border-[#2BB5A0]"
+            <button
+              type="button"
+              onClick={() => setJenisPasienOpen((o) => !o)}
+              className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border text-sm cursor-pointer transition-colors ${
+                jenisPasienFilter !== ""
+                  ? "border-[#2BB5A0] bg-[#E6F5F4] text-[#2BB5A0] font-semibold"
+                  : "border-gray-200 bg-white text-gray-600 hover:border-[#2BB5A0]"
+              }`}
               style={{ fontFamily: "var(--font-jakarta)" }}
             >
-              <option value="">Semua</option>
-              <option value="UMUM">UMUM</option>
-              <option value="BPJS">BPJS</option>
-            </select>
+              <span>{JENIS_PASIEN_LABELS[jenisPasienFilter] ?? "Semua"}</span>
+              <ChevronDown size={14} strokeWidth={2} className={`ml-2 flex-shrink-0 transition-transform ${jenisPasienOpen ? "rotate-180" : ""}`} />
+            </button>
+            {jenisPasienOpen && (
+              <div className="absolute left-0 top-full mt-2 z-30 bg-white border border-gray-100 rounded-2xl shadow-lg p-2 w-full" style={{ fontFamily: "var(--font-jakarta)" }}>
+                {(["", "UMUM", "BPJS"] as const).map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => { setJenisPasienFilter(opt); setJenisPasienOpen(false); }}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                      jenisPasienFilter === opt
+                        ? "bg-[#2DD4BF]/10 border border-[#2DD4BF]/30 text-[#006B5F] font-semibold"
+                        : "text-gray-600 hover:bg-[#F4F4F4] hover:text-[#50555C]"
+                    }`}
+                  >
+                    {JENIS_PASIEN_LABELS[opt]}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           </div>
         </div>

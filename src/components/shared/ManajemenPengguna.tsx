@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { Search, UserPlus, Eye, Pencil, Trash2, ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { Search, UserPlus, Eye, Pencil, Trash2, ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, Loader2, ChevronDown } from "lucide-react";
 import AccountFormModal, { type AccountSavePayload } from "@/components/shared/AccountFormModal";
 import DeleteConfirmationModal from "@/components/shared/DeleteConfirmationModal";
 
@@ -30,6 +30,13 @@ interface Account {
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
+
+const ROLE_FILTER_LABELS: Record<string, string> = {
+  Semua: "Semua", ADMIN: "Admin", PENDAFTARAN: "Pendaftaran", PERAWAT: "Perawat", DOKTER: "Dokter",
+};
+const STATUS_FILTER_LABELS: Record<string, string> = {
+  Semua: "Semua", aktif: "Aktif", nonaktif: "Nonaktif",
+};
 
 const roleBadge: Record<Role, { label: string; className: string }> = {
   ADMIN:      { label: "ADMIN",      className: "bg-purple-50 text-purple-500 border-purple-500"    },
@@ -79,6 +86,12 @@ export default function ManajemenPengguna({ role, currentUserId }: ManajemenPeng
   const [userToDeactivate, setUserToDeactivate] = useState<Account | null>(null);
   const [isTogglingId, setIsTogglingId] = useState<string | null>(null);
 
+  // ── Filter dropdown open state ────────────────────────────────────────────
+  const [roleFilterOpen, setRoleFilterOpen] = useState(false);
+  const [statusFilterOpen, setStatusFilterOpen] = useState(false);
+  const roleFilterRef = useRef<HTMLDivElement>(null);
+  const statusFilterRef = useRef<HTMLDivElement>(null);
+
   // ── Toast ─────────────────────────────────────────────────────────────────
   const [toast, setToast] = useState<{ message: string; visible: boolean; type: "success" | "error" }>({
     message: "", visible: false, type: "success",
@@ -92,6 +105,15 @@ export default function ManajemenPengguna({ role, currentUserId }: ManajemenPeng
   }
 
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
+
+  useEffect(() => {
+    function onMouseDown(e: MouseEvent) {
+      if (roleFilterRef.current && !roleFilterRef.current.contains(e.target as Node)) setRoleFilterOpen(false);
+      if (statusFilterRef.current && !statusFilterRef.current.contains(e.target as Node)) setStatusFilterOpen(false);
+    }
+    document.addEventListener("mousedown", onMouseDown);
+    return () => document.removeEventListener("mousedown", onMouseDown);
+  }, []);
 
   // ── Fetch all accounts once (client-side filtering for instant search) ────
   const fetchAccounts = useCallback(async () => {
@@ -124,7 +146,7 @@ export default function ManajemenPengguna({ role, currentUserId }: ManajemenPeng
   const filteredAccounts = useMemo(() => {
     const q = searchQuery.toLowerCase();
     return accounts.filter((a) => {
-      if (q && !a.username.toLowerCase().includes(q) && !(a.practitioner?.name ?? "").toLowerCase().includes(q)) return false;
+      if (q && !a.username.toLowerCase().includes(q) && !(a.practitioner?.name ?? "").toLowerCase().includes(q) && !(a.practitioner?.identifierStr ?? "").toLowerCase().includes(q) && !(a.practitioner?.ihsNumber ?? "").toLowerCase().includes(q)) return false;
       if (roleFilter !== "Semua" && a.role !== roleFilter) return false;
       if (statusFilter === "aktif" && !a.isActive) return false;
       if (statusFilter === "nonaktif" && a.isActive) return false;
@@ -375,7 +397,7 @@ export default function ManajemenPengguna({ role, currentUserId }: ManajemenPeng
               <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300" strokeWidth={2.5} />
               <input
                 type="text"
-                placeholder="Cari Nama atau Username…"
+                placeholder="Cari Nama, Username, NIK, atau No. IHS…"
                 autoComplete="off"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -385,38 +407,78 @@ export default function ManajemenPengguna({ role, currentUserId }: ManajemenPeng
             </div>
           </div>
 
-          <div className="w-48">
+          <div className="w-48 relative" ref={roleFilterRef}>
             <label className="block text-xs font-semibold tracking-widest text-white/80 uppercase mb-2" style={{ fontFamily: "var(--font-jakarta)" }}>
               Role
             </label>
-            <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 bg-gray-50 outline-none appearance-none cursor-pointer"
+            <button
+              type="button"
+              onClick={() => setRoleFilterOpen((o) => !o)}
+              className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border text-sm cursor-pointer transition-colors ${
+                roleFilter !== "Semua"
+                  ? "border-[#2BB5A0] bg-[#E6F5F4] text-[#2BB5A0] font-semibold"
+                  : "border-gray-200 bg-white text-gray-600 hover:border-[#2BB5A0]"
+              }`}
               style={{ fontFamily: "var(--font-jakarta)" }}
             >
-              <option value="Semua">Semua</option>
-              <option value="ADMIN">Admin</option>
-              <option value="PENDAFTARAN">Pendaftaran</option>
-              <option value="PERAWAT">Perawat</option>
-              <option value="DOKTER">Dokter</option>
-            </select>
+              <span>{ROLE_FILTER_LABELS[roleFilter] ?? roleFilter}</span>
+              <ChevronDown size={14} strokeWidth={2} className={`ml-2 flex-shrink-0 transition-transform ${roleFilterOpen ? "rotate-180" : ""}`} />
+            </button>
+            {roleFilterOpen && (
+              <div className="absolute left-0 top-full mt-2 z-30 bg-white border border-gray-100 rounded-2xl shadow-lg p-2 w-full" style={{ fontFamily: "var(--font-jakarta)" }}>
+                {(["Semua", "ADMIN", "PENDAFTARAN", "PERAWAT", "DOKTER"] as const).map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => { setRoleFilter(opt); setRoleFilterOpen(false); }}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                      roleFilter === opt
+                        ? "bg-[#2DD4BF]/10 border border-[#2DD4BF]/30 text-[#006B5F] font-semibold"
+                        : "text-gray-600 hover:bg-[#F4F4F4] hover:text-[#50555C]"
+                    }`}
+                  >
+                    {ROLE_FILTER_LABELS[opt]}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div className="w-48">
+          <div className="w-48 relative" ref={statusFilterRef}>
             <label className="block text-xs font-semibold tracking-widest text-white/80 uppercase mb-2" style={{ fontFamily: "var(--font-jakarta)" }}>
               Status
             </label>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 bg-gray-50 outline-none appearance-none cursor-pointer"
+            <button
+              type="button"
+              onClick={() => setStatusFilterOpen((o) => !o)}
+              className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border text-sm cursor-pointer transition-colors ${
+                statusFilter !== "Semua"
+                  ? "border-[#2BB5A0] bg-[#E6F5F4] text-[#2BB5A0] font-semibold"
+                  : "border-gray-200 bg-white text-gray-600 hover:border-[#2BB5A0]"
+              }`}
               style={{ fontFamily: "var(--font-jakarta)" }}
             >
-              <option value="Semua">Semua</option>
-              <option value="aktif">Aktif</option>
-              <option value="nonaktif">Nonaktif</option>
-            </select>
+              <span>{STATUS_FILTER_LABELS[statusFilter] ?? statusFilter}</span>
+              <ChevronDown size={14} strokeWidth={2} className={`ml-2 flex-shrink-0 transition-transform ${statusFilterOpen ? "rotate-180" : ""}`} />
+            </button>
+            {statusFilterOpen && (
+              <div className="absolute left-0 top-full mt-2 z-30 bg-white border border-gray-100 rounded-2xl shadow-lg p-2 w-full" style={{ fontFamily: "var(--font-jakarta)" }}>
+                {(["Semua", "aktif", "nonaktif"] as const).map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => { setStatusFilter(opt); setStatusFilterOpen(false); }}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                      statusFilter === opt
+                        ? "bg-[#2DD4BF]/10 border border-[#2DD4BF]/30 text-[#006B5F] font-semibold"
+                        : "text-gray-600 hover:bg-[#F4F4F4] hover:text-[#50555C]"
+                    }`}
+                  >
+                    {STATUS_FILTER_LABELS[opt]}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           </div>
         </div>
