@@ -23,7 +23,7 @@ export default function LoginPage() {
 
   const errorMessageMap: Record<string, string> = {
     credentials: "Username atau Password salah.",
-    account_inactive: "Akun Anda telah dinonaktifkan. Hubungi administrator.",
+    account_inactive: "Akun Anda telah dinonaktifkan. Hubungi admin untuk melanjutkan.",
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
