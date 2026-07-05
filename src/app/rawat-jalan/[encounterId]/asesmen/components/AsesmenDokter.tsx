@@ -433,7 +433,7 @@ export default function AsesmenDokter({
         // per-field inline errors. Lists only the fields that are actually empty.
         const emptyFields = [
           procErr ? 'Tindakan Medis' : null,
-          medErr ? 'Resep Obat' : null,
+          medErr ? 'Peresepan Obat' : null,
           eduErr ? 'Edukasi' : null,
           labErr ? 'Instruksi Lab' : null,
         ].filter(Boolean);

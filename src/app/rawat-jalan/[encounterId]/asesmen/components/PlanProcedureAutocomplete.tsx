@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, KeyboardEvent } from 'react';
 import { Search, Loader2, ArrowLeft } from 'lucide-react';
-import { useProcedureSearch } from '@/lib/hooks/useProcedureSearch';
+import { useProcedureSearch, type Icd9CmEntry } from '@/lib/hooks/useProcedureSearch';
 
 const HTML_TAG_REGEX = /<[^>]*>/g;
 
@@ -33,8 +33,8 @@ export function PlanProcedureAutocomplete({
     setSelectedIndex(-1);
   }, [results]);
 
-  const handleSelect = (procedure: SelectedProcedure) => {
-    onProcedureChange(procedure);
+  const handleSelect = (procedure: Icd9CmEntry) => {
+    onProcedureChange({ code: procedure.code, display: procedure.display, category: procedure.category ?? '' });
     setSearchQuery('');
     setShowDropdown(false);
   };

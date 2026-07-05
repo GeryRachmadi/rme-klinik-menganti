@@ -114,7 +114,7 @@ const PlanMedicationForm = forwardRef<PlanMedicationFormRef, PlanMedicationFormP
           className="text-sm font-bold text-[#0F766E] uppercase tracking-wider"
           style={{ WebkitTextStroke: '0.2px #0F766E', fontFamily: JAKARTA }}
         >
-          Resep Obat
+          Peresepan Obat
           <span className="text-red-500 ml-1" style={{ WebkitTextStroke: '0' }}>*</span>
         </h3>
 
@@ -154,7 +154,7 @@ const PlanMedicationForm = forwardRef<PlanMedicationFormRef, PlanMedicationFormP
                 onChange={(e) => setValue('tidakAdaResep', e.target.checked, { shouldDirty: true, shouldValidate: true })}
                 className="w-4 h-4 accent-[#2BB5A0] cursor-pointer"
               />
-              Tidak ada resep obat
+              Tidak ada peresepan obat
             </label>
           )}
         </div>
@@ -162,7 +162,7 @@ const PlanMedicationForm = forwardRef<PlanMedicationFormRef, PlanMedicationFormP
 
       {tidakAdaResep ? (
         <p className="text-sm text-gray-400 italic py-4 text-center">
-          Tidak ada resep obat untuk kunjungan ini.
+          Tidak ada peresepan obat untuk kunjungan ini.
         </p>
       ) : (
         <>
