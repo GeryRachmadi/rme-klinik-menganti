@@ -69,7 +69,7 @@ export function AssessmentDiagnosisForm({ onSelectDiagnosis, encounterId, isRead
       e.preventDefault();
       if (selectedIndex >= 0 && selectedIndex < results.length) {
         const item = results[selectedIndex];
-        handleSelect(item.code, item.display);
+        handleSelect(item.code, item.display_id ?? item.display);
       }
     } else if (e.key === 'Escape') {
       setShowDropdown(false);
@@ -203,10 +203,15 @@ export function AssessmentDiagnosisForm({ onSelectDiagnosis, encounterId, isRead
                         ? 'bg-[#E6F5F4] text-[#0F766E]'
                         : 'text-gray-900 hover:bg-gray-50'
                     }`}
-                    onClick={() => handleSelect(item.code, item.display)}
+                    onClick={() => handleSelect(item.code, item.display_id ?? item.display)}
                     onMouseEnter={() => setSelectedIndex(index)}
                   >
-                    <span className="font-semibold">[{item.code}]</span> - {item.display}
+                    <p className="leading-snug">
+                      <span className="font-semibold">[{item.code}]</span> - {item.display_id ?? item.display}
+                    </p>
+                    {item.display_id && (
+                      <p className="text-xs text-gray-400 mt-0.5 leading-snug">{item.display}</p>
+                    )}
                   </li>
                 ))}
               </ul>
