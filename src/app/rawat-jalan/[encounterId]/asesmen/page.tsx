@@ -6,7 +6,7 @@ import Breadcrumb from "@/components/shared/Breadcrumb";
 import PatientAssessmentHeader from "./components/PatientAssessmentHeader";
 import AsesmenPerawat from "./components/AsesmenPerawat";
 import AsesmenDokter from "./components/AsesmenDokter";
-import PrintableDocument from "@/app/riwayat-medis/[noRm]/components/PrintableDocument";
+import PrintableDocument from "@/app/rekam-medis/[noRm]/components/PrintableDocument";
 import { mapRingkasanData, mapEncounterTimeline } from "@/lib/mappers/medical-records-mapper";
 import { calculateAge } from "@/lib/utils/date";
 import { parseFamilyHistory } from "@/lib/utils/family-history";
@@ -284,11 +284,11 @@ export default async function AsesmenPage({
   };
 
   // Print document (Cetak) is available only once the encounter is SELESAI,
-  // and only for clinicians/admin (mirrors the riwayat-medis restriction —
+  // and only for clinicians/admin (mirrors the rekam-medis restriction —
   // perawat is excluded).
   // Reuse mapRingkasanData by handing it a patient-shaped object whose single
   // encounter is THIS visit — the mapper snapshots the latest SELESAI encounter
-  // into the same RingkasanData the riwayat-medis print document consumes.
+  // into the same RingkasanData the rekam-medis print document consumes.
   const canPrint =
     encounter.status === 'SELESAI' &&
     ['DOKTER', 'ADMIN'].includes(userRole);

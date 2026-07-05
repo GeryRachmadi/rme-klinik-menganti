@@ -7,7 +7,7 @@ import { formatDob } from "@/lib/utils/format-dob";
 import { formatDoctorName } from "@/lib/utils/format-doctor-name";
 
 // Only the identity fields the document actually renders — keeps this reusable
-// from both the riwayat-medis page (full Patient) and the asesmen page (a
+// from both the rekam-medis page (full Patient) and the asesmen page (a
 // partial Prisma `select`).
 interface PrintablePatient {
   namaLengkap: string;

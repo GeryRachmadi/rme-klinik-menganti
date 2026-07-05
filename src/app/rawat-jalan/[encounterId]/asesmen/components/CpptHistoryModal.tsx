@@ -2,7 +2,7 @@
 
 import { X } from 'lucide-react';
 import type { TimelineEncounter } from '@/lib/mappers/medical-records-mapper';
-import EncounterHistoryTab from '@/app/riwayat-medis/[noRm]/components/EncounterHistoryTab';
+import EncounterHistoryTab from '@/app/rekam-medis/[noRm]/components/EncounterHistoryTab';
 
 interface CpptHistoryModalProps {
   isOpen: boolean;

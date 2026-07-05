@@ -1,7 +1,7 @@
 import { ExternalLink } from 'lucide-react';
 import { formatDob } from '@/lib/utils/format-dob';
 import { formatDoctorName } from '@/lib/utils/format-doctor-name';
-import CetakButton from '@/app/riwayat-medis/[noRm]/components/CetakButton';
+import CetakButton from '@/app/rekam-medis/[noRm]/components/CetakButton';
 import CpptHistoryButton from './CpptHistoryButton';
 import type { TimelineEncounter } from '@/lib/mappers/medical-records-mapper';
 
@@ -152,7 +152,7 @@ export default function PatientAssessmentHeader({
           )}
 
           <a
-            href={`/riwayat-medis/${patient.noRm}`}
+            href={`/rekam-medis/${patient.noRm}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-6 py-3 text-base font-semibold text-[#475569] bg-white rounded-full hover:opacity-90 transition-opacity shrink-0"

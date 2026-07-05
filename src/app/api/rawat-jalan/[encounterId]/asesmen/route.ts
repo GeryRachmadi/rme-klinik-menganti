@@ -345,7 +345,7 @@ export async function POST(
 
       // Step 7: Mark encounter as SELESAI + persist section-level Kajian Awal notes.
       // The doctor flow carries catatan in assessmentData; store it on the encounter
-      // (independent of chips) so it survives to /riwayat-medis (BB-08.6 / BB-08.17).
+      // (independent of chips) so it survives to /rekam-medis (BB-08.6 / BB-08.17).
       await tx.encounter.update({
         where: { id: encounterId },
         data: {

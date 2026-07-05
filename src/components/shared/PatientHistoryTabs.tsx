@@ -14,13 +14,13 @@ import {
 } from "@/lib/mappers/medical-records-mapper";
 import type { FamilyHistory } from "@/lib/utils/family-history";
 
-import PatientProfileTab from "@/app/riwayat-medis/[noRm]/components/PatientProfileTab";
-import EncounterHistoryTab from "@/app/riwayat-medis/[noRm]/components/EncounterHistoryTab";
-import RingkasanTab from "@/app/riwayat-medis/[noRm]/components/RingkasanTab";
-import ConditionTab from "@/app/riwayat-medis/[noRm]/components/ConditionTab";
-import AllergyHistoryTab from "@/app/riwayat-medis/[noRm]/components/AllergyHistoryTab";
-import MedicationTab from "@/app/riwayat-medis/[noRm]/components/MedicationTab";
-import EmptyMedicalRecord from "@/app/riwayat-medis/[noRm]/components/EmptyMedicalRecord";
+import PatientProfileTab from "@/app/rekam-medis/[noRm]/components/PatientProfileTab";
+import EncounterHistoryTab from "@/app/rekam-medis/[noRm]/components/EncounterHistoryTab";
+import RingkasanTab from "@/app/rekam-medis/[noRm]/components/RingkasanTab";
+import ConditionTab from "@/app/rekam-medis/[noRm]/components/ConditionTab";
+import AllergyHistoryTab from "@/app/rekam-medis/[noRm]/components/AllergyHistoryTab";
+import MedicationTab from "@/app/rekam-medis/[noRm]/components/MedicationTab";
+import EmptyMedicalRecord from "@/app/rekam-medis/[noRm]/components/EmptyMedicalRecord";
 
 interface PatientHistoryTabsProps {
   patient: Patient;

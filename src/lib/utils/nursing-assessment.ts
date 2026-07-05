@@ -8,7 +8,7 @@
 // the structured diagnosis objects round-trip safely.
 //
 // This helper is the SINGLE source of truth for the format — all call sites
-// (nurse route, doctor route, asesmen hydration, riwayat-medis mapper) must go
+// (nurse route, doctor route, asesmen hydration, rekam-medis mapper) must go
 // through serialize/parse so the round-trip stays consistent. Mirrors
 // family-history.ts exactly, minus the negation (`tidakAda`) flag — Asesmen
 // Keperawatan is mandatory and has no "Tidak Ada" escape hatch.

@@ -9,7 +9,7 @@ import { Printer } from "lucide-react";
  * exists) is decided by the parent PatientHeader.
  */
 interface CetakButtonProps {
-  // "sm" (default) matches the riwayat-medis header; "lg" matches the larger
+  // "sm" (default) matches the rekam-medis header; "lg" matches the larger
   // sibling buttons (CPPT / Lihat Detail Profil) in the asesmen header.
   size?: "sm" | "lg";
 }

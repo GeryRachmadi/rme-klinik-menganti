@@ -9,7 +9,7 @@
 // so the free-text catatan can hold any character safely.
 //
 // This helper is the SINGLE source of truth for the format — all four call
-// sites (nurse route, doctor route, asesmen hydration, riwayat-medis mapper)
+// sites (nurse route, doctor route, asesmen hydration, rekam-medis mapper)
 // must go through serialize/parse so the round-trip stays consistent.
 
 export interface FamilyHistory {
