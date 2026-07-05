@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getPatientIHSId } from "@/lib/satusehat";
 import type { PatientRegistrationInput } from "@/lib/validations/patient";
+import type { JenisPasien } from "@/generated/prisma";
 
 export type CreatePatientResponse =
   | { success: true; data: { noRm: string } }
@@ -83,7 +84,7 @@ export async function createPatient(
           jenisKelamin: data.jenisKelamin,
           agama: data.agama,
           statusPernikahan: data.statusPernikahan,
-          jenisPasien: data.jenisPasien,
+          jenisPasien: (data.jenisPasien ?? "UMUM") as JenisPasien,
           alamatKtp: data.alamatKtp,
           provinsi: data.provinsi,
           kabupatenKota: data.kabupatenKota,

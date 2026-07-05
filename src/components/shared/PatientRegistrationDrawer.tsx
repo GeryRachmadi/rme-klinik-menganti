@@ -80,7 +80,6 @@ export default function PatientRegistrationDrawer({
       jenisKelamin: "" as unknown as PatientRegistrationInput["jenisKelamin"],
       agama: "" as unknown as PatientRegistrationInput["agama"],
       statusPernikahan: "" as unknown as PatientRegistrationInput["statusPernikahan"],
-      jenisPasien: "" as unknown as PatientRegistrationInput["jenisPasien"],
       alamatKtp: "",
       provinsi: "",
       kabupatenKota: "",
@@ -412,7 +411,7 @@ export default function PatientRegistrationDrawer({
               <FieldError message={errors.namaLengkap?.message} />
             </div>
 
-            {/* Jenis Kelamin | Jenis Pasien */}
+            {/* Jenis Kelamin | Tanggal Lahir */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
@@ -439,58 +438,17 @@ export default function PatientRegistrationDrawer({
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Jenis Pasien <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <select
-                    {...register("jenisPasien")}
-                    className={selCls(errors.jenisPasien)}
-                  >
-                    <option value="" disabled>
-                      Pilih jenis pasien...
-                    </option>
-                    <option value="UMUM">Umum</option>
-                    <option value="BPJS">BPJS</option>
-                  </select>
-                  <ChevronDown
-                    size={15}
-                    strokeWidth={2}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                  />
-                </div>
-                <FieldError message={errors.jenisPasien?.message} />
-              </div>
-            </div>
-
-            {/* Tempat Lahir | Tanggal Lahir */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Tempat Lahir <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Kota/Kabupaten lahir"
-                  autoComplete="off"
-                  {...register("tempatLahir")}
-                  className={cls(errors.tempatLahir)}
-                />
-                <FieldError message={errors.tempatLahir?.message} />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   Tanggal Lahir <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
                   autoComplete="off"
+                  min="1900-01-01"
+                  max="9999-12-31"
                   {...register("tanggalLahir")}
                   className={`${cls(errors.tanggalLahir)} text-gray-600`}
                 />
-                <p className="mt-1 text-sm text-gray-500">Contoh: 17/01/1990</p>
-                {/* Live Age display — additive, recomputes as the user picks a DoB.
-                    Reuses the existing calculateAge() and watchedDOB (also used by
-                    the BB-04.7 guardian logic, which is left untouched). */}
+                {/* Live Age display */}
                 {watchedDOB && !Number.isNaN(new Date(watchedDOB).getTime()) && calculateAge(new Date(watchedDOB)) >= 0 && (
                   <p className="mt-1 text-sm text-gray-500">
                     Umur: {calculateAge(new Date(watchedDOB))} tahun
@@ -498,6 +456,21 @@ export default function PatientRegistrationDrawer({
                 )}
                 <FieldError message={errors.tanggalLahir?.message} />
               </div>
+            </div>
+
+            {/* Tempat Lahir */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                Tempat Lahir <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Kota/Kabupaten lahir"
+                autoComplete="off"
+                {...register("tempatLahir")}
+                className={cls(errors.tempatLahir)}
+              />
+              <FieldError message={errors.tempatLahir?.message} />
             </div>
 
             {/* Agama | Status Pernikahan */}
@@ -677,7 +650,7 @@ export default function PatientRegistrationDrawer({
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   Perusahaan{" "}
-                  <span className="font-normal text-gray-400">(opsional)</span>
+                  <span className="font-normal text-gray-400">(Opsional)</span>
                 </label>
                 <input
                   type="text"

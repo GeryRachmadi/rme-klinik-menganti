@@ -44,9 +44,7 @@ const patientBaseObject = z.object({
     { error: "Status pernikahan wajib dipilih" }
   ),
 
-  jenisPasien: z.enum(["UMUM", "BPJS"], {
-    error: "Jenis pasien wajib dipilih",
-  }),
+  jenisPasien: z.enum(["UMUM", "BPJS"]).optional().transform(val => val ?? "UMUM"),
 
   // ── Alamat ─────────────────────────────────────────────────────────────
   alamatKtp:     z.string({ message: "Alamat KTP wajib diisi" }).min(1, "Alamat KTP wajib diisi"),

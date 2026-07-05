@@ -90,10 +90,13 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
   const [filterStatus, setFilterStatus] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
+  const [filterJenisPenjamin, setFilterJenisPenjamin] = useState("");
   const [prioritasOpen, setPrioritasOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
+  const [jenisPenjaminOpen, setJenisPenjaminOpen] = useState(false);
   const prioritasRef = useRef<HTMLDivElement>(null);
   const statusRef = useRef<HTMLDivElement>(null);
+  const jenisPenjaminRef = useRef<HTMLDivElement>(null);
 
   const [mounted, setMounted]           = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -106,6 +109,7 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
     function onDown(e: MouseEvent) {
       if (prioritasRef.current && !prioritasRef.current.contains(e.target as Element)) setPrioritasOpen(false);
       if (statusRef.current && !statusRef.current.contains(e.target as Element)) setStatusOpen(false);
+      if (jenisPenjaminRef.current && !jenisPenjaminRef.current.contains(e.target as Element)) setJenisPenjaminOpen(false);
     }
     document.addEventListener("mousedown", onDown);
     return () => document.removeEventListener("mousedown", onDown);
@@ -260,10 +264,11 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
       }
       return item.tanggal === filterTanggal;
     })();
-    const matchPrioritas = filterPrioritas ? item.prioritas  === filterPrioritas : true;
-    const matchStatus    = filterStatus    ? item.status     === filterStatus    : true;
+    const matchPrioritas     = filterPrioritas     ? item.prioritas   === filterPrioritas     : true;
+    const matchStatus        = filterStatus        ? item.status      === filterStatus        : true;
+    const matchJenisPenjamin = filterJenisPenjamin ? item.jenisPasien === filterJenisPenjamin : true;
 
-    return matchSearch && matchTanggal && matchPrioritas && matchStatus;
+    return matchSearch && matchTanggal && matchPrioritas && matchStatus && matchJenisPenjamin;
   });
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / LIMIT));
@@ -362,6 +367,42 @@ export default function DaftarAntrean({ userRole }: DaftarAntreanProps) {
                 />
               </div>,
               document.body
+            )}
+          </div>
+
+          <div className="w-44 relative" ref={jenisPenjaminRef}>
+            <label className="block text-xs font-semibold tracking-widest text-white/80 uppercase mb-2">
+              Jenis Penjamin
+            </label>
+            <button
+              type="button"
+              onClick={() => setJenisPenjaminOpen((o) => !o)}
+              className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border text-sm cursor-pointer transition-colors ${
+                filterJenisPenjamin !== ""
+                  ? "border-[#2BB5A0] bg-[#E6F5F4] text-[#2BB5A0] font-semibold"
+                  : "border-gray-200 bg-white text-gray-600 hover:border-[#2BB5A0]"
+              }`}
+            >
+              <span>{filterJenisPenjamin || "Semua"}</span>
+              <ChevronDown size={14} strokeWidth={2} className={`ml-2 flex-shrink-0 transition-transform ${jenisPenjaminOpen ? "rotate-180" : ""}`} />
+            </button>
+            {jenisPenjaminOpen && (
+              <div className="absolute left-0 top-full mt-2 z-30 bg-white border border-gray-100 rounded-2xl shadow-lg p-2 w-full" style={{ fontFamily: "var(--font-jakarta)" }}>
+                {(["", "UMUM", "BPJS"] as const).map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => { setFilterJenisPenjamin(opt); setCurrentPage(1); setJenisPenjaminOpen(false); }}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                      filterJenisPenjamin === opt
+                        ? "bg-[#2DD4BF]/10 border border-[#2DD4BF]/30 text-[#006B5F] font-semibold"
+                        : "text-gray-600 hover:bg-[#F4F4F4] hover:text-[#50555C]"
+                    }`}
+                  >
+                    {opt || "Semua"}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
 
