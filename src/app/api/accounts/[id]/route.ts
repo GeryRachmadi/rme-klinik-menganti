@@ -4,7 +4,7 @@ import { ZodError } from "zod";
 import { requireAdminRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { okResponse, errResponse } from "@/lib/api-response";
-import { updateAccountSchema } from "@/lib/validation";
+import { updateAccountSchema } from "@/lib/validations/account";
 import { handlePrismaError, handleZodError } from "@/lib/api-errors";
 
 const ACCOUNT_SELECT = {
