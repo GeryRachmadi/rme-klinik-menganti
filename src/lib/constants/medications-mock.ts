@@ -3,7 +3,7 @@
 // Item 13) — the doctor types freely (Option A: free-text input with suggestions),
 // so this list only assists entry; it never restricts what can be typed.
 //
-// Shape mirrors icd9cm-mock.ts: { display; category }. The category maps to common
+// Shape: { display; category }. The category maps to common
 // pharmacological groups for grouping the dropdown. This is a curated subset of
 // frequent outpatient prescriptions, NOT an exhaustive pharmacopeia — for local
 // development before a real drug-master DB/API (same precedent as sdki-mock.ts).

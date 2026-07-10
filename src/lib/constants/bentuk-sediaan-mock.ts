@@ -3,8 +3,8 @@
 //
 // Labels and categories are verbatim from Figma (node 916:41): 14 entries across
 // 4 categories, plus Tablet (Cetak/Kompresi) added under Padat (Solida) per PIC
-// feedback during Item 13's rebuild — 15 entries total. Shape mirrors
-// icd9cm-mock.ts: { display; category }.
+// feedback during Item 13's rebuild — 15 entries total. Shape:
+// { display; category }.
 
 export interface BentukSediaanEntry {
   display: string;

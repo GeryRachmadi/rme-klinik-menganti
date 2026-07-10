@@ -2,7 +2,7 @@
 // Used for the "Asesmen Keperawatan" section (UAT Phase 2 Item 14) — the nurse's
 // own clinical judgment, distinct from the doctor's ICD-10 diagnosis.
 //
-// Shape mirrors icd9cm-mock.ts exactly: { code; display; category }. The category
+// Shape: { code; display; category }. The category
 // maps to SDKI's five real diagnostic categories (Fisiologis, Psikologis,
 // Perilaku, Relasional, Lingkungan). Codes use the real SDKI "D.00XX" scheme
 // where known. This is a curated subset of common primary-care presentations,
