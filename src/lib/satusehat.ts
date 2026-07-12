@@ -40,14 +40,6 @@ export async function getSATUSEHATToken(): Promise<string> {
   const clientSecret = process.env.SATUSEHAT_CLIENT_SECRET;
   const baseUrl = process.env.SATUSEHAT_BASE_URL;
 
-// --- CCTV SUPER DETAIL CLAUDE ---
-  console.log("=== DEBUG ENV SATUSEHAT ===");
-  console.log("clientId:", JSON.stringify(clientId));
-  console.log("clientSecret:", JSON.stringify(clientSecret));
-  console.log("Ada petik literal di depan?", clientId?.startsWith('"'));
-  console.log("===========================");
-  // --------------------------------
-
   if (!clientId || !clientSecret || !baseUrl) {
     throw new Error(
       "Missing SATUSEHAT_CLIENT_ID, SATUSEHAT_CLIENT_SECRET, or SATUSEHAT_BASE_URL in .env"
@@ -55,13 +47,15 @@ export async function getSATUSEHATToken(): Promise<string> {
   }
 
   try {
-    const response = await fetch(`${baseUrl}/oauth2/v1/accesstoken`, {
+    const tokenUrl = new URL(`${baseUrl}/oauth2/v1/accesstoken`);
+    tokenUrl.searchParams.set("grant_type", "client_credentials");
+
+    const response = await fetch(tokenUrl.toString(), {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
-        grant_type: "client_credentials",
         client_id: clientId,
         client_secret: clientSecret,
       }).toString(),
