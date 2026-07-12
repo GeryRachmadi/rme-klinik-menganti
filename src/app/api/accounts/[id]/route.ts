@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { okResponse, errResponse } from "@/lib/api-response";
 import { updateAccountSchema } from "@/lib/validations/account";
 import { handlePrismaError, handleZodError } from "@/lib/api-errors";
+import { getPractitionerIHSId } from "@/lib/satusehat";
 
 const ACCOUNT_SELECT = {
   id: true,
@@ -105,8 +106,20 @@ export async function PATCH(
 
   const practitionerData: Record<string, unknown> = {};
   if (validated.namaLengkap) practitionerData.name = validated.namaLengkap;
-  if (validated.nik !== undefined) practitionerData.identifierStr = validated.nik;
   if (validated.spesialisasi !== undefined) practitionerData.speciality = validated.spesialisasi || null;
+
+  if (validated.nik !== undefined) {
+    practitionerData.identifierStr = validated.nik;
+
+    // Auto-fill IHS number from the new NIK via SATUSEHAT lookup. Never
+    // blocks the update — practitioners may not be registered in SATUSEHAT yet.
+    try {
+      const ihsResult = await getPractitionerIHSId(validated.nik);
+      practitionerData.ihsNumber = ihsResult?.ihsId ?? null;
+    } catch (err) {
+      console.warn("[accounts] Practitioner IHS lookup failed, continuing without it:", err);
+    }
+  }
 
   try {
     const account = await prisma.$transaction(async (tx) => {

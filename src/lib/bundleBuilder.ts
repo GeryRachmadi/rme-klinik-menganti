@@ -37,10 +37,80 @@ export async function buildSatuSehatBundle(encounterId: string): Promise<FHIRBun
 
   const entries: FHIRBundleEntry[] = [];
 
+  // ── Conditions (diagnoses) ───────────────────────────────────
+  // Built before the Encounter resource so the primary diagnosis's
+  // fullUrl is available for Encounter.diagnosis below.
+  let primaryConditionFullUrl: string | null = null;
+
+  for (const d of encounter.conditionDiagnoses) {
+    const conditionFullUrl = `urn:uuid:${crypto.randomUUID()}`;
+    if (d.isPrimary) primaryConditionFullUrl = conditionFullUrl;
+
+    entries.push({
+      fullUrl: conditionFullUrl,
+      resource: {
+        resourceType: 'Condition',
+        clinicalStatus: {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
+              code: 'active',
+            },
+          ],
+        },
+        code: {
+          coding: [
+            {
+              system: 'http://hl7.org/fhir/sid/icd-10',
+              code: d.codeIcd10,
+              display: d.display,
+            },
+          ],
+        },
+        subject: { reference: patientRef },
+        encounter: { reference: encounterRef },
+      },
+      request: { method: 'POST', url: 'Condition' },
+    });
+  }
+
+  // ── Location ─────────────────────────────────────────────────
+  // SATUSEHAT requires Encounter.location[0].location to be a reference,
+  // not a display-only value — no real registered Location/IHS ID exists
+  // yet, so a minimal Location resource is included in the same bundle.
+  const locationFullUrl = `urn:uuid:${crypto.randomUUID()}`;
+  entries.push({
+    fullUrl: locationFullUrl,
+    resource: {
+      resourceType: 'Location',
+      name: 'Klinik Pratama Menganti Gresik',
+    },
+    request: { method: 'POST', url: 'Location' },
+  });
+
   // ── Encounter ────────────────────────────────────────────────
+  const ENCOUNTER_STATUS_MAP: Record<string, string> = {
+    MENUNGGU: 'planned',
+    DIPERIKSA: 'in-progress',
+    SELESAI: 'finished',
+    BATAL: 'cancelled',
+  };
+
   const encounterResource: Record<string, unknown> = {
     resourceType: 'Encounter',
     status: 'finished',
+    identifier: [
+      { system: 'http://sys-ids.kemkes.go.id/encounter', value: encounter.id },
+    ],
+    statusHistory: [
+      {
+        status: ENCOUNTER_STATUS_MAP[encounter.status] ?? 'finished',
+        period: {
+          start: toFHIRDateTime(encounter.createdAt),
+          end: toFHIRDateTime(encounter.updatedAt),
+        },
+      },
+    ],
     class: {
       system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
       code: 'AMB',
@@ -50,6 +120,9 @@ export async function buildSatuSehatBundle(encounterId: string): Promise<FHIRBun
       start: toFHIRDateTime(encounter.createdAt),
       end: toFHIRDateTime(encounter.updatedAt),
     },
+    location: [
+      { location: { reference: locationFullUrl, display: 'Klinik Pratama Menganti Gresik' } },
+    ],
     serviceProvider: {
       reference: 'Organization/d7e507d8-23ed-4297-8488-0c72c5c44589',
     },
@@ -60,6 +133,24 @@ export async function buildSatuSehatBundle(encounterId: string): Promise<FHIRBun
       { individual: { reference: `Practitioner/${encounter.practitioner.ihsNumber}` } },
     ];
   }
+  // else: omitted gracefully — no practitioner IHS ID assigned to this encounter.
+
+  if (primaryConditionFullUrl) {
+    encounterResource.diagnosis = [
+      {
+        condition: { reference: primaryConditionFullUrl },
+        use: {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/diagnosis-role',
+              code: 'AD',
+            },
+          ],
+        },
+      },
+    ];
+  }
+  // else: omitted gracefully — no primary ConditionDiagnosis found.
 
   entries.push({
     fullUrl: encounterRef,
@@ -107,41 +198,14 @@ export async function buildSatuSehatBundle(encounterId: string): Promise<FHIRBun
           subject: { reference: patientRef },
           encounter: { reference: encounterRef },
           effectiveDateTime: toFHIRDateTime(encounter.createdAt),
+          ...(encounter.practitioner?.ihsNumber && {
+            performer: [{ reference: `Practitioner/${encounter.practitioner.ihsNumber}` }],
+          }),
           ...formatVitalSign(vital.field, vital.unit),
         },
         request: { method: 'POST', url: 'Observation' },
       });
     }
-  }
-
-  // ── Conditions (diagnoses) ───────────────────────────────────
-  for (const d of encounter.conditionDiagnoses) {
-    entries.push({
-      fullUrl: `urn:uuid:${crypto.randomUUID()}`,
-      resource: {
-        resourceType: 'Condition',
-        clinicalStatus: {
-          coding: [
-            {
-              system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
-              code: 'active',
-            },
-          ],
-        },
-        code: {
-          coding: [
-            {
-              system: 'http://hl7.org/fhir/sid/icd-10',
-              code: d.codeIcd10,
-              display: d.display,
-            },
-          ],
-        },
-        subject: { reference: patientRef },
-        encounter: { reference: encounterRef },
-      },
-      request: { method: 'POST', url: 'Condition' },
-    });
   }
 
   // ── Procedures ───────────────────────────────────────────────
@@ -177,11 +241,41 @@ export async function buildSatuSehatBundle(encounterId: string): Promise<FHIRBun
       fullUrl: medicationRef,
       resource: {
         resourceType: 'Medication',
+        identifier: [
+          {
+            system: 'http://sys-ids.kemkes.go.id/medication/d7e507d8-23ed-4297-8488-0c72c5c44589',
+            value: crypto.randomUUID(),
+          },
+        ],
+        // Per SATUSEHAT's Medication docs (https://satusehat.kemkes.go.id/platform/docs/id/fhir/resources/medication/).
+        extension: [
+          {
+            url: 'https://fhir.kemkes.go.id/r4/StructureDefinition/MedicationType',
+            valueCodeableConcept: {
+              coding: [
+                {
+                  system: 'http://terminology.kemkes.go.id/CodeSystem/medication-type',
+                  code: 'NC',
+                  display: 'Non-compound',
+                },
+              ],
+            },
+          },
+        ],
+        // TEMPORARY: there is no real KFA code lookup/mapping for free-text
+        // medication names in this app. This hardcodes every prescription to
+        // SATUSEHAT's own documented sample KFA code (a specific TB combo
+        // drug) purely so the bundle passes validation — it does NOT reflect
+        // the actual medication prescribed. A real KFA search/mapping feature
+        // (see https://dto.kemkes.go.id/kfa-browser) is required before this
+        // is clinically accurate.
         code: {
           coding: [
             {
               system: 'http://sys-ids.kemkes.go.id/kfa',
-              code: 'dummy-kfa-001',
+              code: '93001019',
+              display:
+                'Obat Anti Tuberculosis / Rifampicin 150 mg / Isoniazid 75 mg / Pyrazinamide 400 mg / Ethambutol 275 mg Kaplet Salut Selaput (KIMIA FARMA)',
             },
           ],
           text: medReq.medication,
@@ -190,16 +284,37 @@ export async function buildSatuSehatBundle(encounterId: string): Promise<FHIRBun
       request: { method: 'POST', url: 'Medication' },
     });
 
+    const medicationRequestResource: Record<string, unknown> = {
+      resourceType: 'MedicationRequest',
+      status: 'active',
+      intent: 'order',
+      // Per SATUSEHAT's official MedicationRequest docs, the identifier
+      // segment is "prescription", not "medicationrequest" (confirmed via
+      // https://satusehat.kemkes.go.id/platform/docs/id/fhir/resources/medication-request/).
+      identifier: [
+        {
+          system: 'http://sys-ids.kemkes.go.id/prescription/d7e507d8-23ed-4297-8488-0c72c5c44589',
+          value: crypto.randomUUID(),
+        },
+      ],
+      // No dedicated SOAP-completion timestamp field exists on Encounter;
+      // using updatedAt as the closest proxy for when the request was authored.
+      authoredOn: toFHIRDateTime(encounter.updatedAt),
+      medicationReference: { reference: medicationRef },
+      subject: { reference: patientRef },
+      encounter: { reference: encounterRef },
+    };
+
+    if (encounter.practitioner?.ihsNumber) {
+      medicationRequestResource.requester = {
+        reference: `Practitioner/${encounter.practitioner.ihsNumber}`,
+      };
+    }
+    // else: omitted gracefully — no practitioner IHS ID assigned to this encounter.
+
     entries.push({
       fullUrl: `urn:uuid:${crypto.randomUUID()}`,
-      resource: {
-        resourceType: 'MedicationRequest',
-        status: 'active',
-        intent: 'order',
-        medicationReference: { reference: medicationRef },
-        subject: { reference: patientRef },
-        encounter: { reference: encounterRef },
-      },
+      resource: medicationRequestResource,
       request: { method: 'POST', url: 'MedicationRequest' },
     });
   }

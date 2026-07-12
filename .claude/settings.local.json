@@ -105,7 +105,10 @@
       "Bash(node pw-nurse13.js)",
       "Bash(node pw-nurse14.js)",
       "Bash(node pw-nurse15.js)",
-      "PowerShell(npm run *)"
+      "PowerShell(npm run *)",
+      "WebSearch",
+      "WebFetch(domain:satusehat.kemkes.go.id)",
+      "WebFetch(domain:simplifier.net)"
     ]
   }
 }

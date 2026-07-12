@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { okResponse, errResponse } from "@/lib/api-response";
 import { createAccountSchema } from "@/lib/validations/account";
 import { handlePrismaError, handleZodError } from "@/lib/api-errors";
+import { getPractitionerIHSId } from "@/lib/satusehat";
 import { ZodError } from "zod";
 
 const ACCOUNT_SELECT = {
@@ -121,6 +122,16 @@ export async function POST(request: NextRequest) {
 
   const hashedPassword = await bcrypt.hash(validated.password, 10);
 
+  // Auto-fill IHS number from NIK via SATUSEHAT lookup. Never blocks account
+  // creation — practitioners may not be registered in SATUSEHAT yet.
+  let ihsNumber: string | null = null;
+  try {
+    const ihsResult = await getPractitionerIHSId(validated.nik);
+    ihsNumber = ihsResult?.ihsId ?? null;
+  } catch (err) {
+    console.warn("[accounts] Practitioner IHS lookup failed, continuing without it:", err);
+  }
+
   try {
     const account = await prisma.$transaction(async (tx) => {
       const newAccount = await tx.account.create({
@@ -134,6 +145,7 @@ export async function POST(request: NextRequest) {
               name: validated.namaLengkap,
               identifierStr: validated.nik,
               speciality: validated.spesialisasi || null,
+              ihsNumber,
             },
           },
         },
