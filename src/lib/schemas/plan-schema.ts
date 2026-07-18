@@ -83,6 +83,49 @@ export const ReferralFormSchema = z.object({
 
 export type ReferralFormValues = z.infer<typeof ReferralFormSchema>;
 
+// Rencana Pemulangan (Discharge Disposition) — replaces the standalone Rujukan
+// toggle with SATUSEHAT's 5-option Encounter.hospitalization.dischargeDisposition
+// vocabulary. "Dirujuk ke Fasilitas Lain" reuses the existing ServiceRequest-backed
+// Tujuan/Alasan fields; "Lain-lain" uses a new free-text dischargeReason instead —
+// ServiceRequest stays reserved for genuine referrals so /rekam-medis's "Rujukan"
+// display never mislabels a non-referral discharge.
+export const DISCHARGE_DISPOSITION_OPTIONS = [
+  "Pulang",
+  "Dirujuk ke Fasilitas Lain",
+  "Pulang Atas Permintaan Sendiri",
+  "Meninggal Dunia",
+  "Lain-lain",
+] as const;
+
+export type DischargeDispositionLabel = typeof DISCHARGE_DISPOSITION_OPTIONS[number];
+
+export const DischargeDispositionFormSchema = z.object({
+  // Spread into a mutable array — z.enum's typings in this project's zod
+  // version want string[], not the readonly tuple DISCHARGE_DISPOSITION_OPTIONS
+  // is declared as (same reason SearchableSelect's `options` prop is spread below).
+  label: z.enum([...DISCHARGE_DISPOSITION_OPTIONS]).optional().or(z.literal("")),
+  tujuanRujukan: z.string().max(255).optional(),
+  alasanRujukan: z.string().max(500).optional(),
+  dischargeReason: z.string().max(500).optional(),
+}).superRefine((data, ctx) => {
+  // Mirrors ReferralFormSchema's conditional-required pattern: when "Dirujuk ke
+  // Fasilitas Lain" is selected, Tujuan and Alasan become mandatory.
+  if (data.label === "Dirujuk ke Fasilitas Lain") {
+    if (!data.tujuanRujukan?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["tujuanRujukan"], message: "Tujuan Rujukan wajib diisi" });
+    }
+    if (!data.alasanRujukan?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["alasanRujukan"], message: "Alasan Rujukan wajib diisi" });
+    }
+  }
+  // "Lain-lain" requires the free-text reason — the field this option exists for.
+  if (data.label === "Lain-lain" && !data.dischargeReason?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["dischargeReason"], message: "Keterangan wajib diisi" });
+  }
+});
+
+export type DischargeDispositionFormValues = z.infer<typeof DischargeDispositionFormSchema>;
+
 // Root schema for the entire Plan section — Tindakan, Resep, and Edukasi are all
 // mandatory (H5 Sev2, PIC request); Rujukan stays conditional on its toggle.
 export const PlanFormSchema = z.object({
@@ -103,10 +146,11 @@ export const PlanFormSchema = z.object({
   labInstruction: z.object({
     instruksiLab: z.string().optional(),
   }).optional(),
-  rujukan: z.object({
-    isActive: z.boolean().optional(),
+  rencanaPemulangan: z.object({
+    label: z.string().optional(),
     tujuanRujukan: z.string().optional(),
     alasanRujukan: z.string().optional(),
+    dischargeReason: z.string().optional(),
   }).optional(),
 }).superRefine((data, ctx) => {
   // H5 Sev2 (PIC request): Tindakan, Resep, and Edukasi are ALL mandatory — a
@@ -135,14 +179,21 @@ export const PlanFormSchema = z.object({
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["labInstruction", "instruksiLab"], message: "Instruksi Lab wajib diisi" });
   }
 }).superRefine((data, ctx) => {
-  // Conditional Rujukan rule: if the referral toggle is ON, Tujuan and Alasan
-  // are mandatory — blocks saving an empty ServiceRequest (BB-11.14).
-  if (data.rujukan?.isActive !== true) return;
-  if (!data.rujukan.tujuanRujukan?.trim()) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["rujukan", "tujuanRujukan"], message: "Tujuan Rujukan wajib diisi" });
+  // Conditional Rencana Pemulangan rule: "Dirujuk" requires Tujuan + Alasan
+  // (still gates ServiceRequest creation, BB-11.14); "Lain-lain" requires
+  // dischargeReason. Mirrors DischargeDispositionFormSchema's own refine so the
+  // client-side per-field form AND this central schema agree.
+  const label = data.rencanaPemulangan?.label;
+  if (label === "Dirujuk ke Fasilitas Lain") {
+    if (!data.rencanaPemulangan?.tujuanRujukan?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["rencanaPemulangan", "tujuanRujukan"], message: "Tujuan Rujukan wajib diisi" });
+    }
+    if (!data.rencanaPemulangan?.alasanRujukan?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["rencanaPemulangan", "alasanRujukan"], message: "Alasan Rujukan wajib diisi" });
+    }
   }
-  if (!data.rujukan.alasanRujukan?.trim()) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["rujukan", "alasanRujukan"], message: "Alasan Rujukan wajib diisi" });
+  if (label === "Lain-lain" && !data.rencanaPemulangan?.dischargeReason?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["rencanaPemulangan", "dischargeReason"], message: "Keterangan wajib diisi" });
   }
 });
 
