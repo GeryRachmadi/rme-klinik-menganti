@@ -248,8 +248,8 @@ export default function AsesmenDokter({
         hasContent: (d: any) => !!d?.instruksiLab,
       },
       {
-        key: `draft_referral_${encounterId}`,
-        hasContent: (d: any) => d?.isActive === true || !!d?.tujuanRujukan || !!d?.alasanRujukan,
+        key: `draft_rencanaPemulangan_${encounterId}`,
+        hasContent: (d: any) => !!d?.label || !!d?.tujuanRujukan || !!d?.alasanRujukan || !!d?.dischargeReason,
       },
     ];
     const hasPlanDraft = planDraftChecks.some(({ key, hasContent }) => {
