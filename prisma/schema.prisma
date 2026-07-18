@@ -1,6 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
+  provider        = "prisma-client-js"
+  output          = "../src/generated/prisma"
   previewFeatures = ["driverAdapters"]
 }
 
@@ -49,18 +49,26 @@ enum StatusPernikahan {
   CERAI_MATI
 }
 
-model Account {
-  id          String   @id @default(cuid())
-  username    String   @unique
-  password    String
-  role        Role
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+enum DischargeDisposition {
+  home
+  other_hcf
+  aadvice
+  exp
+  oth
+}
 
-  practitioner     Practitioner?
-  activityLogs     ActivityLog[]
-  createdEncounters Encounter[] @relation("EncounterCreatedBy")
+model Account {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  role      Role
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  practitioner      Practitioner?
+  activityLogs      ActivityLog[]
+  createdEncounters Encounter[]   @relation("EncounterCreatedBy")
 }
 
 model Practitioner {
@@ -72,10 +80,10 @@ model Practitioner {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  accountId     String   @unique
-  account       Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  encounters         Encounter[] @relation("EncounterDokter")
-  encountersPerawat  Encounter[] @relation("EncounterPerawat")
+  accountId         String      @unique
+  account           Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  encounters        Encounter[] @relation("EncounterDokter")
+  encountersPerawat Encounter[] @relation("EncounterPerawat")
 }
 
 // ============================================
@@ -83,11 +91,11 @@ model Practitioner {
 // ============================================
 
 model Patient {
-  id               String          @id @default(cuid())
-  noRm             String          @unique
+  id               String           @id @default(cuid())
+  noRm             String           @unique
   /// National ID (KTP). Unique, exactly 16 digits. Required.
-  nik              String          @unique
-  ihs              String?         @unique
+  nik              String           @unique
+  ihs              String?          @unique
   namaLengkap      String
   tempatLahir      String
   tanggalLahir     DateTime
@@ -109,8 +117,8 @@ model Patient {
   namaWali         String?
   hubunganWali     String?
   noHpWali         String?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
   encounters           Encounter[]
   conditionHistories   ConditionHistory[]
@@ -119,44 +127,46 @@ model Patient {
 }
 
 model Encounter {
-  id            String    @id @default(cuid())
-  queueNumber   String?                  // e.g. "U-001", "G-007" — null until assigned at registration
-  queueDate     DateTime? @db.Date       // DATE portion of registration day — scopes daily uniqueness
-  status        String    @default("MENUNGGU")
-  priority      String    @default("STABIL")
-  periodStart   DateTime  @default(now())
-  periodEnd     DateTime?
-  reasonCode    String?
-  patientType   String    @default("UMUM")
-  syncStatus    String    @default("UNSYNCED") // UNSYNCED | SUCCESS | FAILED_SYNC
-  transactionId String?                        // Kemenkes transaction ID from SATUSEHAT
+  id                    String                @id @default(cuid())
+  queueNumber           String? // e.g. "U-001", "G-007" — null until assigned at registration
+  queueDate             DateTime?             @db.Date // DATE portion of registration day — scopes daily uniqueness
+  status                String                @default("MENUNGGU")
+  priority              String                @default("STABIL")
+  periodStart           DateTime              @default(now())
+  periodEnd             DateTime?
+  reasonCode            String?
+  patientType           String                @default("UMUM")
+  syncStatus            String                @default("UNSYNCED") // UNSYNCED | SUCCESS | FAILED_SYNC
+  transactionId         String? // Kemenkes transaction ID from SATUSEHAT
   // Section-level Kajian Awal notes — independent of chip rows so a catatan-only
   // submission survives (UC-08 BB-08.6 / BB-08.17). Episodic: belongs to this visit.
-  riwayatPenyakitNotes String? @db.Text
-  riwayatAlergiNotes   String? @db.Text
-  pengobatanRutinNotes String? @db.Text
-  pemeriksaanFisikNotes String? @db.Text
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  riwayatPenyakitNotes  String?               @db.Text
+  riwayatAlergiNotes    String?               @db.Text
+  pengobatanRutinNotes  String?               @db.Text
+  pemeriksaanFisikNotes String?               @db.Text
+  dischargeDisposition  DischargeDisposition?
+  dischargeReason       String?               @db.Text
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
 
-  patientId          String
-  patient            Patient       @relation(fields: [patientId], references: [id])
-  practitionerId     String?
-  practitioner       Practitioner? @relation("EncounterDokter", fields: [practitionerId], references: [id])
+  patientId               String
+  patient                 Patient       @relation(fields: [patientId], references: [id])
+  practitionerId          String?
+  practitioner            Practitioner? @relation("EncounterDokter", fields: [practitionerId], references: [id])
   perawatId               String?
   perawat                 Practitioner? @relation("EncounterPerawat", fields: [perawatId], references: [id])
   instruksiLab            String?       @db.Text
   asesmenKeperawatan      String?       @db.Text
   riwayatPenyakitKeluarga String?       @db.Text
-  createdByAccountId String?
-  createdByAccount   Account?      @relation("EncounterCreatedBy", fields: [createdByAccountId], references: [id])
+  createdByAccountId      String?
+  createdByAccount        Account?      @relation("EncounterCreatedBy", fields: [createdByAccountId], references: [id])
 
-  observations        Observation[]
-  conditionDiagnoses  ConditionDiagnosis[]
-  procedures          Procedure[]
-  serviceRequests     ServiceRequest[]
-  medicationRequests  MedicationRequest[]
-  syncQueues          SyncQueue[]
+  observations       Observation[]
+  conditionDiagnoses ConditionDiagnosis[]
+  procedures         Procedure[]
+  serviceRequests    ServiceRequest[]
+  medicationRequests MedicationRequest[]
+  syncQueues         SyncQueue[]
 
   @@unique([queueNumber, queueDate])
 }
@@ -231,13 +241,13 @@ model Observation {
 // ============================================
 
 model ConditionDiagnosis {
-  id          String   @id @default(cuid())
-  codeIcd10   String
-  display     String
-  notes       String?
-  isPrimary   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  codeIcd10 String
+  display   String
+  notes     String?
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   encounterId String
   encounter   Encounter @relation(fields: [encounterId], references: [id])
@@ -260,17 +270,17 @@ model Procedure {
 }
 
 model MedicationRequest {
-  id          String   @id @default(cuid())
-  medication  String
-  dosage      String?
-  instruction String?
-  isRacikan      Boolean   @default(false)
-  bentukRacikan  String?
-  jumlahRacikan  Int?
-  aturanPakai    String?
-  waktuKonsumsi  String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  medication    String
+  dosage        String?
+  instruction   String?
+  isRacikan     Boolean  @default(false)
+  bentukRacikan String?
+  jumlahRacikan Int?
+  aturanPakai   String?
+  waktuKonsumsi String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   encounterId String
   encounter   Encounter @relation(fields: [encounterId], references: [id])
@@ -310,24 +320,24 @@ model ICD9CMReference {
 // ============================================
 
 model ActivityLog {
-  id         String   @id @default(cuid())
-  action     String
-  status     String   @default("SUCCESS")
-  ipAddress  String?
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  action    String
+  status    String   @default("SUCCESS")
+  ipAddress String?
+  createdAt DateTime @default(now())
 
   accountId String
   account   Account @relation(fields: [accountId], references: [id])
 }
 
 model SyncQueue {
-  id          String   @id @default(cuid())
-  fhirJson    Json
-  status      String   @default("PENDING")
-  retryCount  Int      @default(0)
-  lastError   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  fhirJson   Json
+  status     String   @default("PENDING")
+  retryCount Int      @default(0)
+  lastError  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   encounterId String
   encounter   Encounter @relation(fields: [encounterId], references: [id])
