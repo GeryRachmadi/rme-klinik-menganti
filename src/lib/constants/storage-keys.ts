@@ -26,6 +26,10 @@ export function getReferralDraftKey(encounterId: string): string {
   return `draft_referral_${encounterId}`;
 }
 
+export function getRencanaPemulanganDraftKey(encounterId: string): string {
+  return `draft_rencanaPemulangan_${encounterId}`;
+}
+
 export function getLabInstructionDraftKey(encounterId: string): string {
   return `draft_labInstruction_${encounterId}`;
 }
