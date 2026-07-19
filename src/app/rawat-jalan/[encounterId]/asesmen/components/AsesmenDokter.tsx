@@ -128,7 +128,7 @@ export default function AsesmenDokter({
   const [showDraftModal, setShowDraftModal] = useState(false);
   // Per-field Plan validation errors surfaced from the central PlanFormSchema
   // safeParse (Tindakan/Resep/Edukasi are all mandatory). Cleared on each submit
-  // attempt and on success; the Rujukan form shows its own native errors.
+  // attempt and on success; the Rencana Pemulangan form shows its own native errors.
   const [planErrors, setPlanErrors] = useState<{ procedure: string | null; medication: string | null; edukasi: string | null; instruksiLab: string | null }>({ procedure: null, medication: null, edukasi: null, instruksiLab: null });
 
   // SATUSEHAT submission state

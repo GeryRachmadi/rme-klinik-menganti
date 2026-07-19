@@ -353,26 +353,35 @@ function PerencanaanMedis({ encounter }: { encounter: TimelineEncounter }) {
   );
 }
 
-// ── RUJUKAN (ServiceRequest) ──
-function Rujukan({ referral }: { referral: TimelineEncounter['referral'] }) {
-  if (!referral) return null;
+// ── RENCANA PEMULANGAN (Discharge Disposition) ──
+function RencanaPemulangan({ rencanaPemulangan }: { rencanaPemulangan: TimelineEncounter['rencanaPemulangan'] }) {
+  if (!rencanaPemulangan) return null;
 
   return (
     <div className="flex flex-col gap-3">
-      <SectionLabel>Rujukan</SectionLabel>
+      <SectionLabel>Rencana Pemulangan</SectionLabel>
       <div className="bg-[#f3f4f5] border border-dashed border-[#999] rounded-[13px] p-[23px] flex flex-col gap-2">
         <p
           className="font-extrabold text-[11px] text-[#94a3b8] uppercase tracking-wide"
           style={POPPINS}
         >
-          Rujuk ke Fasilitas Lain
+          {rencanaPemulangan.label}
         </p>
-        <p className="font-bold text-[17px] text-[#334155] leading-[26px]" style={JAKARTA}>
-          Tujuan: {referral.tujuan || '—'}
-        </p>
-        {referral.alasan && (
+        {rencanaPemulangan.label === 'Dirujuk ke Fasilitas Lain' && (
+          <>
+            <p className="font-bold text-[17px] text-[#334155] leading-[26px]" style={JAKARTA}>
+              Tujuan: {rencanaPemulangan.tujuanRujukan || '—'}
+            </p>
+            {rencanaPemulangan.alasanRujukan && (
+              <p className="text-[14px] text-[#475569] leading-[22px]" style={JAKARTA}>
+                <span className="font-bold text-[#334155]">Alasan:</span> {rencanaPemulangan.alasanRujukan}
+              </p>
+            )}
+          </>
+        )}
+        {rencanaPemulangan.label === 'Lain-lain' && rencanaPemulangan.dischargeReason && (
           <p className="text-[14px] text-[#475569] leading-[22px]" style={JAKARTA}>
-            <span className="font-bold text-[#334155]">Alasan:</span> {referral.alasan}
+            <span className="font-bold text-[#334155]">Keterangan:</span> {rencanaPemulangan.dischargeReason}
           </p>
         )}
       </div>
@@ -510,7 +519,7 @@ export function EncounterCard({
                 <PerencanaanMedis encounter={encounter} />
 
                 {/* RUJUKAN */}
-                <Rujukan referral={encounter.referral} />
+                <RencanaPemulangan rencanaPemulangan={encounter.rencanaPemulangan} />
               </div>
             </div>
           </div>

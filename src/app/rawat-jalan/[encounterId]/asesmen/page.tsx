@@ -13,6 +13,17 @@ import { parseFamilyHistory } from "@/lib/utils/family-history";
 import { parseNursingAssessment } from "@/lib/utils/nursing-assessment";
 import { parseRacikanContainer } from "@/lib/utils/racikan-container";
 
+// Maps the Prisma DischargeDisposition enum back to the Indonesian label the
+// SearchableSelect displays — inverse of the mapping applied at save time in
+// the API route. Kept local since it's only needed to hydrate the edit form.
+const DISCHARGE_DISPOSITION_LABELS: Record<string, string> = {
+  home: "Pulang",
+  other_hcf: "Dirujuk ke Fasilitas Lain",
+  aadvice: "Pulang Atas Permintaan Sendiri",
+  exp: "Meninggal Dunia",
+  oth: "Lain-lain",
+};
+
 export const metadata: Metadata = {
   title: "Asesmen | RME Klinik Pratama Menganti",
 };
@@ -278,9 +289,17 @@ export default async function AsesmenPage({
     tidakAdaResep: isTidakAdaResep,
     anjuranEdukasi,
     instruksiLab: encounter.instruksiLab ?? '',
-    rujukan: firstRujukan
-      ? { isActive: true, tujuanRujukan: firstRujukan.intent, alasanRujukan: firstRujukan.note ?? '' }
-      : { isActive: false, tujuanRujukan: '', alasanRujukan: '' },
+    // Legacy encounters may carry a ServiceRequest with no dischargeDisposition
+    // set (pre-migration data) — treat that as an implicit "Dirujuk" so the edit
+    // form still shows the saved referral instead of defaulting to blank.
+    rencanaPemulangan: {
+      label: encounter.dischargeDisposition
+        ? DISCHARGE_DISPOSITION_LABELS[encounter.dischargeDisposition] ?? ''
+        : firstRujukan ? 'Dirujuk ke Fasilitas Lain' : '',
+      tujuanRujukan: firstRujukan?.intent ?? '',
+      alasanRujukan: firstRujukan?.note ?? '',
+      dischargeReason: encounter.dischargeReason ?? '',
+    },
   };
 
   // Print document (Cetak) is available only once the encounter is SELESAI,

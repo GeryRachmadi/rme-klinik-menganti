@@ -274,7 +274,7 @@ function PerencanaanMedisCard({ episodic }: { episodic: EpisodicData | null }) {
   const medications = episodic?.medications ?? [];
   const anjuranText = episodic?.education ?? null;
   const instruksiLab = episodic?.instruksiLab ?? null;
-  const referral = episodic?.referral ?? null;
+  const rencanaPemulangan = episodic?.rencanaPemulangan ?? null;
   const doctorRawName = episodic?.practitionerName ?? null;
   const doctor = doctorRawName
     ? formatDoctorName(doctorRawName, episodic?.practitionerSpeciality)
@@ -330,25 +330,38 @@ function PerencanaanMedisCard({ episodic }: { episodic: EpisodicData | null }) {
         )}
       </div>
 
-      {/* INNER CARD — Rujukan ke Fasilitas Lain (always show) */}
+      {/* INNER CARD — Rencana Pemulangan (always show) */}
       <div className="bg-white rounded-[24px] drop-shadow-[0px_1px_1px_rgba(0,0,0,0.05)] px-[20px] pt-[18.75px] pb-[20px] flex flex-col gap-4" style={JAKARTA}>
-        <InnerLabel>Rujukan ke Fasilitas Lain</InnerLabel>
-        {referral ? (
+        <InnerLabel>Rencana Pemulangan</InnerLabel>
+        {rencanaPemulangan ? (
           <div className="flex flex-col gap-1.5">
             <p className="text-[#475569] text-[14px] leading-[22.75px]">
-              <span className="font-bold text-[#334155]">Tujuan:</span>{" "}
-              {referral.tujuan || "—"}
+              {rencanaPemulangan.label}
             </p>
-            {referral.alasan && (
+            {rencanaPemulangan.label === "Dirujuk ke Fasilitas Lain" && (
+              <>
+                <p className="text-[#475569] text-[14px] leading-[22.75px]">
+                  <span className="font-bold text-[#334155]">Tujuan:</span>{" "}
+                  {rencanaPemulangan.tujuanRujukan || "—"}
+                </p>
+                {rencanaPemulangan.alasanRujukan && (
+                  <p className="text-[#475569] text-[14px] leading-[22.75px]">
+                    <span className="font-bold text-[#334155]">Alasan:</span>{" "}
+                    {rencanaPemulangan.alasanRujukan}
+                  </p>
+                )}
+              </>
+            )}
+            {rencanaPemulangan.label === "Lain-lain" && rencanaPemulangan.dischargeReason && (
               <p className="text-[#475569] text-[14px] leading-[22.75px]">
-                <span className="font-bold text-[#334155]">Alasan:</span>{" "}
-                {referral.alasan}
+                <span className="font-bold text-[#334155]">Keterangan:</span>{" "}
+                {rencanaPemulangan.dischargeReason}
               </p>
             )}
           </div>
         ) : (
           <p className="italic text-[#94a3b8] text-[14px]">
-            Tidak ada rujukan tercatat.
+            Tidak ada rencana pemulangan tercatat.
           </p>
         )}
       </div>

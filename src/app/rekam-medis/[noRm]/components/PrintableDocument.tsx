@@ -314,15 +314,23 @@ export default function PrintableDocument({
             <td className="w-[70%] border-b border-black py-1">{episodic.education || "-"}</td>
           </tr>
           <tr className="align-top">
-            <td className="w-[30%] border-b border-black py-1 pr-2 font-semibold">Rujukan Lain</td>
+            <td className="w-[30%] border-b border-black py-1 pr-2 font-semibold">Rencana Pemulangan</td>
             <td className="w-[70%] border-b border-black py-1">
-              {episodic.referral ? (
+              {episodic.rencanaPemulangan ? (
                 <>
-                  <p className="font-bold">Dirujuk ke: {episodic.referral.tujuan}</p>
-                  <p className="text-gray-600">Alasan: {episodic.referral.alasan || "-"}</p>
+                  <p className="font-bold">{episodic.rencanaPemulangan.label}</p>
+                  {episodic.rencanaPemulangan.label === "Dirujuk ke Fasilitas Lain" && (
+                    <>
+                      <p className="text-gray-600">Dirujuk ke: {episodic.rencanaPemulangan.tujuanRujukan}</p>
+                      <p className="text-gray-600">Alasan: {episodic.rencanaPemulangan.alasanRujukan || "-"}</p>
+                    </>
+                  )}
+                  {episodic.rencanaPemulangan.label === "Lain-lain" && episodic.rencanaPemulangan.dischargeReason && (
+                    <p className="text-gray-600">Keterangan: {episodic.rencanaPemulangan.dischargeReason}</p>
+                  )}
                 </>
               ) : (
-                <p className="italic text-gray-600">Tidak ada rujukan</p>
+                <p className="italic text-gray-600">Tidak ada rencana pemulangan tercatat</p>
               )}
             </td>
           </tr>

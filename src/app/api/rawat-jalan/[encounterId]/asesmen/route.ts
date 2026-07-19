@@ -7,6 +7,14 @@ import { serializeNursingAssessment } from "@/lib/utils/nursing-assessment";
 import { serializeRacikanContainer, type RacikanContainer } from "@/lib/utils/racikan-container";
 import type { NonRacikanItem } from "@/lib/schemas/plan-schema";
 
+const DISCHARGE_DISPOSITION_ENUM: Record<string, string> = {
+  "Pulang": "home",
+  "Dirujuk ke Fasilitas Lain": "other_hcf",
+  "Pulang Atas Permintaan Sendiri": "aadvice",
+  "Meninggal Dunia": "exp",
+  "Lain-lain": "oth",
+};
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ encounterId: string }> }
@@ -36,14 +44,25 @@ export async function POST(
     // is provided (including null) is serialized below. The NURSE route keeps the
     // hard mandatory guard.
 
-    // Conditional Rujukan guard: an active referral must carry both Tujuan and
-    // Alasan — block empty ServiceRequest creation server-side (BB-11.14).
-    if (plan?.rujukan?.isActive === true) {
-      const tujuan = typeof plan.rujukan.tujuanRujukan === "string" ? plan.rujukan.tujuanRujukan.trim() : "";
-      const alasan = typeof plan.rujukan.alasanRujukan === "string" ? plan.rujukan.alasanRujukan.trim() : "";
+    // Conditional Rencana Pemulangan guard: "Dirujuk" must carry both Tujuan and
+    // Alasan — blocks empty ServiceRequest creation server-side (BB-11.14).
+    // "Lain-lain" must carry a free-text dischargeReason.
+    const rencanaLabel: string = plan?.rencanaPemulangan?.label ?? "";
+    if (rencanaLabel === "Dirujuk ke Fasilitas Lain") {
+      const tujuan = typeof plan.rencanaPemulangan.tujuanRujukan === "string" ? plan.rencanaPemulangan.tujuanRujukan.trim() : "";
+      const alasan = typeof plan.rencanaPemulangan.alasanRujukan === "string" ? plan.rencanaPemulangan.alasanRujukan.trim() : "";
       if (!tujuan || !alasan) {
         return Response.json(
           { error: "Tujuan dan Alasan Rujukan wajib diisi" },
+          { status: 400 }
+        );
+      }
+    }
+    if (rencanaLabel === "Lain-lain") {
+      const reason = typeof plan.rencanaPemulangan.dischargeReason === "string" ? plan.rencanaPemulangan.dischargeReason.trim() : "";
+      if (!reason) {
+        return Response.json(
+          { error: "Keterangan Rencana Pemulangan wajib diisi" },
           { status: 400 }
         );
       }
@@ -317,14 +336,17 @@ export async function POST(
       }
       }
 
-      // Step 5: Replace referral (delete existing; create only if isActive=true)
+      // Step 5: Replace referral (delete existing; create only when the doctor
+      // picked "Dirujuk ke Fasilitas Lain" — ServiceRequest is reserved for
+      // genuine referrals so /rekam-medis's "Rujukan" display is never mislabeled
+      // by a "Lain-lain" or other discharge outcome).
       await tx.serviceRequest.deleteMany({ where: { encounterId } });
-      if (plan?.rujukan?.isActive === true) {
+      if (rencanaLabel === "Dirujuk ke Fasilitas Lain") {
         await tx.serviceRequest.create({
           data: {
             encounterId,
-            intent: plan.rujukan.tujuanRujukan?.trim() || "Tidak ditentukan",
-            note: plan.rujukan.alasanRujukan?.trim() || null,
+            intent: plan.rencanaPemulangan.tujuanRujukan?.trim() || "Tidak ditentukan",
+            note: plan.rencanaPemulangan.alasanRujukan?.trim() || null,
           },
         });
       }
@@ -349,6 +371,12 @@ export async function POST(
       await tx.encounter.update({
         where: { id: encounterId },
         data: {
+          dischargeDisposition: rencanaLabel
+            ? (DISCHARGE_DISPOSITION_ENUM[rencanaLabel] as any) ?? null
+            : null,
+          dischargeReason: rencanaLabel === "Lain-lain"
+            ? (plan.rencanaPemulangan.dischargeReason?.trim() || null)
+            : null,
           reasonCode: hasilPeriksaData?.keluhanUtama ?? null,
           instruksiLab: plan?.labInstruction?.instruksiLab?.trim() ? plan.labInstruction.instruksiLab.trim() : null,
           riwayatPenyakitNotes: assessmentData?.catatanPenyakit?.trim() ? assessmentData.catatanPenyakit : null,

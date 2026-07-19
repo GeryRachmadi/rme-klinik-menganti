@@ -2,6 +2,17 @@ import { prisma } from '@/lib/prisma';
 import { toFHIRDateTime, formatVitalSign } from '@/lib/satusehat';
 import { parseFamilyHistory } from '@/lib/utils/family-history';
 
+// Prisma enum values can't contain hyphens, but SATUSEHAT's FHIR ValueSet for
+// Encounter.hospitalization.dischargeDisposition uses hyphenated codes — map
+// explicitly rather than assuming the strings line up.
+const DISCHARGE_DISPOSITION_FHIR_CODE: Record<string, { code: string; display: string }> = {
+  home: { code: "home", display: "Home" },
+  other_hcf: { code: "other-hcf", display: "Other healthcare facility" },
+  aadvice: { code: "aadvice", display: "Left against advice" },
+  exp: { code: "exp", display: "Expired" },
+  oth: { code: "oth", display: "Other" },
+};
+
 export type FHIRBundle = {
   resourceType: 'Bundle';
   type: 'transaction';
@@ -59,6 +70,23 @@ export async function buildSatuSehatBundle(encounterId: string): Promise<FHIRBun
     encounterResource.participant = [
       { individual: { reference: `Practitioner/${encounter.practitioner.ihsNumber}` } },
     ];
+  }
+
+  if (encounter.dischargeDisposition) {
+    const mapped = DISCHARGE_DISPOSITION_FHIR_CODE[encounter.dischargeDisposition];
+    if (mapped) {
+      encounterResource.hospitalization = {
+        dischargeDisposition: {
+          coding: [
+            {
+              system: "http://terminology.hl7.org/CodeSystem/discharge-disposition",
+              code: mapped.code,
+              display: mapped.display,
+            },
+          ],
+        },
+      };
+    }
   }
 
   entries.push({

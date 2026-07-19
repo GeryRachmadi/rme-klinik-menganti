@@ -147,7 +147,8 @@ export interface EpisodicData {
   medications: MedicationDisplayItem[]; // Resep Obat from latest encounter
   education: string | null;          // Edukasi/Anjuran free text
   instruksiLab: string | null;       // Instruksi Lab / Penunjang Medis Eksternal
-  referral: { tujuan: string; alasan: string | null } | null; // Rujukan (ServiceRequest)
+  referral: { tujuan: string; alasan: string | null } | null; // Rujukan (ServiceRequest) — kept for backward compat, superseded by rencanaPemulangan
+  rencanaPemulangan: RencanaPemulanganDisplay | null;
 }
 
 export interface RingkasanData {
@@ -197,6 +198,53 @@ function dedupeById<T>(items: T[], getKey: (item: T) => string): T[] {
     seen.add(key);
     return true;
   });
+}
+
+// Maps the Prisma DischargeDisposition enum to its Indonesian display label —
+// mirrors the inverse mapping in the asesmen edit-form page and the enum
+// mapping in the API route.
+const DISCHARGE_DISPOSITION_DISPLAY_LABELS: Record<string, string> = {
+  home: "Pulang",
+  other_hcf: "Dirujuk ke Fasilitas Lain",
+  aadvice: "Pulang Atas Permintaan Sendiri",
+  exp: "Meninggal Dunia",
+  oth: "Lain-lain",
+};
+
+export interface RencanaPemulanganDisplay {
+  label: string;
+  tujuanRujukan: string | null;
+  alasanRujukan: string | null;
+  dischargeReason: string | null;
+}
+
+/**
+ * Builds the Rencana Pemulangan display shape for one encounter. Backward
+ * compatible with pre-migration encounters that have a ServiceRequest row but
+ * no dischargeDisposition set — those are treated as an implicit "Dirujuk ke
+ * Fasilitas Lain" so their referral data keeps displaying under the new
+ * unified card instead of silently disappearing.
+ */
+function mapRencanaPemulangan(enc: any): RencanaPemulanganDisplay | null {
+  const sr = (enc.serviceRequests || [])[0] || null;
+  if (enc.dischargeDisposition) {
+    const label = DISCHARGE_DISPOSITION_DISPLAY_LABELS[enc.dischargeDisposition] ?? enc.dischargeDisposition;
+    return {
+      label,
+      tujuanRujukan: sr?.intent ?? null,
+      alasanRujukan: sr?.note ?? null,
+      dischargeReason: enc.dischargeReason ?? null,
+    };
+  }
+  if (sr) {
+    return {
+      label: "Dirujuk ke Fasilitas Lain",
+      tujuanRujukan: sr.intent ?? null,
+      alasanRujukan: sr.note ?? null,
+      dischargeReason: null,
+    };
+  }
+  return null;
 }
 
 /**
@@ -272,6 +320,7 @@ export function mapRingkasanData(prismaPatient: any): RingkasanData {
     // Rujukan — ServiceRequest stores tujuan in `intent`, alasan in `note`.
     const sr = (latest.serviceRequests || [])[0] || null;
     const referral = sr ? { tujuan: sr.intent || "", alasan: sr.note ?? null } : null;
+    const rencanaPemulangan = mapRencanaPemulangan(latest);
 
     episodic = {
       encounterDate: latest.periodStart || latest.createdAt || null,
@@ -287,6 +336,7 @@ export function mapRingkasanData(prismaPatient: any): RingkasanData {
       education,
       instruksiLab: latest.instruksiLab ?? null,
       referral,
+      rencanaPemulangan,
     };
   }
 
@@ -320,7 +370,8 @@ export interface TimelineEncounter {
   medications: MedicationDisplayItem[];
   education: string | null;
   instruksiLab: string | null;       // Instruksi Lab / Penunjang Medis Eksternal
-  referral: { tujuan: string; alasan: string | null } | null; // ServiceRequest (Rujukan)
+  referral: { tujuan: string; alasan: string | null } | null; // ServiceRequest (Rujukan) — kept for backward compat, superseded by rencanaPemulangan
+  rencanaPemulangan: RencanaPemulanganDisplay | null;
   // Asesmen Keperawatan (Item 14) — episodic per-visit nursing judgment, parsed
   // from Encounter.asesmenKeperawatan JSON. NOT a longitudinal "most recent wins"
   // summary; each card shows ITS OWN visit's nursing assessment.
@@ -407,6 +458,7 @@ export function mapEncounterTimeline(prismaPatient: any): TimelineEncounter[] {
     // Rujukan — ServiceRequest stores tujuan in `intent`, alasan in `note`.
     const sr = (enc.serviceRequests || [])[0] || null;
     const referral = sr ? { tujuan: sr.intent || "", alasan: sr.note ?? null } : null;
+    const rencanaPemulangan = mapRencanaPemulangan(enc);
 
     const nursingAssessment = parseNursingAssessment(enc.asesmenKeperawatan);
 
@@ -426,6 +478,7 @@ export function mapEncounterTimeline(prismaPatient: any): TimelineEncounter[] {
       education,
       instruksiLab: enc.instruksiLab ?? null,
       referral,
+      rencanaPemulangan,
       nursingAssessment,
     };
   });
