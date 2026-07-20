@@ -34,7 +34,7 @@ export function PlanProcedureAutocomplete({
   }, [results]);
 
   const handleSelect = (procedure: Icd9CmEntry) => {
-    onProcedureChange({ code: procedure.code, display: procedure.display, category: procedure.category ?? '' });
+    onProcedureChange({ code: procedure.code, display: procedure.display_id ?? procedure.display, category: procedure.category ?? '' });
     setSearchQuery('');
     setShowDropdown(false);
   };
@@ -198,8 +198,11 @@ export function PlanProcedureAutocomplete({
                     <div className="text-sm font-medium">
                       <span className="font-semibold">{item.code}</span>
                       {' — '}
-                      {item.display}
+                      {item.display_id ?? item.display}
                     </div>
+                    {item.display_id && (
+                      <div className="text-xs text-gray-400 mt-0.5">{item.display}</div>
+                    )}
                     <div className="text-xs text-gray-400 mt-0.5">{item.category}</div>
                   </li>
                 ))}

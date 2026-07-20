@@ -1,11 +1,15 @@
 import { z } from "zod";
 
-// A single ingredient within a Racikan container — drug name and strength are
-// separate fields since one drug name can map to multiple available strengths
-// (Item 13 rebuild, Option A container/ingredient restructure).
+// A single ingredient within a Racikan container — drug name, quantity, and
+// dosage form are separate fields since one drug name can map to multiple
+// available strengths (Item 13 rebuild, Option A container/ingredient
+// restructure). `jumlah` + `bentukSediaan` together disambiguate the amount
+// of this ingredient going into the mix (e.g. "1 Tablet"), distinct from the
+// racikan container's own overall bentukSediaan (e.g. "Puyer (Serbuk)").
 const RacikanIngredientSchema = z.object({
   namaObat: z.string().trim().min(1, "Nama obat wajib diisi"),
-  dosis: z.string().trim().min(1, "Dosis wajib diisi"),
+  jumlah: z.number().int("Jumlah harus berupa bilangan bulat").positive("Jumlah harus lebih dari 0"),
+  bentukSediaan: z.string().trim().min(1, "Bentuk sediaan wajib diisi"),
 });
 
 // A single Racikan (compounded) prescription container. Every field is
@@ -28,7 +32,7 @@ export const RacikanContainerSchema = z.object({
 // Non-Racikan items have no ingredients sub-array (Item 13 rebuild).
 export const NonRacikanItemSchema = z.object({
   namaObat: z.string().trim().min(1, "Nama obat wajib diisi"),
-  dosis: z.string().trim().min(1, "Dosis wajib diisi"),
+  dosis: z.string().trim().optional(),
   jumlah: z.number().int().positive("Jumlah harus lebih dari 0"),
   bentukSediaan: z.string().trim().min(1, "Bentuk sediaan wajib dipilih"),
   aturanPakai: z.string().trim().min(1, "Aturan pakai wajib diisi"),
@@ -103,11 +107,18 @@ export const DischargeDispositionFormSchema = z.object({
   // Spread into a mutable array — z.enum's typings in this project's zod
   // version want string[], not the readonly tuple DISCHARGE_DISPOSITION_OPTIONS
   // is declared as (same reason SearchableSelect's `options` prop is spread below).
-  label: z.enum([...DISCHARGE_DISPOSITION_OPTIONS]).optional().or(z.literal("")),
+  // Keeps the `""` literal in the union (not `.optional()`) so the unselected
+  // default state still type-checks — the superRefine below is what actually
+  // makes selection mandatory (PIC request: Rencana Pemulangan can no longer be
+  // left blank, matching Tindakan/Resep/Edukasi/Instruksi Lab).
+  label: z.enum([...DISCHARGE_DISPOSITION_OPTIONS]).or(z.literal("")),
   tujuanRujukan: z.string().max(255).optional(),
   alasanRujukan: z.string().max(500).optional(),
   dischargeReason: z.string().max(500).optional(),
 }).superRefine((data, ctx) => {
+  if (!data.label) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["label"], message: "Rencana Pemulangan wajib dipilih" });
+  }
   // Mirrors ReferralFormSchema's conditional-required pattern: when "Dirujuk ke
   // Fasilitas Lain" is selected, Tujuan and Alasan become mandatory.
   if (data.label === "Dirujuk ke Fasilitas Lain") {
@@ -126,8 +137,9 @@ export const DischargeDispositionFormSchema = z.object({
 
 export type DischargeDispositionFormValues = z.infer<typeof DischargeDispositionFormSchema>;
 
-// Root schema for the entire Plan section — Tindakan, Resep, and Edukasi are all
-// mandatory (H5 Sev2, PIC request); Rujukan stays conditional on its toggle.
+// Root schema for the entire Plan section — Tindakan, Resep, Edukasi, Instruksi
+// Lab, and Rencana Pemulangan are all mandatory (H5 Sev2, PIC request); only the
+// Dirujuk/Lain-lain sub-fields inside Rencana Pemulangan stay conditional.
 export const PlanFormSchema = z.object({
   procedure: z.object({
     procedures: z.array(z.any()).optional(),
@@ -173,10 +185,10 @@ export const PlanFormSchema = z.object({
   if (!data.edukasi?.anjuranEdukasi?.trim()) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["edukasi", "anjuranEdukasi"], message: "Edukasi / Anjuran wajib diisi" });
   }
-  // Instruksi Lab is a permanent, mandatory Plan fixture (H2 Sev3): the doctor
-  // must explicitly type something (even "-" / "Tidak ada") — never blank.
-  if (!data.labInstruction?.instruksiLab?.trim()) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["labInstruction", "instruksiLab"], message: "Instruksi Lab wajib diisi" });
+  // Rencana Pemulangan is now mandatory (PIC request) — the doctor must pick one
+  // of the 5 discharge-disposition options, mirrored on the server in route.ts.
+  if (!data.rencanaPemulangan?.label?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["rencanaPemulangan", "label"], message: "Rencana Pemulangan wajib dipilih" });
   }
 }).superRefine((data, ctx) => {
   // Conditional Rencana Pemulangan rule: "Dirujuk" requires Tujuan + Alasan

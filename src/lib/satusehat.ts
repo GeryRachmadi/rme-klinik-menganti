@@ -123,6 +123,8 @@ export async function getPatientIHSId(
       "9201394901000008": { ihsId: "P00883356749", name: "Sonia Herdianti" },
       "9201076407000009": { ihsId: "P01058967035", name: "Nancy Wang" },
       "9210060207000010": { ihsId: "P02428473601", name: "Syarif Muhammad" },
+      "3578023456789012": { ihsId: "P05123456789", name: "Nadine Intisari" },
+      "3578034567890123": { ihsId: "P06987654321", name: "Darrel Atyamiko" },
     };
     const match = mockPatients[cleanNik];
     if (match) {

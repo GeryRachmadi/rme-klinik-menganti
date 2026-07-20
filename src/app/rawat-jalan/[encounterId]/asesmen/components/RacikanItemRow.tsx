@@ -102,8 +102,8 @@ function NamaObatAutocomplete({
 
 /**
  * One Racikan container: bentuk sediaan / jumlah / aturan pakai / waktu konsumsi
- * at the container level, holding a sub-array of ingredients (namaObat + dosis
- * each). Mirrors the container/ingredient split decided for Item 13's rebuild —
+ * at the container level, holding a sub-array of ingredients (namaObat + jumlah
+ * + bentukSediaan each). Mirrors the container/ingredient split decided for Item 13's rebuild —
  * a container with zero ingredients is meaningless, so the ingredient list
  * always keeps at least one row (remove is disabled at the last row).
  */
@@ -240,13 +240,18 @@ export default function RacikanItemRow({ index, control, onRemove, isReadOnly = 
 
       {/* Ingredients sub-list */}
       <div className="flex flex-col gap-2 pl-3 border-l-2 border-[#E6F5F4]">
-        <span className="text-[11px] text-gray-400 uppercase tracking-wider" style={labelStyle}>
+        <span className="text-[11px] text-[#0F766E] uppercase tracking-wider" style={labelStyle}>
           Bahan Racikan
         </span>
 
         {ingredientFields.map((ingredientField, ingredientIndex) => (
           <div key={ingredientField.id} className="grid grid-cols-12 gap-2 items-end">
-            <div className="col-span-7 flex flex-col gap-1">
+            <div className="col-span-5 flex flex-col gap-1">
+              {ingredientIndex === 0 && (
+                <label className="text-[10px] text-[#0F766E] uppercase tracking-wider" style={labelStyle}>
+                  Nama Obat
+                </label>
+              )}
               <Controller
                 control={control}
                 name={`racikanItems.${index}.ingredients.${ingredientIndex}.namaObat`}
@@ -260,18 +265,25 @@ export default function RacikanItemRow({ index, control, onRemove, isReadOnly = 
               />
             </div>
 
-            <div className="col-span-4 flex flex-col gap-1">
+            <div className="col-span-3 flex flex-col gap-1">
+              {ingredientIndex === 0 && (
+                <label className="text-[10px] text-gray-400 uppercase tracking-wider" style={labelStyle}>
+                  Jumlah
+                </label>
+              )}
               <Controller
                 control={control}
-                name={`racikanItems.${index}.ingredients.${ingredientIndex}.dosis`}
+                name={`racikanItems.${index}.ingredients.${ingredientIndex}.jumlah`}
                 render={({ field }) => (
                   <input
-                    type="text"
+                    type="number"
+                    min={1}
+                    step={1}
                     disabled={isReadOnly}
                     autoComplete="off"
-                    value={field.value ?? ""}
-                    onChange={field.onChange}
-                    placeholder="Contoh: 500mg"
+                    value={Number.isFinite(field.value) ? field.value : ""}
+                    onChange={(e) => field.onChange(e.target.value === "" ? NaN : Number(e.target.value))}
+                    placeholder="Contoh: 1"
                     className={inputClass(isReadOnly)}
                     style={inputStyle}
                   />
@@ -279,7 +291,28 @@ export default function RacikanItemRow({ index, control, onRemove, isReadOnly = 
               />
             </div>
 
-            <div className="col-span-1 flex justify-center">
+            <div className="col-span-3 flex flex-col gap-1">
+              {ingredientIndex === 0 && (
+                <label className="text-[10px] text-gray-400 uppercase tracking-wider" style={labelStyle}>
+                  Bentuk Sediaan
+                </label>
+              )}
+              <Controller
+                control={control}
+                name={`racikanItems.${index}.ingredients.${ingredientIndex}.bentukSediaan`}
+                render={({ field }) => (
+                  <CategorizedSearchableSelect
+                    options={BENTUK_SEDIAAN_MOCK}
+                    value={field.value ?? ""}
+                    onChange={field.onChange}
+                    disabled={isReadOnly}
+                    placeholder="Pilih bentuk..."
+                  />
+                )}
+              />
+            </div>
+
+            <div className={`col-span-1 flex justify-center ${ingredientIndex === 0 ? "self-end" : ""}`}>
               <button
                 type="button"
                 onClick={() => removeIngredient(ingredientIndex)}
@@ -300,7 +333,7 @@ export default function RacikanItemRow({ index, control, onRemove, isReadOnly = 
         {!isReadOnly && (
           <button
             type="button"
-            onClick={() => appendIngredient({ namaObat: "", dosis: "" })}
+            onClick={() => appendIngredient({ namaObat: "", jumlah: 1, bentukSediaan: "" })}
             className="inline-flex self-start items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#0F766E] text-[#0F766E] text-xs hover:bg-[#E6F5F4] transition-colors cursor-pointer"
             style={{ fontFamily: JAKARTA, fontWeight: 700 }}
           >

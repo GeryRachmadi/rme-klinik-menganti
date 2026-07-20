@@ -283,7 +283,7 @@ export default async function AsesmenPage({
           jumlah: m.jumlahRacikan ?? parsed?.jumlah ?? 1,
           aturanPakai: m.aturanPakai ?? parsed?.aturanPakai ?? '',
           waktuKonsumsi: m.waktuKonsumsi ?? parsed?.waktuKonsumsi ?? '',
-          ingredients: parsed?.ingredients ?? [{ namaObat: m.medication, dosis: '' }],
+          ingredients: parsed?.ingredients ?? [{ namaObat: m.medication, jumlah: NaN, bentukSediaan: '-' }],
         };
       }) ?? [],
     tidakAdaResep: isTidakAdaResep,

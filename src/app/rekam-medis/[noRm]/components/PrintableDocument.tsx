@@ -287,7 +287,7 @@ export default function PrintableDocument({
                         <p className="italic">R/ {item.namaRacikan}</p>
                         {item.ingredients.map((ing, j) => (
                           <p key={j} className="italic" style={{ paddingLeft: "1.5rem" }}>
-                            {ing.namaObat} {ing.dosis}
+                            {ing.namaObat} {Number.isFinite(ing.jumlah) && ing.jumlah > 0 ? ing.jumlah : ""} {ing.bentukSediaan}
                           </p>
                         ))}
                         <p className="italic" style={{ paddingLeft: "1.5rem" }}>
@@ -325,8 +325,8 @@ export default function PrintableDocument({
                       <p className="text-gray-600">Alasan: {episodic.rencanaPemulangan.alasanRujukan || "-"}</p>
                     </>
                   )}
-                  {episodic.rencanaPemulangan.label === "Lain-lain" && episodic.rencanaPemulangan.dischargeReason && (
-                    <p className="text-gray-600">Keterangan: {episodic.rencanaPemulangan.dischargeReason}</p>
+                  {episodic.rencanaPemulangan.dischargeReason && (
+                    <p className="text-gray-600">Catatan Tambahan: {episodic.rencanaPemulangan.dischargeReason}</p>
                   )}
                 </>
               ) : (

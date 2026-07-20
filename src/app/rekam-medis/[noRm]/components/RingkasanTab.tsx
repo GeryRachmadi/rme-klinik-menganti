@@ -352,9 +352,9 @@ function PerencanaanMedisCard({ episodic }: { episodic: EpisodicData | null }) {
                 )}
               </>
             )}
-            {rencanaPemulangan.label === "Lain-lain" && rencanaPemulangan.dischargeReason && (
+            {rencanaPemulangan.dischargeReason && (
               <p className="text-[#475569] text-[14px] leading-[22.75px]">
-                <span className="font-bold text-[#334155]">Keterangan:</span>{" "}
+                <span className="font-bold text-[#334155]">Catatan Tambahan:</span>{" "}
                 {rencanaPemulangan.dischargeReason}
               </p>
             )}

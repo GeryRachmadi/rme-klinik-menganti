@@ -379,9 +379,9 @@ function RencanaPemulangan({ rencanaPemulangan }: { rencanaPemulangan: TimelineE
             )}
           </>
         )}
-        {rencanaPemulangan.label === 'Lain-lain' && rencanaPemulangan.dischargeReason && (
+        {rencanaPemulangan.dischargeReason && (
           <p className="text-[14px] text-[#475569] leading-[22px]" style={JAKARTA}>
-            <span className="font-bold text-[#334155]">Keterangan:</span> {rencanaPemulangan.dischargeReason}
+            <span className="font-bold text-[#334155]">Catatan Tambahan:</span> {rencanaPemulangan.dischargeReason}
           </p>
         )}
       </div>

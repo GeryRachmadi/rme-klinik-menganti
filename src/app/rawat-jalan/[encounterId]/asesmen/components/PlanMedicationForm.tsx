@@ -35,7 +35,7 @@ const emptyRacikanItem = () => ({
   jumlah: 1,
   aturanPakai: '',
   waktuKonsumsi: '',
-  ingredients: [{ namaObat: '', dosis: '' }],
+  ingredients: [{ namaObat: '', jumlah: 1, bentukSediaan: '' }],
 });
 
 export interface PlanMedicationFormRef {
@@ -147,12 +147,12 @@ const PlanMedicationForm = forwardRef<PlanMedicationFormRef, PlanMedicationFormP
           )}
 
           {!isReadOnly && (
-            <label className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer select-none ml-auto">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 cursor-pointer select-none ml-auto" style={{ fontFamily: JAKARTA }}>
               <input
                 type="checkbox"
                 checked={tidakAdaResep}
                 onChange={(e) => setValue('tidakAdaResep', e.target.checked, { shouldDirty: true, shouldValidate: true })}
-                className="w-4 h-4 accent-[#2BB5A0] cursor-pointer"
+                className="w-4 h-4 accent-[#0F766E] cursor-pointer"
               />
               Tidak ada peresepan obat
             </label>

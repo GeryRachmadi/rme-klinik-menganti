@@ -87,7 +87,7 @@ export type MedicationDisplayItem =
       jumlah: number;
       aturanPakai: string;
       waktuKonsumsi: string;
-      ingredients: Array<{ namaObat: string; dosis: string }>;
+      ingredients: Array<{ namaObat: string; jumlah: number; bentukSediaan: string }>;
     }
   | { type: "tidak-ada" };
 

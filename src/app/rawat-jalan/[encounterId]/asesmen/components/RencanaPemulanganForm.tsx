@@ -103,11 +103,11 @@ const RencanaPemulanganForm = forwardRef<RencanaPemulanganFormRef, RencanaPemula
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tujuanValue]);
 
-  // When the doctor switches away from a branch, clear that branch's fields so a
-  // stale value from a previous selection can't be silently resubmitted. Only
-  // warn if there was actually something to clear — otherwise switching between
-  // e.g. "Pulang" and "Meninggal Dunia" (neither of which has extra fields)
-  // would toast "reset" for no reason.
+  // When the doctor switches away from "Dirujuk", clear its Tujuan/Alasan fields
+  // so a stale value from a previous selection can't be silently resubmitted.
+  // Catatan Tambahan is hidden specifically for "Dirujuk" (it already has its
+  // own Tujuan/Alasan fields), so switching INTO "Dirujuk" clears it too —
+  // otherwise a hidden field's leftover text would still get silently saved.
   useEffect(() => {
     if (!isMountedRef.current) {
       isMountedRef.current = true;
@@ -115,15 +115,15 @@ const RencanaPemulanganForm = forwardRef<RencanaPemulanganFormRef, RencanaPemula
     }
     if (isReadOnly) return;
     const hadRujukanData = !isRujukan && (!!getValues('tujuanRujukan')?.trim() || !!getValues('alasanRujukan')?.trim());
-    const hadLainLainData = !isLainLain && !!getValues('dischargeReason')?.trim();
+    const hadCatatanData = isRujukan && !!getValues('dischargeReason')?.trim();
     if (!isRujukan) {
       setValue('tujuanRujukan', '', { shouldDirty: false });
       setValue('alasanRujukan', '', { shouldDirty: false });
     }
-    if (!isLainLain) {
+    if (isRujukan) {
       setValue('dischargeReason', '', { shouldDirty: false });
     }
-    if (hadRujukanData || hadLainLainData) {
+    if (hadRujukanData || hadCatatanData) {
       showWarning('Data rencana pemulangan disetel ulang');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -154,74 +154,97 @@ const RencanaPemulanganForm = forwardRef<RencanaPemulanganFormRef, RencanaPemula
         </div>
       )}
 
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-5">
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-bold text-[#0F766E] uppercase tracking-wider" style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
-            Rencana Pemulangan
-          </label>
-          <SearchableSelect
-            options={[...DISCHARGE_DISPOSITION_OPTIONS]}
-            value={label ?? ''}
-            onChange={(val) => setValue('label', val as DischargeDispositionFormValues['label'], { shouldValidate: true, shouldDirty: true })}
-            placeholder="Pilih Rencana Pemulangan..."
-            disabled={isReadOnly}
-          />
-        </div>
-
-        {isRujukan && (
-          <div className="flex flex-col gap-4 mt-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-[#0F766E] uppercase tracking-wider" style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
-                Tujuan Rujukan
-              </label>
-              <input
-                type="text"
-                {...register('tujuanRujukan')}
-                placeholder="Contoh: RSUD Ibnu Sina Gresik"
-                disabled={isReadOnly}
-                className={`block w-full px-3 py-2.5 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] text-sm transition-colors ${isReadOnly ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-900'}`}
-              />
-              {errors.tujuanRujukan && (
-                <p className="text-red-500 text-[13px] mt-1">{errors.tujuanRujukan.message}</p>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-[#0F766E] uppercase tracking-wider" style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
-                Alasan Rujukan
-              </label>
-              <textarea
-                {...register('alasanRujukan')}
-                placeholder="Pertimbangan Medis…"
-                rows={3}
-                disabled={isReadOnly}
-                className={`w-full border border-gray-200 rounded-xl p-4 text-sm placeholder-gray-400 resize-y focus:outline-none focus:ring-1 min-h-[80px] focus:ring-[#0F766E] focus:border-[#0F766E] transition-colors ${isReadOnly ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800'}`}
-              />
-              {errors.alasanRujukan && (
-                <p className="text-red-500 text-[13px] mt-1">{errors.alasanRujukan.message}</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {isLainLain && (
-          <div className="flex flex-col gap-1.5 mt-4">
-            <label className="text-xs font-bold text-[#0F766E] uppercase tracking-wider" style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
-              Keterangan
-            </label>
-            <textarea
-              {...register('dischargeReason')}
-              placeholder="Jelaskan rencana pemulangan…"
-              rows={3}
-              disabled={isReadOnly}
-              className={`w-full border border-gray-200 rounded-xl p-4 text-sm placeholder-gray-400 resize-y focus:outline-none focus:ring-1 min-h-[80px] focus:ring-[#0F766E] focus:border-[#0F766E] transition-colors ${isReadOnly ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800'}`}
-            />
-            {errors.dischargeReason && (
-              <p className="text-red-500 text-[13px] mt-1">{errors.dischargeReason.message}</p>
-            )}
-          </div>
+      <div className="flex flex-col gap-1.5">
+        <h3
+          className="text-sm font-bold text-[#0F766E] uppercase tracking-wider"
+          style={{ WebkitTextStroke: '0.2px #0F766E', fontFamily: '"Plus Jakarta Sans", sans-serif' }}
+        >
+          Rencana Pemulangan
+          <span className="text-red-500 ml-1" style={{ WebkitTextStroke: '0' }}>*</span>
+        </h3>
+        <SearchableSelect
+          options={[...DISCHARGE_DISPOSITION_OPTIONS]}
+          value={label ?? ''}
+          onChange={(val) => setValue('label', val as DischargeDispositionFormValues['label'], { shouldValidate: true, shouldDirty: true })}
+          placeholder="Pilih Rencana Pemulangan..."
+          disabled={isReadOnly}
+          hasError={!!errors.label}
+        />
+        {errors.label && (
+          <p className="text-red-500 text-[13px] mt-1">{errors.label.message}</p>
         )}
       </div>
+
+      {isRujukan && (
+        <div className="flex flex-col gap-1.5">
+          <h3
+            className="text-sm font-bold text-[#0F766E] uppercase tracking-wider"
+            style={{ WebkitTextStroke: '0.2px #0F766E', fontFamily: '"Plus Jakarta Sans", sans-serif' }}
+          >
+            Tujuan Rujukan
+          </h3>
+          <input
+            type="text"
+            {...register('tujuanRujukan')}
+            placeholder="Contoh: RSUD Ibnu Sina Gresik"
+            disabled={isReadOnly}
+            className={`block w-full px-3 py-2.5 border border-gray-300 rounded-lg placeholder-gray-400 font-sans focus:outline-none focus:ring-1 focus:ring-[#0F766E] focus:border-[#0F766E] text-sm transition-colors ${isReadOnly ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-900'}`}
+            style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
+          />
+          {errors.tujuanRujukan && (
+            <p className="text-red-500 text-[13px] mt-1">{errors.tujuanRujukan.message}</p>
+          )}
+        </div>
+      )}
+
+      {isRujukan && (
+        <div className="flex flex-col gap-1.5">
+          <h3
+            className="text-sm font-bold text-[#0F766E] uppercase tracking-wider"
+            style={{ WebkitTextStroke: '0.2px #0F766E', fontFamily: '"Plus Jakarta Sans", sans-serif' }}
+          >
+            Alasan Rujukan
+          </h3>
+          <textarea
+            {...register('alasanRujukan')}
+            placeholder="Pertimbangan Medis…"
+            rows={3}
+            disabled={isReadOnly}
+            className={`w-full border rounded-xl p-4 text-sm font-sans resize-y focus:outline-none focus:ring-1 min-h-[80px] focus:ring-[#0F766E] focus:border-[#0F766E] border-gray-200 transition-colors placeholder-gray-400 ${isReadOnly ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800'}`}
+            style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
+          />
+          {errors.alasanRujukan && (
+            <p className="text-red-500 text-[13px] mt-1">{errors.alasanRujukan.message}</p>
+          )}
+        </div>
+      )}
+
+      {!!label && !isRujukan && (
+        <div className="flex flex-col gap-1.5">
+          <h3
+            className="text-sm font-bold text-[#0F766E] uppercase tracking-wider"
+            style={{ WebkitTextStroke: '0.2px #0F766E', fontFamily: '"Plus Jakarta Sans", sans-serif' }}
+          >
+            Catatan Tambahan
+            {isLainLain ? (
+              <span className="text-red-500 ml-1" style={{ WebkitTextStroke: '0' }}>*</span>
+            ) : (
+              <span className="normal-case font-medium text-gray-400 ml-1">(Opsional)</span>
+            )}
+          </h3>
+          <textarea
+            {...register('dischargeReason')}
+            placeholder="Jelaskan rencana pemulangan…"
+            rows={3}
+            disabled={isReadOnly}
+            className={`w-full border rounded-xl p-4 text-sm font-sans resize-y focus:outline-none focus:ring-1 min-h-[80px] focus:ring-[#0F766E] focus:border-[#0F766E] border-gray-200 transition-colors placeholder-gray-400 ${isReadOnly ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800'}`}
+            style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
+          />
+          {errors.dischargeReason && (
+            <p className="text-red-500 text-[13px] mt-1">{errors.dischargeReason.message}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 });

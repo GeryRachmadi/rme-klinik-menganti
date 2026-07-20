@@ -87,18 +87,25 @@ export default function MedicationDisplayCard({ item }: { item: MedicationDispla
               Tidak ada bahan tercatat.
             </p>
           ) : (
-            item.ingredients.map((ing, i) => (
-              <div key={`${ing.namaObat}-${i}`} className="flex items-center justify-between gap-2">
-                <span className="text-[12px] font-medium text-[#475569]" style={JAKARTA}>
-                  {ing.namaObat || "Bahan"}
-                </span>
-                {ing.dosis && (
+            item.ingredients.map((ing, i) => {
+              const jumlahText = Number.isFinite(ing.jumlah) && ing.jumlah > 0 ? String(ing.jumlah) : "";
+              const jumlahBentuk = [jumlahText, ing.bentukSediaan]
+                .map((v) => (v ?? "").trim())
+                .filter((v) => v.length > 0 && v !== "-")
+                .join(" ");
+              return (
+                <div key={`${ing.namaObat}-${i}`} className="flex items-center justify-between gap-2">
                   <span className="text-[12px] font-medium text-[#475569]" style={JAKARTA}>
-                    {ing.dosis}
+                    {ing.namaObat || "Bahan"}
                   </span>
-                )}
-              </div>
-            ))
+                  {jumlahBentuk && (
+                    <span className="text-[12px] font-medium text-[#475569]" style={JAKARTA}>
+                      {jumlahBentuk}
+                    </span>
+                  )}
+                </div>
+              );
+            })
           )}
         </div>
       )}

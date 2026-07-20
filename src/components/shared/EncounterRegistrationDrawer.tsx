@@ -109,6 +109,15 @@ export default function EncounterRegistrationDrawer({
   }>({ visible: false, message: "", type: "success" });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoCloseInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [autoCloseSeconds, setAutoCloseSeconds] = useState(5);
+  // onClose is an inline arrow function on the caller's side, so it gets a new
+  // identity on every parent re-render (e.g. DaftarAntrean's 5s polling). Read
+  // it from a ref instead of a dependency so the auto-close effect below isn't
+  // restarted by unrelated parent re-renders.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
   function showToast(message: string, type: "success" | "error" = "success") {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -207,13 +216,35 @@ export default function EncounterRegistrationDrawer({
       setSuccessQueueNumber(null);
       setToast((t) => ({ ...t, visible: false }));
       if (toastTimer.current) clearTimeout(toastTimer.current);
+      if (autoCloseTimer.current) clearTimeout(autoCloseTimer.current);
+      if (autoCloseInterval.current) clearInterval(autoCloseInterval.current);
+      setAutoCloseSeconds(5);
     }
   }, [isOpen, reset, search.reset]);
+
+  // Auto-close the drawer 5 seconds after a queue ticket is generated, with a
+  // live countdown so the user can see it happening.
+  useEffect(() => {
+    if (!successQueueNumber) return;
+    setAutoCloseSeconds(5);
+    autoCloseInterval.current = setInterval(() => {
+      setAutoCloseSeconds((s) => Math.max(0, s - 1));
+    }, 1000);
+    autoCloseTimer.current = setTimeout(() => {
+      onCloseRef.current();
+    }, 5000);
+    return () => {
+      if (autoCloseTimer.current) clearTimeout(autoCloseTimer.current);
+      if (autoCloseInterval.current) clearInterval(autoCloseInterval.current);
+    };
+  }, [successQueueNumber]);
 
   // Cleanup timers on unmount
   useEffect(() => () => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (autoCloseTimer.current) clearTimeout(autoCloseTimer.current);
+    if (autoCloseInterval.current) clearInterval(autoCloseInterval.current);
   }, []);
 
   if (!rendered) return null;
@@ -319,6 +350,10 @@ export default function EncounterRegistrationDrawer({
               <p className="text-xs text-gray-400 text-center max-w-xs">
                 Informasikan nomor antrean ini kepada pasien dan minta untuk menunggu
                 dipanggil oleh perawat.
+              </p>
+
+              <p className="text-xs text-gray-400 text-center">
+                Panel ini akan tertutup otomatis dalam {autoCloseSeconds} detik…
               </p>
             </div>
           ) : (

@@ -114,7 +114,7 @@ export default function ChipsInput({
               type="checkbox" 
               checked={negationChecked}
               onChange={(e) => onNegationChange && onNegationChange(e.target.checked)}
-              className="rounded border-gray-300 text-[#0F766E] focus:ring-[#0F766E] w-4 h-4 cursor-pointer"
+              className="rounded border-gray-300 accent-[#0F766E] focus:ring-[#0F766E] w-4 h-4 cursor-pointer"
             />
             <span className="font-medium">{negationLabel}</span>
           </label>
@@ -124,7 +124,8 @@ export default function ChipsInput({
           <button
             type="button"
             onClick={() => setIsInputVisible(true)}
-            className="text-sm font-semibold text-[#0F766E] hover:text-teal-900 transition-colors whitespace-nowrap ml-4"
+            className="text-sm px-3 py-1 rounded bg-[#0F766E] text-white hover:opacity-90 transition-opacity cursor-pointer whitespace-nowrap ml-4"
+            style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
           >
             + Tambah {addLabel || 'Riwayat'}
           </button>

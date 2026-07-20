@@ -309,10 +309,11 @@ model ICD10Reference {
 }
 
 model ICD9CMReference {
-  id       String  @id @default(cuid())
-  code     String  @unique
-  display  String
-  category String?
+  id         String  @id @default(cuid())
+  code       String  @unique
+  display    String
+  display_id String?
+  category   String?
 }
 
 // ============================================

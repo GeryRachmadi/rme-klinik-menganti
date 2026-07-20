@@ -18,7 +18,7 @@ interface PlanLabInstructionFormProps {
   encounterId: string;
   isReadOnly?: boolean;
   defaultValues?: { instruksiLab?: string };
-  /** Validation error surfaced from the central PlanFormSchema (Instruksi Lab is mandatory). */
+  /** Validation error surfaced from the central PlanFormSchema. */
   externalError?: string | null;
 }
 
@@ -72,12 +72,11 @@ const PlanLabInstructionForm = forwardRef<PlanLabInstructionFormRef, PlanLabInst
           className="text-sm font-bold text-[#0F766E] uppercase tracking-wider"
           style={{ WebkitTextStroke: '0.2px #0F766E', fontFamily: '"Plus Jakarta Sans", sans-serif' }}
         >
-          Instruksi Lab <span className="normal-case font-medium text-gray-400">(Penunjang Medis Eksternal)</span>
-          <span className="text-red-500 ml-1" style={{ WebkitTextStroke: '0' }}>*</span>
+          Instruksi Lab
         </h3>
         <textarea
           {...register('instruksiLab')}
-          placeholder="Contoh: Cek darah lengkap, urinalisis, atau tulis 'Tidak ada' jika tidak diperlukan"
+          placeholder="Contoh: Cek darah lengkap, urinalisis"
           rows={3}
           disabled={isReadOnly}
           className={`w-full border rounded-xl p-4 text-sm font-sans resize-y focus:outline-none focus:ring-1 min-h-[80px] transition-colors placeholder-gray-400 ${externalError ? 'border-red-500 focus:ring-red-500' : 'focus:ring-[#0F766E] focus:border-[#0F766E] border-gray-200'} ${isReadOnly ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-800'}`}

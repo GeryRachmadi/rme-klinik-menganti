@@ -44,10 +44,17 @@ export async function POST(
     // is provided (including null) is serialized below. The NURSE route keeps the
     // hard mandatory guard.
 
+    // Rencana Pemulangan is mandatory (PIC request) — mirrors the client
+    // PlanFormSchema's top-level check, alongside Tindakan/Resep/Edukasi/
+    // Instruksi Lab below.
+    const rencanaLabel: string = plan?.rencanaPemulangan?.label ?? "";
+    if (!rencanaLabel.trim()) {
+      return Response.json({ error: "Rencana Pemulangan wajib dipilih" }, { status: 400 });
+    }
+
     // Conditional Rencana Pemulangan guard: "Dirujuk" must carry both Tujuan and
     // Alasan — blocks empty ServiceRequest creation server-side (BB-11.14).
     // "Lain-lain" must carry a free-text dischargeReason.
-    const rencanaLabel: string = plan?.rencanaPemulangan?.label ?? "";
     if (rencanaLabel === "Dirujuk ke Fasilitas Lain") {
       const tujuan = typeof plan.rencanaPemulangan.tujuanRujukan === "string" ? plan.rencanaPemulangan.tujuanRujukan.trim() : "";
       const alasan = typeof plan.rencanaPemulangan.alasanRujukan === "string" ? plan.rencanaPemulangan.alasanRujukan.trim() : "";
@@ -85,11 +92,6 @@ export async function POST(
     }
     if (!plan?.edukasi?.anjuranEdukasi?.trim()) {
       return Response.json({ error: "Edukasi / Anjuran wajib diisi" }, { status: 400 });
-    }
-    // Instruksi Lab (H2 Sev3) is a permanent, mandatory Plan fixture — mirrors the
-    // Edukasi guard. The doctor must type something explicit (even "-"), never blank.
-    if (!plan?.labInstruction?.instruksiLab?.trim()) {
-      return Response.json({ error: "Instruksi Lab wajib diisi" }, { status: 400 });
     }
 
     const encounter = await prisma.encounter.findUnique({
@@ -374,8 +376,11 @@ export async function POST(
           dischargeDisposition: rencanaLabel
             ? (DISCHARGE_DISPOSITION_ENUM[rencanaLabel] as any) ?? null
             : null,
-          dischargeReason: rencanaLabel === "Lain-lain"
-            ? (plan.rencanaPemulangan.dischargeReason?.trim() || null)
+          // Catatan Tambahan is optional for every option (mandatory only for
+          // "Lain-lain", enforced by the guard above) — persist whatever the
+          // doctor typed regardless of which disposition was selected.
+          dischargeReason: rencanaLabel
+            ? (plan.rencanaPemulangan?.dischargeReason?.trim() || null)
             : null,
           reasonCode: hasilPeriksaData?.keluhanUtama ?? null,
           instruksiLab: plan?.labInstruction?.instruksiLab?.trim() ? plan.labInstruction.instruksiLab.trim() : null,
