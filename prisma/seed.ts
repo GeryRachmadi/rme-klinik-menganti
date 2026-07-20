@@ -214,47 +214,61 @@ async function main() {
 
   const icd9cmData = [
     // Consultation
-    { code: "89.02", display: "Wawancara dan evaluasi komprehensif",                        category: "Consultation" },
-    { code: "89.03", display: "Wawancara dan evaluasi komprehensif (Gigi)",                 category: "Consultation" },
-    { code: "89.7",  display: "Monitoring tanda vital",                                     category: "Consultation" },
+    { code: "89.01", display: "Interview and evaluation, described as brief",                                               display_id: "Wawancara dan evaluasi singkat",                              category: "Consultation" },
+    { code: "89.02", display: "Interview and evaluation, described as limited",                                             display_id: "Wawancara dan evaluasi terbatas",                             category: "Consultation" },
+    { code: "89.03", display: "Interview and evaluation, described as comprehensive",                                      display_id: "Wawancara dan evaluasi komprehensif",                         category: "Consultation" },
+    { code: "89.05", display: "Diagnostic interview and evaluation, not otherwise specified",                              display_id: "Wawancara dan evaluasi diagnostik, tidak dispesifikasikan",   category: "Consultation" },
+    { code: "89.08", display: "Other consultation",                                                                        display_id: "Konsultasi lainnya",                                          category: "Consultation" },
+    { code: "89.09", display: "Consultation, not otherwise specified",                                                     display_id: "Konsultasi, tidak dispesifikasikan",                          category: "Consultation" },
+    { code: "89.7",  display: "General physical examination",                                                              display_id: "Pemeriksaan fisik umum",                                      category: "Consultation" },
     // Laboratory
-    { code: "90.59", display: "Pemeriksaan mikroskopis darah (Lainnya)",                    category: "Laboratory" },
-    { code: "90.53", display: "Pemeriksaan mikroskopis darah (Kultur)",                     category: "Laboratory" },
-    { code: "90.5",  display: "Pemeriksaan gula darah",                                     category: "Laboratory" },
-    { code: "91.6",  display: "Urinalisis (Pemeriksaan urin)",                              category: "Laboratory" },
-    { code: "90.57", display: "Pemeriksaan hemoglobin / hematokrit",                        category: "Laboratory" },
+    { code: "90.53", display: "Microscopic examination of blood, culture and sensitivity",                                 display_id: "Pemeriksaan mikroskopis darah (Kultur dan sensitivitas)",     category: "Laboratory" },
+    { code: "90.59", display: "Microscopic examination of blood, other microscopic examination",                           display_id: "Pemeriksaan mikroskopis darah lainnya",                       category: "Laboratory" },
+    { code: "91.31", display: "Microscopic examination of specimen from bladder, urethra, prostate, seminal vesicle, perivesical tissue, urine, and semen", display_id: "Pemeriksaan mikroskopis urin (Urinalisis)", category: "Laboratory" },
     // Imaging
-    { code: "87.44", display: "Rontgen dada rutin (X-Ray Thorax)",                         category: "Imaging" },
-    { code: "87.21", display: "Rontgen gigi (Dental X-Ray)",                               category: "Imaging" },
-    { code: "88.79", display: "Ultrasonografi (USG) lainnya",                              category: "Imaging" },
+    { code: "87.44", display: "Routine chest x-ray, so described",                                                         display_id: "Rontgen dada rutin (X-Ray Thorax)",                           category: "Imaging" },
+    { code: "87.12", display: "Other dental x-ray",                                                                        display_id: "Rontgen gigi (Dental X-Ray)",                                 category: "Imaging" },
+    { code: "88.79", display: "Other diagnostic ultrasound",                                                               display_id: "Ultrasonografi (USG) lainnya",                                category: "Imaging" },
     // Cardiology
-    { code: "89.52", display: "Elektrokardiogram (EKG)",                                   category: "Cardiology" },
+    { code: "89.52", display: "Electrocardiogram",                                                                         display_id: "Elektrokardiogram (EKG)",                                     category: "Cardiology" },
     // Minor Procedures
-    { code: "86.04", display: "Insisi dan drainase kulit / jaringan subkutan lainnya",     category: "Minor Procedures" },
-    { code: "86.59", display: "Penjahitan kulit dan jaringan subkutan",                    category: "Minor Procedures" },
-    { code: "99.21", display: "Injeksi antibiotik",                                        category: "Minor Procedures" },
-    { code: "99.11", display: "Pemberian vaksin / imunisasi",                              category: "Minor Procedures" },
-    { code: "93.94", display: "Nebulisasi / Inhalasi terapi",                              category: "Minor Procedures" },
-    { code: "99.03", display: "Pemberian cairan infus intravena (IV drip)",                category: "Minor Procedures" },
-    { code: "99.23", display: "Injeksi insulin",                                           category: "Minor Procedures" },
-    { code: "99.29", display: "Injeksi lainnya",                                           category: "Minor Procedures" },
-    { code: "86.28", display: "Perawatan luka / Ganti balutan",                            category: "Minor Procedures" },
-    { code: "96.52", display: "Irigasi / Pembersihan telinga",                             category: "Minor Procedures" },
-    { code: "64.0",  display: "Sirkumsisi",                                                category: "Minor Procedures" },
+    { code: "86.04", display: "Other incision with drainage of skin and subcutaneous tissue",                              display_id: "Insisi dan drainase kulit / jaringan subkutan lainnya",       category: "Minor Procedures" },
+    { code: "86.59", display: "Closure of skin and subcutaneous tissue of other sites",                                    display_id: "Penjahitan kulit dan jaringan subkutan",                      category: "Minor Procedures" },
+    { code: "99.21", display: "Injection of antibiotic",                                                                   display_id: "Injeksi antibiotik",                                          category: "Minor Procedures" },
+    { code: "99.39", display: "Other vaccination and inoculation",                                                        display_id: "Pemberian vaksin / imunisasi lainnya",                        category: "Minor Procedures" },
+    { code: "93.94", display: "Respiratory medication administered by nebulizer",                                          display_id: "Nebulisasi / Inhalasi terapi",                                category: "Minor Procedures" },
+    { code: "99.18", display: "Injection or infusion of electrolytes",                                                     display_id: "Pemberian cairan infus elektrolit (IV drip)",                 category: "Minor Procedures" },
+    { code: "99.17", display: "Injection of insulin",                                                                      display_id: "Injeksi insulin",                                             category: "Minor Procedures" },
+    { code: "99.29", display: "Injection or infusion of other therapeutic or prophylactic substance",                      display_id: "Injeksi / infus lainnya",                                     category: "Minor Procedures" },
+    { code: "86.28", display: "Nonexcisional debridement of wound, infection, or burn",                                    display_id: "Debridemen luka non-eksisional",                              category: "Minor Procedures" },
+    { code: "96.52", display: "Irrigation of ear",                                                                         display_id: "Irigasi / Pembersihan telinga",                               category: "Minor Procedures" },
+    { code: "64.0",  display: "Circumcision",                                                                              display_id: "Sirkumsisi",                                                  category: "Minor Procedures" },
     // Dental Procedures
-    { code: "23.09", display: "Ekstraksi gigi lainnya (Cabut gigi biasa)",                 category: "Dental Procedures" },
-    { code: "23.11", display: "Pengangkatan sisa akar gigi",                               category: "Dental Procedures" },
-    { code: "23.2",  display: "Restorasi gigi dengan amalgam (Tambal)",                    category: "Dental Procedures" },
-    { code: "24.31", display: "Eksisi lesi gigi (Pembersihan karang / Scaling)",           category: "Dental Procedures" },
+    { code: "23.09", display: "Extraction of other tooth",                                                                 display_id: "Ekstraksi gigi lainnya (Cabut gigi biasa)",                   category: "Dental Procedures" },
+    { code: "23.11", display: "Removal of residual root",                                                                  display_id: "Pengangkatan sisa akar gigi",                                 category: "Dental Procedures" },
+    { code: "23.2",  display: "Restoration of tooth by filling",                                                           display_id: "Restorasi gigi dengan amalgam (Tambal)",                      category: "Dental Procedures" },
+    { code: "24.31", display: "Excision of lesion or tissue of gum",                                                       display_id: "Eksisi lesi jaringan gusi",                                   category: "Dental Procedures" },
     // Gynaecology
-    { code: "67.12", display: "Pap smear serviks",                                         category: "Gynaecology" },
+    { code: "67.12", display: "Cervical biopsy",                                                                           display_id: "Biopsi serviks",                                              category: "Gynaecology" },
   ];
 
-  const icd9cmResult = await prisma.iCD9CMReference.createMany({
-    data: icd9cmData,
-    skipDuplicates: true,
+  // Codes replaced by a corrected code, or dropped outright (no valid ICD-9-CM
+  // procedure code exists for them) as part of the bilingual-field cleanup.
+  const icd9cmRetiredCodes = ["87.21", "91.6", "99.11", "99.23", "99.03", "90.5", "90.57"];
+  await prisma.iCD9CMReference.deleteMany({
+    where: { code: { in: icd9cmRetiredCodes } },
   });
-  console.log(`Seeded ICD-9-CM: ${icd9cmResult.count} rows inserted (duplicates skipped).`);
+
+  await Promise.all(
+    icd9cmData.map((entry) =>
+      prisma.iCD9CMReference.upsert({
+        where:  { code: entry.code },
+        update: { display: entry.display, display_id: entry.display_id, category: entry.category },
+        create: entry,
+      })
+    )
+  );
+  console.log(`Seeded ICD-9-CM: ${icd9cmData.length} rows upserted.`);
 
   console.log("Done! Password for all accounts: password123");
 }

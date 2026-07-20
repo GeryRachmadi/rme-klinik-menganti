@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
 
   if (all) {
     const results = await prisma.iCD9CMReference.findMany({
-      select: { id: true, code: true, display: true, category: true },
+      select: { id: true, code: true, display: true, display_id: true, category: true },
       orderBy: [{ category: "asc" }, { code: "asc" }],
     });
     return NextResponse.json(results);
@@ -20,12 +20,13 @@ export async function GET(req: NextRequest) {
   const results = await prisma.iCD9CMReference.findMany({
     where: {
       OR: [
-        { code:     { contains: q, mode: "insensitive" } },
-        { display:  { contains: q, mode: "insensitive" } },
-        { category: { contains: q, mode: "insensitive" } },
+        { code:       { contains: q, mode: "insensitive" } },
+        { display:    { contains: q, mode: "insensitive" } },
+        { display_id: { contains: q, mode: "insensitive" } },
+        { category:   { contains: q, mode: "insensitive" } },
       ],
     },
-    select: { id: true, code: true, display: true, category: true },
+    select: { id: true, code: true, display: true, display_id: true, category: true },
     take: 20,
   });
 

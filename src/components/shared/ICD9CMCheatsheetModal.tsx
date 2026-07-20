@@ -7,6 +7,7 @@ interface ICD9CMRow {
   id: string;
   code: string;
   display: string;
+  display_id: string | null;
   category: string | null;
 }
 
@@ -68,6 +69,7 @@ export function ICD9CMCheatsheetModal({ isOpen, onClose, onSelect }: ICD9CMCheat
     (row) =>
       row.code.toLowerCase().includes(q) ||
       row.display.toLowerCase().includes(q) ||
+      (row.display_id ?? '').toLowerCase().includes(q) ||
       (row.category ?? '').toLowerCase().includes(q)
   );
 
@@ -85,7 +87,7 @@ export function ICD9CMCheatsheetModal({ isOpen, onClose, onSelect }: ICD9CMCheat
   ];
 
   const handleSelect = (row: ICD9CMRow) => {
-    onSelect(row.code, row.display, row.category);
+    onSelect(row.code, row.display_id ?? row.display, row.category);
     onClose();
   };
 
@@ -171,9 +173,14 @@ export function ICD9CMCheatsheetModal({ isOpen, onClose, onSelect }: ICD9CMCheat
                         >
                           {row.code}
                         </span>
-                        <p className="text-sm text-gray-800 group-hover:text-[#0A5A54] leading-snug">
-                          {row.display}
-                        </p>
+                        <div>
+                          <p className="text-sm text-gray-800 group-hover:text-[#0A5A54] leading-snug">
+                            {row.display_id ?? row.display}
+                          </p>
+                          {row.display_id && (
+                            <p className="text-xs text-gray-400 mt-0.5 leading-snug">{row.display}</p>
+                          )}
+                        </div>
                       </li>
                     ))}
                   </ul>

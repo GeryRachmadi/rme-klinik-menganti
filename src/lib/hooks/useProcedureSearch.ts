@@ -4,6 +4,7 @@ export interface Icd9CmEntry {
   id: string;
   code: string;
   display: string;
+  display_id: string | null;
   category: string | null;
 }
 
